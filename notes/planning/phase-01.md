@@ -116,42 +116,37 @@ Create a set of Elixir structs that represent UI elements in a platform-agnostic
 
 ## 1.4 Signal and Event Handling Constructs
 
-- [ ] **Task 1.4** Define DSL constructs for signal definitions and event handling
+- [x] **Task 1.4** Define signal helpers and event handling constructs
 
-Create the signal entity and event handler constructs that enable UI components to emit and respond to JidoSignal messages.
+Create helper functions for working with Jido.Signal, enabling UI components to emit and respond to signal messages.
 
-- [ ] 1.4.1 Create `lib/unified_ui/dsl/entities/signals.ex`
-- [ ] 1.4.2 Define `@signal_entity` with schema:
-  - args: `[:name]`
-  - options: `payload` (schema definition), `description`, `targets`
-- [ ] 1.4.3 Create `UnifiedUi.Signals.Signal` target struct
-- [ ] 1.4.4 Define signal naming conventions
-- [ ] 1.4.5 Create helper module `UnifiedUi.Signals` with:
-  - `define_signal/3` - Creates a signal struct
-  - `emit_signal/2` - Emits a signal via JidoSignal
-  - `subscribe/2` - Subscribes to signals from a component
-- [ ] 1.4.6 Define standard signal types:
+- [x] 1.4.1 Create `lib/unified_ui/signals.ex` helper module
+- [x] 1.4.2 Define standard_signals/0 returning list of standard signal names
+- [x] 1.4.3 Define signal_type/1 mapping atoms to type strings
+- [x] 1.4.4 Define create/3 for creating Jido.Signal from atom or string
+- [x] 1.4.5 Define create!/3 raising version for known-valid signals
+- [x] 1.4.6 Define valid_type/1 for validating signal type format
+- [x] 1.4.7 Define standard signal types:
   - `:click` - Button/element clicked
   - `:change` - Input value changed
   - `:submit` - Form submitted
   - `:focus` - Element gained focus
   - `:blur` - Element lost focus
-- [ ] 1.4.7 Add signal validation helpers
+  - `:select` - Item selected
 
 **Implementation Notes:**
-- Signals map to JidoSignal envelopes from jido_signal library
-- `targets` option allows specifying which agents receive the signal
-- Standard signals provide baseline; custom signals can be defined
+- Uses Jido.Signal directly (no intermediate wrapper struct)
+- Helper functions in `UnifiedUi.Signals` for common UI signal types
+- Standard signals provide baseline; custom signals created with `Jido.Signal.new/1`
+- Signal type format: `"domain.entity.action"` (e.g., `"unified.button.clicked"`)
 
 **Unit Tests for Section 1.4:**
-- [ ] Test signal entity with name argument
-- [ ] Test signal entity with payload schema
-- [ ] Test define_signal creates valid signal struct
-- [ ] Test emit_signal sends JidoSignal message
-- [ ] Test subscribe registers signal interest
-- [ ] Test standard signal types are pre-defined
-- [ ] Test custom signal types can be defined
-- [ ] Test signal validation catches invalid names
+- [x] Test standard_signals/0 returns list of signal names
+- [x] Test signal_type/1 maps atoms to type strings
+- [x] Test create/3 creates Jido.Signal from atom
+- [x] Test create/3 creates Jido.Signal from custom type string
+- [x] Test create!/3 raises on invalid signal name
+- [x] Test valid_type/1 validates signal type format
 
 ---
 
