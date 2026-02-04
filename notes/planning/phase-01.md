@@ -74,28 +74,28 @@ Define the Spark.Dsl.Extension that aggregates all DSL entities, sections, trans
 
 ## 1.3 Intermediate UI Representation Design
 
-- [ ] **Task 1.3** Design and implement the Intermediate UI Representation (IUR) system
+- [x] **Task 1.3** Design and implement the Intermediate UI Representation (IUR) system
 
 Create a set of Elixir structs that represent UI elements in a platform-agnostic manner. The IUR is what the view/1 function returns and what renderers consume.
 
-- [ ] 1.3.1 Create `lib/unified_ui/iur/element.ex` with:
+- [x] 1.3.1 Create `lib/unified_ui/iur/element.ex` with:
   - `UnifiedUi.IUR.Element` protocol
   - `children/1` function for tree traversal
   - `metadata/1` function for element properties
-- [ ] 1.3.2 Create `lib/unified_ui/iur/widgets.ex` with base widget structs:
+- [x] 1.3.2 Create `lib/unified_ui/iur/widgets.ex` with base widget structs:
   - `UnifiedUi.IUR.Widgets.Text` - content, style, id
   - `UnifiedUi.IUR.Widgets.Button` - label, on_click, disabled, style, id
-- [ ] 1.3.3 Create `lib/unified_ui/iur/layouts.ex` with base layout structs:
+- [x] 1.3.3 Create `lib/unified_ui/iur/layouts.ex` with base layout structs:
   - `UnifiedUi.IUR.Layouts.VBox` - children, spacing, align
   - `UnifiedUi.IUR.Layouts.HBox` - children, spacing, align
-- [ ] 1.3.4 Create `lib/unified_ui/iur/styles.ex` with:
+- [x] 1.3.4 Create `lib/unified_ui/iur/styles.ex` with:
   - `UnifiedUi.IUR.Style` - fg, bg, attrs, padding
   - Style attribute definitions
   - Style merge functions
-- [ ] 1.3.5 Implement `c:UnifiedUi.IUR.Element.children/1` for all structs
-- [ ] 1.3.6 Implement `c:UnifiedUi.IUR.Element.metadata/1` for all structs
-- [ ] 1.3.7 Add IUR validation helpers
-- [ ] 1.3.8 Document IUR contract for renderer implementers
+- [x] 1.3.5 Implement `c:UnifiedUi.IUR.Element.children/1` for all structs
+- [x] 1.3.6 Implement `c:UnifiedUi.IUR.Element.metadata/1` for all structs
+- [x] 1.3.7 Add IUR validation helpers
+- [x] 1.3.8 Document IUR contract for renderer implementers
 
 **Implementation Notes:**
 - IUR structs are simple data containers (no business logic)
@@ -103,14 +103,14 @@ Create a set of Elixir structs that represent UI elements in a platform-agnostic
 - Style struct uses platform-agnostic attribute names
 
 **Unit Tests for Section 1.3:**
-- [ ] Test Text IUR struct creation
-- [ ] Test Button IUR struct creation
-- [ ] Test VBox IUR struct with children
-- [ ] Test HBox IUR struct with children
-- [ ] Test Style struct creation
-- [ ] Test Element.protocol children/1 works
-- [ ] Test Element.protocol metadata/1 extracts properties
-- [ ] Test style merge functions
+- [x] Test Text IUR struct creation
+- [x] Test Button IUR struct creation
+- [x] Test VBox IUR struct with children
+- [x] Test HBox IUR struct with children
+- [x] Test Style struct creation
+- [x] Test Element.protocol children/1 works
+- [x] Test Element.protocol metadata/1 extracts properties
+- [x] Test style merge functions
 
 ---
 
