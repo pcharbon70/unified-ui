@@ -79,15 +79,15 @@ defmodule UnifiedUi.IUR.Style do
   @type alignment :: :left | :center | :right | :top | :bottom | :start | :end | :stretch
 
   @type t :: %__MODULE__{
-    fg: color() | nil,
-    bg: color() | nil,
-    attrs: [text_attr()],
-    padding: integer() | nil,
-    margin: integer() | nil,
-    width: size() | nil,
-    height: size() | nil,
-    align: alignment() | nil
-  }
+          fg: color() | nil,
+          bg: color() | nil,
+          attrs: [text_attr()],
+          padding: integer() | nil,
+          margin: integer() | nil,
+          width: size() | nil,
+          height: size() | nil,
+          align: alignment() | nil
+        }
 
   @doc """
   Creates a new Style struct from the given keyword list.
@@ -121,6 +121,7 @@ defmodule UnifiedUi.IUR.Style do
   def merge(nil, nil), do: new()
   def merge(nil, style2), do: style2
   def merge(style1, nil), do: style1
+
   def merge(style1, style2) do
     merged_attrs =
       (style1.attrs ++ style2.attrs)

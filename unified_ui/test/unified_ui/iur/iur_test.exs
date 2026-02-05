@@ -25,11 +25,15 @@ defmodule UnifiedUi.IURTest do
 
       merged = Style.merge(style1, style2)
 
-      assert merged.fg == :red  # overridden
+      # overridden
+      assert merged.fg == :red
       assert merged.bg == nil
-      assert merged.padding == 2  # from style1
-      assert merged.margin == 1  # from style2
-      assert [:bold, :underline] = merged.attrs  # combined
+      # from style1
+      assert merged.padding == 2
+      # from style2
+      assert merged.margin == 1
+      # combined
+      assert [:bold, :underline] = merged.attrs
     end
 
     test "merge/2 handles nil styles" do
@@ -197,6 +201,7 @@ defmodule UnifiedUi.IURTest do
         disabled: false,
         id: :submit_btn
       }
+
       metadata = Element.metadata(button)
 
       assert metadata.type == :button

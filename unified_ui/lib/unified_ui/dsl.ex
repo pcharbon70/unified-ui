@@ -67,6 +67,9 @@ defmodule UnifiedUi.Dsl do
   These are the standard signal types used for inter-component
   communication via the JidoSignal library.
 
+  Delegates to `UnifiedUi.Signals.standard_signals/0` as the
+  single source of truth for signal definitions.
+
   ## Returns
 
   A list of atoms representing standard signal types.
@@ -76,7 +79,5 @@ defmodule UnifiedUi.Dsl do
       iex> UnifiedUi.Dsl.standard_signals()
       [:click, :change, :submit, :focus, :blur, :select]
   """
-  def standard_signals do
-    [:click, :change, :submit, :focus, :blur, :select]
-  end
+  defdelegate standard_signals, to: UnifiedUi.Signals
 end

@@ -105,7 +105,7 @@ defmodule UnifiedUi.SignalsTest do
     end
 
     test "raises on invalid signal name" do
-      assert_raise ArgumentError, fn ->
+      assert_raise UnifiedUi.Errors.InvalidSignalError, fn ->
         Signals.create!(:unknown, %{})
       end
     end
@@ -138,11 +138,12 @@ defmodule UnifiedUi.SignalsTest do
     end
 
     test "can use Jido.Signal.new directly for custom signals" do
-      assert {:ok, signal} = Signal.new(%{
-        type: "myapp.custom.event",
-        data: %{value: 123},
-        source: "/my/app"
-      })
+      assert {:ok, signal} =
+               Signal.new(%{
+                 type: "myapp.custom.event",
+                 data: %{value: 123},
+                 source: "/my/app"
+               })
 
       assert signal.type == "myapp.custom.event"
       assert signal.data == %{value: 123}

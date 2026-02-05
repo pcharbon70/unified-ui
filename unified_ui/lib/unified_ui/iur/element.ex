@@ -86,73 +86,44 @@ defprotocol UnifiedUi.IUR.Element do
 end
 
 defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Text do
+  import UnifiedUi.IUR.ElementHelpers
+
   def children(_text), do: []
 
   def metadata(text) do
-    base = %{type: :text}
-    base
-    |> maybe_put_id(text.id)
-    |> maybe_put_style(text.style)
+    build_metadata(%{type: :text}, id: text.id, style: text.style)
   end
-
-  defp maybe_put_id(map, nil), do: map
-  defp maybe_put_id(map, id), do: Map.put(map, :id, id)
-
-  defp maybe_put_style(map, nil), do: map
-  defp maybe_put_style(map, style), do: Map.put(map, :style, style)
 end
 
 defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Button do
+  import UnifiedUi.IUR.ElementHelpers
+
   def children(_button), do: []
 
   def metadata(button) do
-    %{
-      type: :button,
-      label: button.label,
-      on_click: button.on_click,
-      disabled: button.disabled
-    }
-    |> maybe_put_id(button.id)
-    |> maybe_put_style(button.style)
+    %{type: :button, label: button.label, on_click: button.on_click, disabled: button.disabled}
+    |> build_metadata(id: button.id, style: button.style)
   end
-
-  defp maybe_put_id(map, nil), do: map
-  defp maybe_put_id(map, id), do: Map.put(map, :id, id)
-
-  defp maybe_put_style(map, nil), do: map
-  defp maybe_put_style(map, style), do: Map.put(map, :style, style)
 end
 
 defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Layouts.VBox do
+  import UnifiedUi.IUR.ElementHelpers
+
   def children(vbox), do: vbox.children
 
   def metadata(vbox) do
-    %{
-      type: :vbox,
-      spacing: vbox.spacing,
-      align: vbox.align
-    }
-    |> maybe_put_id(vbox.id)
+    build_metadata(%{type: :vbox, spacing: vbox.spacing, align: vbox.align}, id: vbox.id)
   end
-
-  defp maybe_put_id(map, nil), do: map
-  defp maybe_put_id(map, id), do: Map.put(map, :id, id)
 end
 
 defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Layouts.HBox do
+  import UnifiedUi.IUR.ElementHelpers
+
   def children(hbox), do: hbox.children
 
   def metadata(hbox) do
-    %{
-      type: :hbox,
-      spacing: hbox.spacing,
-      align: hbox.align
-    }
-    |> maybe_put_id(hbox.id)
+    build_metadata(%{type: :hbox, spacing: hbox.spacing, align: hbox.align}, id: hbox.id)
   end
-
-  defp maybe_put_id(map, nil), do: map
-  defp maybe_put_id(map, id), do: Map.put(map, :id, id)
 end
 
 defimpl UnifiedUi.IUR.Element, for: Any do

@@ -91,8 +91,9 @@ defmodule UnifiedUi.Dsl.Sections.Signals do
 
   @doc """
   Returns the list of standard signal types.
+
+  Delegates to `UnifiedUi.Signals.standard_signals/0` as the
+  single source of truth for signal definitions.
   """
-  def standard_signals do
-    [:click, :change, :submit, :focus, :blur, :select]
-  end
+  defdelegate standard_signals, to: UnifiedUi.Signals
 end

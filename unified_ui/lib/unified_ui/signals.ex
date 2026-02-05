@@ -115,7 +115,8 @@ defmodule UnifiedUi.Signals do
         source: "/my/app"
       )
   """
-  @spec create(signal_name() | signal_type(), payload(), keyword()) :: {:ok, Signal.t()} | {:error, term()}
+  @spec create(signal_name() | signal_type(), payload(), keyword()) ::
+          {:ok, Signal.t()} | {:error, term()}
   def create(name, payload \\ %{}, opts \\ [])
 
   def create(name, payload, opts) when is_atom(name) do
@@ -135,21 +136,29 @@ defmodule UnifiedUi.Signals do
   ## Examples
 
       signal = UnifiedUi.Signals.create!(:click, %{button_id: :my_btn})
+
+  Will raise `UnifiedUi.Errors.InvalidSignalError` if the signal name is invalid.
   """
   @spec create!(signal_name() | signal_type(), payload(), keyword()) :: Signal.t()
   def create!(name, payload \\ %{}, opts \\ [])
 
   def create!(name, payload, opts) when is_atom(name) do
     case create(name, payload, opts) do
-      {:ok, signal} -> signal
-      {:error, reason} -> raise ArgumentError, "Failed to create signal: #{inspect(reason)}"
+      {:ok, signal} ->
+        signal
+
+      {:error, reason} ->
+        raise UnifiedUi.Errors.InvalidSignalError, signal_name: name
     end
   end
 
   def create!(type, payload, opts) when is_binary(type) do
     case create(type, payload, opts) do
-      {:ok, signal} -> signal
-      {:error, reason} -> raise ArgumentError, "Failed to create signal: #{inspect(reason)}"
+      {:ok, signal} ->
+        signal
+
+      {:error, reason} ->
+        raise UnifiedUi.Errors.InvalidSignalError, signal_type: type
     end
   end
 
