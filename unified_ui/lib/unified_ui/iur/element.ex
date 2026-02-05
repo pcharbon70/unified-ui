@@ -91,7 +91,7 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Text do
   def children(_text), do: []
 
   def metadata(text) do
-    build_metadata(%{type: :text}, id: text.id, style: text.style)
+    build_metadata(%{type: :text, visible: text.visible}, id: text.id, style: text.style)
   end
 end
 
@@ -101,8 +101,46 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Button do
   def children(_button), do: []
 
   def metadata(button) do
-    %{type: :button, label: button.label, on_click: button.on_click, disabled: button.disabled}
+    %{
+      type: :button,
+      label: button.label,
+      on_click: button.on_click,
+      disabled: button.disabled,
+      visible: button.visible
+    }
     |> build_metadata(id: button.id, style: button.style)
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Label do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_label), do: []
+
+  def metadata(label) do
+    %{type: :label, for: label.for, text: label.text, visible: label.visible}
+    |> build_metadata(id: label.id, style: label.style)
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.TextInput do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_input), do: []
+
+  def metadata(input) do
+    %{
+      type: :text_input,
+      id: input.id,
+      value: input.value,
+      placeholder: input.placeholder,
+      input_type: input.type,
+      on_change: input.on_change,
+      on_submit: input.on_submit,
+      disabled: input.disabled,
+      visible: input.visible
+    }
+    |> build_metadata(style: input.style)
   end
 end
 

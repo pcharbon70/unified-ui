@@ -113,6 +113,98 @@ defmodule UnifiedUi.IURTest do
       button = %Widgets.Button{label: "Save", on_click: {:save, %{data: "value"}}}
       assert button.on_click == {:save, %{data: "value"}}
     end
+
+    test "creates a button with visible false" do
+      button = %Widgets.Button{label: "Hidden", on_click: :noop, visible: false}
+      assert button.visible == false
+    end
+  end
+
+  describe "Widgets.Label" do
+    test "creates a label with for and text" do
+      label = %Widgets.Label{for: :email_input, text: "Email:"}
+      assert label.for == :email_input
+      assert label.text == "Email:"
+      assert label.id == nil
+      assert label.style == nil
+    end
+
+    test "creates a label with id and style" do
+      style = %Style{fg: :cyan, attrs: [:bold]}
+      label = %Widgets.Label{for: :password, text: "Password:", id: :pwd_label, style: style}
+
+      assert label.for == :password
+      assert label.text == "Password:"
+      assert label.id == :pwd_label
+      assert label.style == style
+    end
+
+    test "creates a label with visible option" do
+      label = %Widgets.Label{for: :test, text: "Test", visible: false}
+      assert label.visible == false
+    end
+  end
+
+  describe "Widgets.TextInput" do
+    test "creates a text_input with id" do
+      input = %Widgets.TextInput{id: :email}
+      assert input.id == :email
+      assert input.value == nil
+      assert input.placeholder == nil
+      assert input.type == nil
+      assert input.on_change == nil
+      assert input.on_submit == nil
+      assert input.disabled == nil
+      assert input.visible == true
+    end
+
+    test "creates a text_input with all options" do
+      input = %Widgets.TextInput{
+        id: :email,
+        value: "test@example.com",
+        placeholder: "user@example.com",
+        type: :email,
+        on_change: :email_changed,
+        on_submit: :form_submit,
+        disabled: false,
+        visible: true
+      }
+
+      assert input.id == :email
+      assert input.value == "test@example.com"
+      assert input.placeholder == "user@example.com"
+      assert input.type == :email
+      assert input.on_change == :email_changed
+      assert input.on_submit == :form_submit
+      assert input.disabled == false
+      assert input.visible == true
+    end
+
+    test "creates a password input" do
+      input = %Widgets.TextInput{id: :password, type: :password}
+      assert input.type == :password
+    end
+
+    test "creates a number input" do
+      input = %Widgets.TextInput{id: :age, type: :number}
+      assert input.type == :number
+    end
+
+    test "creates a text_input with placeholder only" do
+      input = %Widgets.TextInput{id: :search, placeholder: "Search..."}
+      assert input.id == :search
+      assert input.placeholder == "Search..."
+    end
+
+    test "creates a disabled text_input" do
+      input = %Widgets.TextInput{id: :readonly, disabled: true}
+      assert input.disabled == true
+    end
+
+    test "creates a text_input with initial value" do
+      input = %Widgets.TextInput{id: :name, value: "John Doe"}
+      assert input.value == "John Doe"
+    end
   end
 
   describe "Layouts.VBox" do
@@ -185,6 +277,105 @@ defmodule UnifiedUi.IURTest do
 
       refute Map.has_key?(metadata, :id)
       assert metadata.type == :text
+    end
+
+    test "metadata/1 includes visible field" do
+      text = %Widgets.Text{content: "Hidden", visible: false}
+      metadata = Element.metadata(text)
+
+      assert metadata.visible == false
+    end
+  end
+
+  describe "Element protocol for Label" do
+    test "children/1 returns empty list for label" do
+      label = %Widgets.Label{for: :input, text: "Label:"}
+      assert Element.children(label) == []
+    end
+
+    test "metadata/1 returns label properties" do
+      label = %Widgets.Label{for: :email, text: "Email:", id: :email_label}
+      metadata = Element.metadata(label)
+
+      assert metadata.type == :label
+      assert metadata.for == :email
+      assert metadata.text == "Email:"
+      assert metadata.id == :email_label
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :cyan}
+      label = %Widgets.Label{for: :test, text: "Test:", style: style}
+      metadata = Element.metadata(label)
+
+      assert metadata.style == style
+    end
+
+    test "metadata/1 includes visible field" do
+      label = %Widgets.Label{for: :test, text: "Test:", visible: false}
+      metadata = Element.metadata(label)
+
+      assert metadata.visible == false
+    end
+  end
+
+  describe "Element protocol for TextInput" do
+    test "children/1 returns empty list for text_input" do
+      input = %Widgets.TextInput{id: :email}
+      assert Element.children(input) == []
+    end
+
+    test "metadata/1 returns text_input properties" do
+      input = %Widgets.TextInput{
+        id: :email,
+        value: "test@example.com",
+        placeholder: "user@example.com",
+        type: :email
+      }
+
+      metadata = Element.metadata(input)
+
+      assert metadata.type == :text_input
+      assert metadata.id == :email
+      assert metadata.value == "test@example.com"
+      assert metadata.placeholder == "user@example.com"
+      assert metadata.input_type == :email
+    end
+
+    test "metadata/1 includes on_change when present" do
+      input = %Widgets.TextInput{id: :test, on_change: :changed}
+      metadata = Element.metadata(input)
+
+      assert metadata.on_change == :changed
+    end
+
+    test "metadata/1 includes on_submit when present" do
+      input = %Widgets.TextInput{id: :test, on_submit: :submitted}
+      metadata = Element.metadata(input)
+
+      assert metadata.on_submit == :submitted
+    end
+
+    test "metadata/1 includes disabled field" do
+      input = %Widgets.TextInput{id: :test, disabled: true}
+      metadata = Element.metadata(input)
+
+      assert metadata.disabled == true
+    end
+
+    test "metadata/1 includes visible field" do
+      input = %Widgets.TextInput{id: :test, visible: false}
+      metadata = Element.metadata(input)
+
+      assert metadata.visible == false
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :blue}
+      input = %Widgets.TextInput{id: :test, style: style}
+      metadata = Element.metadata(input)
+
+      assert metadata.style == style
     end
   end
 

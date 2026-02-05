@@ -27,7 +27,7 @@ defmodule UnifiedUi.Dsl.Extension do
   The DSL is organized into sections:
 
   * `:ui` - Top-level section for UI definitions
-  * `:widgets` - Widget entity definitions (text, button, input, etc.)
+  * `:widgets` - Widget entity definitions (text, button, label, text_input, etc.)
   * `:layouts` - Layout entity definitions (vbox, hbox, grid, etc.)
   * `:styles` - Style and theme definitions
   * `:signals` - Signal type definitions for inter-component communication
@@ -109,12 +109,10 @@ defmodule UnifiedUi.Dsl.Extension do
     """,
     schema: [],
     entities: [
-      # Widget entities will be added in future phases:
-      # - text
-      # - button
-      # - text_input
-      # - label
-      # etc.
+      UnifiedUi.Dsl.Entities.Widgets.button_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.label_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity()
     ]
   }
 
