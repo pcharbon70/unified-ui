@@ -28,12 +28,31 @@ defmodule UnifiedUi.Dsl do
   * Layouts (future): `vbox`, `hbox`, `grid`, etc.
   * Styles: `style` option for visual styling
 
+  ## Elm Architecture
+
+  Modules using `use UnifiedUi.Dsl` automatically receive generated
+  `init/1`, `update/2`, and `view/1` functions following The Elm Architecture.
+  To adopt the behaviour explicitly, add `@behaviour UnifiedUi.ElmArchitecture`
+  before `use UnifiedUi.Dsl`.
+
+  ```elixir
+  defmodule MyComponent do
+    @behaviour UnifiedUi.ElmArchitecture
+    use UnifiedUi.Dsl
+
+    # ... DSL definitions
+  end
+  ```
+
   """
 
   @doc """
   Uses the UnifiedUi DSL in the calling module.
 
   This sets up Spark DSL with the UnifiedUi extension.
+  Note: This does not automatically adopt the ElmArchitecture behaviour
+  to avoid conflicts with Spark.Dsl. Add `@behaviour UnifiedUi.ElmArchitecture`
+  explicitly if you want the behaviour contract.
   """
   defmacro __using__(_opts) do
     quote do

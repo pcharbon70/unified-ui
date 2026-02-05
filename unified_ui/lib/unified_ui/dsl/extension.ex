@@ -61,6 +61,21 @@ defmodule UnifiedUi.Dsl.Extension do
 
   """
 
+  # Entity for state definition in UI section
+  @state_entity %Spark.Dsl.Entity{
+    name: :state,
+    target: UnifiedUi.Dsl.State,
+    args: [:attrs],
+    schema: [
+      attrs: [
+        type: :keyword_list,
+        doc: "Initial state as keyword list with atom keys",
+        required: true
+      ]
+    ],
+    describe: "Define the initial state for the component"
+  }
+
   @ui_section %Spark.Dsl.Section{
     name: :ui,
     describe: """
@@ -81,10 +96,7 @@ defmodule UnifiedUi.Dsl.Extension do
         required: false
       ]
     ],
-    entities: [
-      # Layout entities will be added here in future phases
-      # Widget entities will be added here in future phases
-    ]
+    entities: [@state_entity]
   }
 
   @widgets_section %Spark.Dsl.Section{
@@ -218,5 +230,10 @@ defmodule UnifiedUi.Dsl.Extension do
 
   use Spark.Dsl.Extension,
     sections: [@ui_section, @widgets_section, @layouts_section, @styles_section, @signals_section],
+    transformers: [
+      UnifiedUi.Dsl.Transformers.InitTransformer,
+      UnifiedUi.Dsl.Transformers.UpdateTransformer,
+      UnifiedUi.Dsl.Transformers.ViewTransformer
+    ],
     verifiers: []
 end
