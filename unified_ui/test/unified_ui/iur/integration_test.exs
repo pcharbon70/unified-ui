@@ -132,14 +132,14 @@ defmodule UnifiedUi.IUR.IntegrationTest do
       assert metadata.on_click == nil
     end
 
-    test "Layout metadata includes spacing and align" do
-      vbox = %VBox{id: :main, spacing: 2, align: :center}
+    test "Layout metadata includes spacing and align_items" do
+      vbox = %VBox{id: :main, spacing: 2, align_items: :center}
 
       metadata = UnifiedUi.IUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.spacing == 2
-      assert metadata.align == :center
+      assert metadata.align_items == :center
     end
   end
 

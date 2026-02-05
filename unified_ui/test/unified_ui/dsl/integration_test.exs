@@ -157,13 +157,13 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     end
 
     test "VBox metadata includes all properties" do
-      vbox = %VBox{id: :main, spacing: 2, align: :center}
+      vbox = %VBox{id: :main, spacing: 2, align_items: :center}
       metadata = UnifiedUi.IUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :main
       assert metadata.spacing == 2
-      assert metadata.align == :center
+      assert metadata.align_items == :center
     end
 
     test "Text widget returns empty children list" do
@@ -395,6 +395,155 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
       assert %Spark.Dsl.Entity{name: :text_input} =
                UnifiedUi.Dsl.Entities.Widgets.text_input_entity()
+    end
+  end
+
+  describe "Layout entity integration" do
+    alias UnifiedUi.Dsl.Entities.Layouts, as: LayoutEntities
+    alias UnifiedUi.IUR.Layouts
+
+    test "VBox entity creates correct IUR struct" do
+      entity = LayoutEntities.vbox_entity()
+
+      assert entity.name == :vbox
+      assert entity.target == Layouts.VBox
+      assert entity.args == []
+      assert Keyword.has_key?(entity.schema, :id)
+      assert Keyword.has_key?(entity.schema, :spacing)
+      assert Keyword.has_key?(entity.schema, :padding)
+      assert Keyword.has_key?(entity.schema, :align_items)
+      assert Keyword.has_key?(entity.schema, :justify_content)
+      assert Keyword.has_key?(entity.schema, :style)
+      assert Keyword.has_key?(entity.schema, :visible)
+    end
+
+    test "HBox entity creates correct IUR struct" do
+      entity = LayoutEntities.hbox_entity()
+
+      assert entity.name == :hbox
+      assert entity.target == Layouts.HBox
+      assert entity.args == []
+      assert Keyword.has_key?(entity.schema, :id)
+      assert Keyword.has_key?(entity.schema, :spacing)
+      assert Keyword.has_key?(entity.schema, :padding)
+      assert Keyword.has_key?(entity.schema, :align_items)
+      assert Keyword.has_key?(entity.schema, :justify_content)
+      assert Keyword.has_key?(entity.schema, :style)
+      assert Keyword.has_key?(entity.schema, :visible)
+    end
+
+    test "VBox IUR struct integrates with Element protocol" do
+      text = %UnifiedUi.IUR.Widgets.Text{content: "A"}
+      button = %UnifiedUi.IUR.Widgets.Button{label: "B", on_click: :b}
+
+      vbox = %Layouts.VBox{
+        id: :main,
+        children: [text, button],
+        spacing: 1,
+        align_items: :center
+      }
+
+      assert UnifiedUi.IUR.Element.children(vbox) == [text, button]
+      metadata = UnifiedUi.IUR.Element.metadata(vbox)
+
+      assert metadata.type == :vbox
+      assert metadata.id == :main
+      assert metadata.spacing == 1
+      assert metadata.align_items == :center
+    end
+
+    test "HBox IUR struct integrates with Element protocol" do
+      text = %UnifiedUi.IUR.Widgets.Text{content: "Label:"}
+      input = %UnifiedUi.IUR.Widgets.TextInput{id: :name}
+
+      hbox = %Layouts.HBox{
+        id: :form_row,
+        children: [text, input],
+        spacing: 2,
+        align_items: :center
+      }
+
+      assert UnifiedUi.IUR.Element.children(hbox) == [text, input]
+      metadata = UnifiedUi.IUR.Element.metadata(hbox)
+
+      assert metadata.type == :hbox
+      assert metadata.id == :form_row
+      assert metadata.spacing == 2
+      assert metadata.align_items == :center
+    end
+
+    test "Layouts can be nested" do
+      button = %UnifiedUi.IUR.Widgets.Button{label: "OK", on_click: :ok}
+
+      inner_hbox = %Layouts.HBox{
+        id: :button_row,
+        children: [button],
+        spacing: 1
+      }
+
+      vbox = %Layouts.VBox{
+        id: :main,
+        children: [inner_hbox],
+        spacing: 2
+      }
+
+      assert UnifiedUi.IUR.Element.children(vbox) == [inner_hbox]
+      assert UnifiedUi.IUR.Element.children(inner_hbox) == [button]
+    end
+
+    test "All layouts have visible field for state binding" do
+      vbox = %Layouts.VBox{visible: true}
+      hbox = %Layouts.HBox{visible: false}
+
+      vbox_meta = UnifiedUi.IUR.Element.metadata(vbox)
+      hbox_meta = UnifiedUi.IUR.Element.metadata(hbox)
+
+      assert vbox_meta.visible == true
+      assert hbox_meta.visible == false
+    end
+
+    test "Layouts support all alignment values" do
+      # align_items values
+      for align <- [:start, :center, :end, :stretch] do
+        vbox = %Layouts.VBox{align_items: align}
+        assert vbox.align_items == align
+
+        hbox = %Layouts.HBox{align_items: align}
+        assert hbox.align_items == align
+      end
+
+      # justify_content values
+      for justify <- [:start, :center, :end, :stretch, :space_between, :space_around] do
+        vbox = %Layouts.VBox{justify_content: justify}
+        assert vbox.justify_content == justify
+
+        hbox = %Layouts.HBox{justify_content: justify}
+        assert hbox.justify_content == justify
+      end
+    end
+
+    test "Layouts support padding option" do
+      vbox = %Layouts.VBox{padding: 2}
+      hbox = %Layouts.HBox{padding: 3}
+
+      assert vbox.padding == 2
+      assert hbox.padding == 3
+    end
+  end
+
+  describe "Layout DSL extension registration" do
+    test "layouts_section includes all layout entities" do
+      sections = UnifiedUi.Dsl.Extension.sections()
+      layouts_section = Enum.find(sections, fn %{name: name} -> name == :layouts end)
+
+      assert layouts_section != nil
+      assert length(layouts_section.entities) == 2
+    end
+
+    test "layout entities are accessible from extension" do
+      # All layout entity functions should be callable
+      assert %Spark.Dsl.Entity{name: :vbox} = UnifiedUi.Dsl.Entities.Layouts.vbox_entity()
+      assert %Spark.Dsl.Entity{name: :hbox} = UnifiedUi.Dsl.Entities.Layouts.hbox_entity()
     end
   end
 end

@@ -212,19 +212,20 @@ defmodule UnifiedUi.IURTest do
       vbox = %Layouts.VBox{}
       assert vbox.children == []
       assert vbox.spacing == 0
-      assert vbox.align == nil
+      assert vbox.align_items == nil
       assert vbox.id == nil
+      assert vbox.visible == true
     end
 
     test "creates a VBox with children" do
       text = %Widgets.Text{content: "Title"}
       button = %Widgets.Button{label: "OK", on_click: :ok}
 
-      vbox = %Layouts.VBox{children: [text, button], spacing: 1, align: :center}
+      vbox = %Layouts.VBox{children: [text, button], spacing: 1, align_items: :center}
 
       assert vbox.children == [text, button]
       assert vbox.spacing == 1
-      assert vbox.align == :center
+      assert vbox.align_items == :center
     end
   end
 
@@ -233,19 +234,20 @@ defmodule UnifiedUi.IURTest do
       hbox = %Layouts.HBox{}
       assert hbox.children == []
       assert hbox.spacing == 0
-      assert hbox.align == nil
+      assert hbox.align_items == nil
       assert hbox.id == nil
+      assert hbox.visible == true
     end
 
     test "creates an HBox with children" do
       label = %Widgets.Text{content: "Name:"}
       button = %Widgets.Button{label: "Submit", on_click: :submit}
 
-      hbox = %Layouts.HBox{children: [label, button], spacing: 2, align: :center}
+      hbox = %Layouts.HBox{children: [label, button], spacing: 2, align_items: :center}
 
       assert hbox.children == [label, button]
       assert hbox.spacing == 2
-      assert hbox.align == :center
+      assert hbox.align_items == :center
     end
   end
 
@@ -421,13 +423,13 @@ defmodule UnifiedUi.IURTest do
     end
 
     test "metadata/1 returns vbox properties" do
-      vbox = %Layouts.VBox{id: :main, spacing: 2, align: :center}
+      vbox = %Layouts.VBox{id: :main, spacing: 2, align_items: :center}
       metadata = Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :main
       assert metadata.spacing == 2
-      assert metadata.align == :center
+      assert metadata.align_items == :center
     end
 
     test "metadata/1 excludes nil id" do
@@ -449,13 +451,13 @@ defmodule UnifiedUi.IURTest do
     end
 
     test "metadata/1 returns hbox properties" do
-      hbox = %Layouts.HBox{id: :form_row, spacing: 2, align: :center}
+      hbox = %Layouts.HBox{id: :form_row, spacing: 2, align_items: :center}
       metadata = Element.metadata(hbox)
 
       assert metadata.type == :hbox
       assert metadata.id == :form_row
       assert metadata.spacing == 2
-      assert metadata.align == :center
+      assert metadata.align_items == :center
     end
   end
 

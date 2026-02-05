@@ -150,7 +150,15 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Layouts.VBox do
   def children(vbox), do: vbox.children
 
   def metadata(vbox) do
-    build_metadata(%{type: :vbox, spacing: vbox.spacing, align: vbox.align}, id: vbox.id)
+    %{
+      type: :vbox,
+      spacing: vbox.spacing,
+      align_items: vbox.align_items,
+      justify_content: vbox.justify_content,
+      padding: vbox.padding,
+      visible: vbox.visible
+    }
+    |> build_metadata(id: vbox.id, style: vbox.style)
   end
 end
 
@@ -160,7 +168,15 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Layouts.HBox do
   def children(hbox), do: hbox.children
 
   def metadata(hbox) do
-    build_metadata(%{type: :hbox, spacing: hbox.spacing, align: hbox.align}, id: hbox.id)
+    %{
+      type: :hbox,
+      spacing: hbox.spacing,
+      align_items: hbox.align_items,
+      justify_content: hbox.justify_content,
+      padding: hbox.padding,
+      visible: hbox.visible
+    }
+    |> build_metadata(id: hbox.id, style: hbox.style)
   end
 end
 

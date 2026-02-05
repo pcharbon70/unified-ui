@@ -126,9 +126,9 @@ defmodule UnifiedUi.Dsl.Extension do
     """,
     schema: [],
     entities: [
-      # Layout entities will be added in future phases:
-      # - vbox
-      # - hbox
+      UnifiedUi.Dsl.Entities.Layouts.vbox_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.hbox_entity()
+      # Additional layout entities will be added in future phases:
       # - grid
       # - stack
       # - split

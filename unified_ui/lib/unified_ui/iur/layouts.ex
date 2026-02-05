@@ -16,7 +16,23 @@ defmodule UnifiedUi.IUR.Layouts do
   * `children` - List of child elements (widgets or nested layouts)
   * `id` - Optional unique identifier
   * `spacing` - Space between children
-  * `align` - Alignment of children within the layout
+  * `align_items` - Cross-axis alignment of children
+  * `justify_content` - Main-axis distribution of children
+  * `padding` - Internal padding around content
+  * `style` - Inline style specification
+  * `visible` - Whether the layout is visible
+
+  ## Alignment Values
+
+  Both `align_items` and `justify_content` accept:
+  * `:start` - Align to the start edge
+  * `:center` - Align to the center
+  * `:end` - Align to the end edge
+  * `:stretch` - Stretch to fill the available space
+
+  Additionally, `justify_content` accepts:
+  * `:space_between` - Distribute space between children
+  * `:space_around` - Distribute space around children
 
   ## Examples
 
@@ -28,8 +44,8 @@ defmodule UnifiedUi.IUR.Layouts do
       ...>     %Button{label: "Start", on_click: :start}
       ...>   ],
       ...>   spacing: 1,
-      ...>   align: :center
-      ...> }
+      ...>   align_items: :center
+      ... }
 
   Create a horizontal form row:
 
@@ -38,9 +54,22 @@ defmodule UnifiedUi.IUR.Layouts do
       ...>     %Text{content: "Name:"},
       ...>     %TextInput{id: :name_input}
       ...>   ],
-      ...>   spacing: 2
-      ...> }
+      ...>   spacing: 2,
+      ...>   align_items: :center
+      ... }
   """
+
+  alias UnifiedUi.IUR.Style
+
+  @type alignment :: :start | :center | :end | :stretch
+  @type justification :: alignment() | :space_between | :space_around
+  @type child ::
+          UnifiedUi.IUR.Widgets.Text.t()
+          | UnifiedUi.IUR.Widgets.Button.t()
+          | UnifiedUi.IUR.Widgets.Label.t()
+          | UnifiedUi.IUR.Widgets.TextInput.t()
+          | VBox.t()
+          | HBox.t()
 
   defmodule VBox do
     @moduledoc """
@@ -52,34 +81,55 @@ defmodule UnifiedUi.IUR.Layouts do
 
     * `children` - List of child elements (widgets or nested layouts)
     * `spacing` - Space between children (integer, default: 0)
-    * `align` - Horizontal alignment of children (`:left`, `:center`, `:right`, `:start`, `:end`, `:stretch`)
+    * `align_items` - Horizontal (cross-axis) alignment of children
+    * `justify_content` - Vertical (main-axis) distribution of children
+    * `padding` - Internal padding around all children (integer, optional)
     * `id` - Optional unique identifier
+    * `style` - Optional inline style
+    * `visible` - Whether the layout is visible (default: true)
 
-    ## Alignment Values
+    ## Alignment Examples
 
-    * `:left` - Align children to the left edge
-    * `:center` - Center children horizontally
-    * `:right` - Align children to the right edge
-    * `:start` - Align to the start (left for LTR, right for RTL)
-    * `:end` - Align to the end (right for LTR, left for RTL)
-    * `:stretch` - Stretch children to fill the width
+    For `align_items` (horizontal alignment):
+    * `:start` - Children align to the left
+    * `:center` - Children are horizontally centered
+    * `:end` - Children align to the right
+    * `:stretch` - Children stretch to fill the width
+
+    For `justify_content` (vertical distribution):
+    * `:start` - Children start at the top
+    * `:center` - Children are vertically centered
+    * `:end` - Children end at the bottom
+    * `:stretch` - Children stretch to fill the height
+    * `:space_between` - Space distributed between children
+    * `:space_around` - Space distributed around children
 
     ## Examples
 
         iex> %VBox{children: [%Text{content: "A"}, %Text{content: "B"}], spacing: 1}
-        %VBox{children: [...], spacing: 1, align: nil, id: nil}
+        %VBox{children: [...], spacing: 1, align_items: nil, ...}
     """
 
-    defstruct [:id, children: [], spacing: 0, align: nil]
-
-    @type alignment :: :left | :center | :right | :start | :end | :stretch
-    @type child :: UnifiedUi.IUR.Widgets.Text.t() | UnifiedUi.IUR.Widgets.Button.t() | t()
+    defstruct [
+      :id,
+      :padding,
+      children: [],
+      spacing: 0,
+      align_items: nil,
+      justify_content: nil,
+      style: nil,
+      visible: true
+    ]
 
     @type t :: %__MODULE__{
             id: atom() | nil,
-            children: [child()],
+            children: [UnifiedUi.IUR.Layouts.child()],
             spacing: integer(),
-            align: alignment() | nil
+            align_items: UnifiedUi.IUR.Layouts.alignment() | nil,
+            justify_content: UnifiedUi.IUR.Layouts.justification() | nil,
+            padding: integer() | nil,
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
           }
   end
 
@@ -93,34 +143,55 @@ defmodule UnifiedUi.IUR.Layouts do
 
     * `children` - List of child elements (widgets or nested layouts)
     * `spacing` - Space between children (integer, default: 0)
-    * `align` - Vertical alignment of children (`:top`, `:center`, `:bottom`, `:start`, `:end`, `:stretch`)
+    * `align_items` - Vertical (cross-axis) alignment of children
+    * `justify_content` - Horizontal (main-axis) distribution of children
+    * `padding` - Internal padding around all children (integer, optional)
     * `id` - Optional unique identifier
+    * `style` - Optional inline style
+    * `visible` - Whether the layout is visible (default: true)
 
-    ## Alignment Values
+    ## Alignment Examples
 
-    * `:top` - Align children to the top edge
-    * `:center` - Center children vertically
-    * `:bottom` - Align children to the bottom edge
-    * `:start` - Align to the start (top for TTB, bottom for BTT)
-    * `:end` - Align to the end (bottom for TTB, top for BTT)
-    * `:stretch` - Stretch children to fill the height
+    For `align_items` (vertical alignment):
+    * `:start` - Children align to the top
+    * `:center` - Children are vertically centered
+    * `:end` - Children align to the bottom
+    * `:stretch` - Children stretch to fill the height
+
+    For `justify_content` (horizontal distribution):
+    * `:start` - Children start at the left
+    * `:center` - Children are horizontally centered
+    * `:end` - Children end at the right
+    * `:stretch` - Children stretch to fill the width
+    * `:space_between` - Space distributed between children
+    * `:space_around` - Space distributed around children
 
     ## Examples
 
         iex> %HBox{children: [%Text{content: "A"}, %Text{content: "B"}], spacing: 2}
-        %HBox{children: [...], spacing: 2, align: nil, id: nil}
+        %HBox{children: [...], spacing: 2, align_items: nil, ...}
     """
 
-    defstruct [:id, children: [], spacing: 0, align: nil]
-
-    @type alignment :: :top | :center | :bottom | :start | :end | :stretch
-    @type child :: UnifiedUi.IUR.Widgets.Text.t() | UnifiedUi.IUR.Widgets.Button.t() | t()
+    defstruct [
+      :id,
+      :padding,
+      children: [],
+      spacing: 0,
+      align_items: nil,
+      justify_content: nil,
+      style: nil,
+      visible: true
+    ]
 
     @type t :: %__MODULE__{
             id: atom() | nil,
-            children: [child()],
+            children: [UnifiedUi.IUR.Layouts.child()],
             spacing: integer(),
-            align: alignment() | nil
+            align_items: UnifiedUi.IUR.Layouts.alignment() | nil,
+            justify_content: UnifiedUi.IUR.Layouts.justification() | nil,
+            padding: integer() | nil,
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
           }
   end
 end
