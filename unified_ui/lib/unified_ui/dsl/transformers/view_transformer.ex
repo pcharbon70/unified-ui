@@ -3,23 +3,12 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
   Spark transformer that generates the `view/1` function for Elm Architecture.
 
   This transformer generates a `view/1` function that returns an IUR tree.
-  For Phase 1.5-2.3, it generates a basic view returning a simple container
-  with access to state.
-
-  Future phases will:
-  - Traverse DSL UI tree (layouts and widgets) - Phase 2.5
-  - Convert each DSL entity to corresponding IUR struct - Phase 2.5
-  - Implement state interpolation for dynamic content - Phase 2.5
+  For Phase 2.5, it uses the IUR.Builder to convert DSL entities into IUR structs.
 
   ## State Interpolation
 
-  For Phase 2.3, the view function accepts the state parameter but doesn't
-  yet perform full state interpolation. Full state interpolation will be
-  implemented in Phase 2.5 (IUR Tree Building) when the DSL tree walking
-  logic is added.
-
-  State helper functions are available in `UnifiedUi.Dsl.StateHelpers` for
-  use in update/2 functions to create state updates.
+  The view function accepts the state parameter. State interpolation is handled
+  at the IUR level by the renderer, which can access state values when needed.
 
   ## Example
 
@@ -27,36 +16,41 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
 
       @impl true
       def view(state) do
-        # State is available for manual interpolation
-        # Full DSL-based interpolation coming in Phase 2.5
-        %UnifiedUi.IUR.Layouts.VBox{
-          id: nil,
-          spacing: nil,
-          align_items: nil,
-          children: []
-        }
+        # The builder converts DSL entities to IUR structs
+        case UnifiedUi.IUR.Builder.build(__dsl_state__()) do
+          nil -> %UnifiedUi.IUR.Layouts.VBox{children: []}
+          iur -> iur
+        end
       end
+
   """
 
   use Spark.Dsl.Transformer
 
   @impl true
   def transform(dsl_state) do
-    # For Phase 1.5-2.3, generate a basic view with an empty VBox
-    # The state parameter is properly named (not prefixed with _)
-    # to indicate it will be used for state interpolation in Phase 2.5
+    # For Phase 2.5, we use the IUR.Builder to convert DSL entities to IUR
     code =
       quote do
         @impl true
         def view(state) do
-          # State is available for use when Phase 2.5 implements
-          # full DSL tree traversal and state interpolation
-          %UnifiedUi.IUR.Layouts.VBox{
-            id: nil,
-            spacing: nil,
-            align_items: nil,
-            children: []
-          }
+          # Use the IUR.Builder to build the tree from DSL state
+          # Pass the DSL state captured at compile time
+          dsl_state = __dsl_state__()
+
+          case UnifiedUi.IUR.Builder.build(dsl_state) do
+            nil ->
+              # Fallback to empty VBox if no entities defined
+              %UnifiedUi.IUR.Layouts.VBox{
+                id: nil,
+                spacing: nil,
+                align_items: nil,
+                children: []
+              }
+
+            iur ->
+              iur
+          end
         end
       end
 
