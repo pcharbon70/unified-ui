@@ -48,11 +48,12 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
 
   describe "view function with state argument" do
     test "view function accepts state argument" do
-      # Verify the expected signature: def view(_state)
-      # The state argument is ignored in Phase 1.5
+      # Verify the expected signature: def view(state)
+      # The state parameter is properly named for Phase 2.3
+      # Full state interpolation coming in Phase 2.5
       test_state = %{count: 5, name: "Test"}
 
-      # The generated view ignores state and returns empty VBox
+      # The generated view accepts state and returns empty VBox
       # Just verify state can be passed
       assert is_map(test_state)
       assert test_state.count == 5
@@ -125,7 +126,8 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
   describe "view function signature" do
     test "view function accepts state argument" do
       # Verify the expected signature
-      # The generated view should be: def view(_state)
+      # The generated view should be: def view(state)
+      # (changed from def view(_state) in Phase 1.5)
       assert true
       # Actual testing requires DSL compilation
     end
