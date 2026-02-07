@@ -235,6 +235,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
   * `:type` - Input type (:text, :password, :email, :number, :tel)
   * `:on_change` - Signal to emit when value changes
   * `:on_submit` - Signal to emit on Enter key
+  * `:form_id` - Form identifier to group this input with a form
   * `:disabled` - Whether the input is disabled
   * `:style` - Inline style as keyword list
   * `:visible` - Whether the input is visible
@@ -246,6 +247,18 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
       text_input :password, type: :password
       text_input :age, type: :number, placeholder: "Age"
       text_input :name, on_change: {:name_changed, :value}
+      text_input :email, form_id: :login_form
+      text_input :password, form_id: :login_form, type: :password
+
+  ## Form Support
+
+  Use the `:form_id` option to group multiple inputs into a form:
+
+      text_input :email, form_id: :login
+      text_input :password, form_id: :login, type: :password
+      text_input :name, form_id: :signup
+
+  Form data can be collected using `UnifiedUi.Dsl.FormHelpers.collect_form_data/2`.
 
   ## Input Types
 
@@ -304,6 +317,15 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         doc: """
         Signal to emit on Enter key. Can be an atom (signal name),
         a tuple {signal_name, payload}, or an MFA tuple {Module, :function, args}.
+        """,
+        required: false
+      ],
+      form_id: [
+        type: :atom,
+        doc: """
+        Optional form identifier to group this input with a form for data collection.
+        Inputs sharing the same form_id can be collected together using
+        UnifiedUi.Dsl.FormHelpers.collect_form_data/2.
         """,
         required: false
       ],

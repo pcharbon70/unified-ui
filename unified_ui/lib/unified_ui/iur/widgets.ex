@@ -145,6 +145,7 @@ defmodule UnifiedUi.IUR.Widgets do
     * `type` - Input type (:text, :password, :email, :number, :tel)
     * `on_change` - Signal to emit when value changes
     * `on_submit` - Signal to emit on Enter key
+    * `form_id` - Optional form identifier for grouping inputs
     * `disabled` - Whether the input is disabled
     * `style` - Optional style struct
     * `visible` - Whether the input is visible
@@ -185,6 +186,7 @@ defmodule UnifiedUi.IUR.Widgets do
       :type,
       :on_change,
       :on_submit,
+      :form_id,
       :disabled,
       :style,
       visible: true
@@ -197,6 +199,7 @@ defmodule UnifiedUi.IUR.Widgets do
             type: input_type(),
             on_change: atom() | {atom(), any()} | nil,
             on_submit: atom() | {atom(), any()} | nil,
+            form_id: atom() | nil,
             disabled: boolean(),
             style: UnifiedUi.IUR.Style.t() | nil,
             visible: boolean()
