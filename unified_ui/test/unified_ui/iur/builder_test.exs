@@ -13,11 +13,11 @@ defmodule UnifiedUi.IUR.BuilderTest do
 
   alias UnifiedUi.IUR.{Builder, Style, Widgets, Layouts}
 
-  describe "build_button/1" do
+  describe "build_button/2" do
     test "builds button with label only" do
       entity = %{name: :button, attrs: %{label: "Click Me"}}
 
-      result = Builder.build_button(entity)
+      result = Builder.build_button(entity, :dsl_state)
 
       assert %Widgets.Button{} = result
       assert result.label == "Click Me"
@@ -41,7 +41,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_button(entity)
+      result = Builder.build_button(entity, :dsl_state)
 
       assert result.label == "Save"
       assert result.id == :save_btn
@@ -62,17 +62,17 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_button(entity)
+      result = Builder.build_button(entity, :dsl_state)
 
       assert result.on_click == {:submit, %{form_id: :login}}
     end
   end
 
-  describe "build_text/1" do
+  describe "build_text/2" do
     test "builds text with content only" do
       entity = %{name: :text, attrs: %{content: "Hello"}}
 
-      result = Builder.build_text(entity)
+      result = Builder.build_text(entity, :dsl_state)
 
       assert %Widgets.Text{} = result
       assert result.content == "Hello"
@@ -92,7 +92,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_text(entity)
+      result = Builder.build_text(entity, :dsl_state)
 
       assert result.content == "Welcome"
       assert result.id == :greeting
@@ -100,11 +100,11 @@ defmodule UnifiedUi.IUR.BuilderTest do
     end
   end
 
-  describe "build_label/1" do
+  describe "build_label/2" do
     test "builds label with required fields" do
       entity = %{name: :label, attrs: %{for: :email_input, text: "Email:"}}
 
-      result = Builder.build_label(entity)
+      result = Builder.build_label(entity, :dsl_state)
 
       assert %Widgets.Label{} = result
       assert result.for == :email_input
@@ -124,7 +124,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_label(entity)
+      result = Builder.build_label(entity, :dsl_state)
 
       assert result.for == :password
       assert result.text == "Password:"
@@ -133,11 +133,11 @@ defmodule UnifiedUi.IUR.BuilderTest do
     end
   end
 
-  describe "build_text_input/1" do
+  describe "build_text_input/2" do
     test "builds text_input with id only" do
       entity = %{name: :text_input, attrs: %{id: :email}}
 
-      result = Builder.build_text_input(entity)
+      result = Builder.build_text_input(entity, :dsl_state)
 
       assert %Widgets.TextInput{} = result
       assert result.id == :email
@@ -163,7 +163,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_text_input(entity)
+      result = Builder.build_text_input(entity, :dsl_state)
 
       assert result.id == :email
       assert result.value == "test@example.com"
@@ -180,7 +180,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         attrs: %{id: :password, type: :password}
       }
 
-      result = Builder.build_text_input(entity)
+      result = Builder.build_text_input(entity, :dsl_state)
 
       assert result.type == :password
     end
@@ -296,17 +296,17 @@ defmodule UnifiedUi.IUR.BuilderTest do
     end
   end
 
-  describe "build_style/1" do
+  describe "build_style/2" do
     test "returns nil for nil style" do
-      assert Builder.build_style(nil) == nil
+      assert Builder.build_style(nil, :dsl_state) == nil
     end
 
     test "returns nil for empty keyword list" do
-      assert Builder.build_style([]) == nil
+      assert Builder.build_style([], :dsl_state) == nil
     end
 
     test "builds style from keyword list" do
-      result = Builder.build_style(fg: :blue, bg: :white)
+      result = Builder.build_style([fg: :blue, bg: :white], :dsl_state)
 
       assert %Style{} = result
       assert result.fg == :blue
@@ -315,7 +315,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
     end
 
     test "builds style with text attributes" do
-      result = Builder.build_style(fg: :red, attrs: [:bold, :underline])
+      result = Builder.build_style([fg: :red, attrs: [:bold, :underline]], :dsl_state)
 
       assert result.fg == :red
       assert result.attrs == [:bold, :underline]
@@ -323,7 +323,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
 
     test "returns existing Style struct" do
       style = Style.new(fg: :green)
-      result = Builder.build_style(style)
+      result = Builder.build_style(style, :dsl_state)
 
       assert result == style
     end
@@ -543,7 +543,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
         }
       }
 
-      result = Builder.build_text(entity)
+      result = Builder.build_text(entity, :dsl_state)
 
       assert %Style{} = result.style
       assert result.style.fg == :red
@@ -568,7 +568,7 @@ defmodule UnifiedUi.IUR.BuilderTest do
     test "handles nil styles correctly" do
       entity = %{name: :text, attrs: %{content: "Plain"}}
 
-      result = Builder.build_text(entity)
+      result = Builder.build_text(entity, :dsl_state)
 
       assert result.style == nil
     end

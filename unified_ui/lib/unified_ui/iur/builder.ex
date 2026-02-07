@@ -30,8 +30,12 @@ defmodule UnifiedUi.IUR.Builder do
 
   ## Style Handling
 
-  Inline styles specified as keyword lists in the DSL are converted to
-  IUR.Style structs during the build process.
+  Styles can be specified in multiple ways:
+  * Inline keyword list: `style: [fg: :blue, attrs: [:bold]]`
+  * Named style reference: `style: :header`
+  * Named style with overrides: `style: [:header, fg: :green]`
+
+  The builder resolves all style references to IUR.Style structs.
 
   ## Nesting
 
@@ -61,6 +65,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
 
   alias UnifiedUi.IUR.{Style, Widgets, Layouts}
+  alias UnifiedUi.Dsl.StyleResolver
   alias Spark.Dsl
 
   @doc """
@@ -104,20 +109,20 @@ defmodule UnifiedUi.IUR.Builder do
   Dispatches to the appropriate build function based on entity type.
   """
   @spec build_entity(map(), Dsl.t()) :: struct()
-  def build_entity(%{name: :button} = entity, _dsl_state) do
-    build_button(entity)
+  def build_entity(%{name: :button} = entity, dsl_state) do
+    build_button(entity, dsl_state)
   end
 
-  def build_entity(%{name: :text} = entity, _dsl_state) do
-    build_text(entity)
+  def build_entity(%{name: :text} = entity, dsl_state) do
+    build_text(entity, dsl_state)
   end
 
-  def build_entity(%{name: :label} = entity, _dsl_state) do
-    build_label(entity)
+  def build_entity(%{name: :label} = entity, dsl_state) do
+    build_label(entity, dsl_state)
   end
 
-  def build_entity(%{name: :text_input} = entity, _dsl_state) do
-    build_text_input(entity)
+  def build_entity(%{name: :text_input} = entity, dsl_state) do
+    build_text_input(entity, dsl_state)
   end
 
   def build_entity(%{name: :vbox} = entity, dsl_state) do
@@ -138,8 +143,8 @@ defmodule UnifiedUi.IUR.Builder do
   @doc """
   Builds a Button IUR struct from a button DSL entity.
   """
-  @spec build_button(map()) :: Widgets.Button.t()
-  def build_button(entity) do
+  @spec build_button(map(), Dsl.t()) :: Widgets.Button.t()
+  def build_button(entity, dsl_state) do
     attrs = get_entity_attrs(entity)
 
     %Widgets.Button{
@@ -148,30 +153,30 @@ defmodule UnifiedUi.IUR.Builder do
       id: Map.get(attrs, :id),
       disabled: Map.get(attrs, :disabled, false),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style))
+      style: build_style(Map.get(attrs, :style), dsl_state)
     }
   end
 
   @doc """
   Builds a Text IUR struct from a text DSL entity.
   """
-  @spec build_text(map()) :: Widgets.Text.t()
-  def build_text(entity) do
+  @spec build_text(map(), Dsl.t()) :: Widgets.Text.t()
+  def build_text(entity, dsl_state) do
     attrs = get_entity_attrs(entity)
 
     %Widgets.Text{
       content: Map.get(attrs, :content),
       id: Map.get(attrs, :id),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style))
+      style: build_style(Map.get(attrs, :style), dsl_state)
     }
   end
 
   @doc """
   Builds a Label IUR struct from a label DSL entity.
   """
-  @spec build_label(map()) :: Widgets.Label.t()
-  def build_label(entity) do
+  @spec build_label(map(), Dsl.t()) :: Widgets.Label.t()
+  def build_label(entity, dsl_state) do
     attrs = get_entity_attrs(entity)
 
     %Widgets.Label{
@@ -179,15 +184,15 @@ defmodule UnifiedUi.IUR.Builder do
       text: Map.get(attrs, :text),
       id: Map.get(attrs, :id),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style))
+      style: build_style(Map.get(attrs, :style), dsl_state)
     }
   end
 
   @doc """
   Builds a TextInput IUR struct from a text_input DSL entity.
   """
-  @spec build_text_input(map()) :: Widgets.TextInput.t()
-  def build_text_input(entity) do
+  @spec build_text_input(map(), Dsl.t()) :: Widgets.TextInput.t()
+  def build_text_input(entity, dsl_state) do
     attrs = get_entity_attrs(entity)
 
     %Widgets.TextInput{
@@ -197,9 +202,10 @@ defmodule UnifiedUi.IUR.Builder do
       type: Map.get(attrs, :type, :text),
       on_change: Map.get(attrs, :on_change),
       on_submit: Map.get(attrs, :on_submit),
+      form_id: Map.get(attrs, :form_id),
       disabled: Map.get(attrs, :disabled, false),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style))
+      style: build_style(Map.get(attrs, :style), dsl_state)
     }
   end
 
@@ -222,7 +228,7 @@ defmodule UnifiedUi.IUR.Builder do
       justify_content: Map.get(attrs, :justify_content),
       padding: Map.get(attrs, :padding),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style)),
+      style: build_style(Map.get(attrs, :style), dsl_state),
       children: children
     }
   end
@@ -244,7 +250,7 @@ defmodule UnifiedUi.IUR.Builder do
       justify_content: Map.get(attrs, :justify_content),
       padding: Map.get(attrs, :padding),
       visible: Map.get(attrs, :visible, true),
-      style: build_style(Map.get(attrs, :style)),
+      style: build_style(Map.get(attrs, :style), dsl_state),
       children: children
     }
   end
@@ -276,19 +282,32 @@ defmodule UnifiedUi.IUR.Builder do
   # Style building
 
   @doc """
-  Converts a keyword list style to an IUR.Style struct.
+  Converts a style reference to an IUR.Style struct.
+
+  Supports:
+  * nil - returns nil
+  * [] - returns nil
+  * Atom (named style) - resolves from DSL
+  * Keyword list (inline styles) - creates Style struct
+  * List with atom first (named style + overrides) - resolves with overrides
 
   Returns nil if no style is provided.
   """
-  @spec build_style(keyword() | nil) :: Style.t() | nil
-  def build_style(nil), do: nil
-  def build_style([]), do: nil
+  @spec build_style(keyword() | atom() | nil, Dsl.t()) :: Style.t() | nil
+  def build_style(style_ref, dsl_state)
 
-  def build_style(style_keyword) when is_list(style_keyword) do
-    Style.new(style_keyword)
+  def build_style(nil, _dsl_state), do: nil
+  def build_style([], _dsl_state), do: nil
+
+  def build_style(style_name, dsl_state) when is_atom(style_name) do
+    StyleResolver.resolve_style_ref(dsl_state, style_name)
   end
 
-  def build_style(%Style{} = style), do: style
+  def build_style(style_keyword, dsl_state) when is_list(style_keyword) do
+    StyleResolver.resolve_style_ref(dsl_state, style_keyword)
+  end
+
+  def build_style(%Style{} = style, _dsl_state), do: style
 
   # Helper functions
 

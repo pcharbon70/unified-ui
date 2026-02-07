@@ -23,7 +23,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
     test "builder can convert button entity to IUR" do
       entity = %{name: :button, attrs: %{label: "Click Me"}}
 
-      result = Builder.build_button(entity)
+      result = Builder.build_button(entity, :dsl_state)
 
       assert %Widgets.Button{label: "Click Me"} = result
     end
@@ -31,7 +31,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
     test "builder can convert text entity to IUR" do
       entity = %{name: :text, attrs: %{content: "Hello"}}
 
-      result = Builder.build_text(entity)
+      result = Builder.build_text(entity, :dsl_state)
 
       assert %Widgets.Text{content: "Hello"} = result
     end

@@ -192,7 +192,7 @@ defmodule UnifiedUi.Dsl.Extension do
       ]
     ],
     entities: [
-      # Theme entities will be added in future phases
+      UnifiedUi.Dsl.Entities.Styles.style_entity()
     ]
   }
 
