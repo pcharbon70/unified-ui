@@ -50,6 +50,8 @@ defmodule UnifiedUi.Dsl.Sections.Ui do
   @doc false
   def entities, do: @ui_section.entities
 
+  # Top-level section following the Reactor pattern
+  # Entities are written directly in the module body without a `ui do...end` wrapper
   @doc false
   def top_level?, do: true
 

@@ -83,6 +83,9 @@ defmodule UnifiedUi.Dsl.Extension do
 
     This section contains the entire UI definition for a component or screen.
     It can contain layouts, widgets, and style definitions.
+
+    Following the Reactor pattern, this is a top-level section, meaning users
+    write UI entities directly in their module body without a wrapping `ui do...end` block.
     """,
     schema: [
       id: [
@@ -96,7 +99,18 @@ defmodule UnifiedUi.Dsl.Extension do
         required: false
       ]
     ],
-    entities: [@state_entity]
+    entities: [
+      @state_entity,
+      # Layout entities - containers that arrange widgets
+      UnifiedUi.Dsl.Entities.Layouts.vbox_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.hbox_entity(),
+      # Widget entities - basic UI components
+      UnifiedUi.Dsl.Entities.Widgets.text_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.button_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.label_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity()
+    ],
+    top_level?: true
   }
 
   @widgets_section %Spark.Dsl.Section{
