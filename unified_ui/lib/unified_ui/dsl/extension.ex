@@ -233,5 +233,11 @@ defmodule UnifiedUi.Dsl.Extension do
       UnifiedUi.Dsl.Transformers.UpdateTransformer,
       UnifiedUi.Dsl.Transformers.ViewTransformer
     ],
-    verifiers: []
+    verifiers: [
+      UnifiedUi.Dsl.Verifiers.UniqueIdVerifier,
+      UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier,
+      UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier,
+      UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier,
+      UnifiedUi.Dsl.Verifiers.StateReferenceVerifier
+    ]
 end
