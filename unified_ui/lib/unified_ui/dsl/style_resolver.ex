@@ -58,6 +58,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   Resolves a named style to an IUR.Style struct.
 
   Handles inheritance by recursively resolving parent styles.
+  Detects and prevents circular references in style inheritance.
 
   ## Parameters
 
@@ -68,6 +69,10 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   ## Returns
 
   An `IUR.Style` struct with merged attributes.
+
+  ## Raises
+
+  Raises `Spark.Error.DslError` if a circular reference is detected.
 
   ## Examples
 
@@ -83,7 +88,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     style_entity = find_style(dsl_state, style_name)
 
     if style_entity do
-      resolve_with_inheritance(dsl_state, style_entity, overrides)
+      resolve_with_inheritance(dsl_state, style_entity, overrides, MapSet.new())
     else
       # Style not found, return empty style with overrides
       Style.new(overrides)
@@ -167,18 +172,39 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     end)
   end
 
-  defp resolve_with_inheritance(_dsl_state, %DslStyle{extends: nil} = style_entity, overrides) do
+  defp resolve_with_inheritance(_dsl_state, %DslStyle{extends: nil} = style_entity, overrides, _seen) do
     base_attrs = style_entity.attributes || []
     Style.merge(Style.new(base_attrs), Style.new(overrides))
   end
 
-  defp resolve_with_inheritance(dsl_state, %DslStyle{extends: parent_name} = style_entity, overrides) do
-    # Detect circular references
+  defp resolve_with_inheritance(dsl_state, %DslStyle{name: name, extends: parent_name} = style_entity, overrides, seen) do
+    # Check for circular reference
+    if MapSet.member?(seen, name) do
+      module = get_persisted_module(dsl_state)
+
+      raise Spark.Error.DslError,
+        module: module,
+        path: [:styles, name],
+        message: """
+        Circular style reference detected
+
+        Style '#{inspect(name)} extends '#{inspect(parent_name)}', which creates a circular reference.
+
+        Style inheritance chain:
+        #{format_seen_chain(seen)}
+
+        To fix this, remove the circular reference by having one of the styles not extend the other.
+        """
+    end
+
+    # Track this style as seen
+    seen = MapSet.put(seen, name)
+
     parent_style = find_style(dsl_state, parent_name)
 
     if parent_style do
       # Resolve parent first (recursive)
-      parent_resolved = resolve_with_inheritance(dsl_state, parent_style, [])
+      parent_resolved = resolve_with_inheritance(dsl_state, parent_style, [], seen)
       current_attrs = style_entity.attributes || []
 
       Style.merge(parent_resolved, Style.new(current_attrs))
@@ -188,6 +214,17 @@ defmodule UnifiedUi.Dsl.StyleResolver do
       base_attrs = style_entity.attributes || []
       Style.merge(Style.new(base_attrs), Style.new(overrides))
     end
+  end
+
+  defp get_persisted_module(dsl_state) do
+    Spark.Dsl.Verifier.get_persisted(dsl_state, :module)
+  end
+
+  defp format_seen_chain(seen) do
+    seen
+    |> MapSet.to_list()
+    |> Enum.map(fn style -> "  - #{inspect(style)}" end)
+    |> Enum.join("\n")
   end
 
   @doc """

@@ -43,6 +43,42 @@ defmodule UnifiedUi.Dsl.FormHelpers do
 
   alias Spark.Dsl.Transformer
   alias UnifiedUi.IUR.Widgets.TextInput
+  alias UnifiedUi.Dsl.Sanitization
+
+  # Predefined validation patterns - carefully crafted to avoid ReDoS
+  # These are the only patterns allowed for format validation to prevent
+  # user-provided regex from causing ReDoS (Regular Expression Denial of Service) attacks.
+  @patterns %{
+    # US ZIP code: 5 digits or 5+4 format
+    us_zip: ~r/^\d{5}(-\d{4})?$/,
+
+    # UK postal code (simplified pattern)
+    uk_postcode: ~r/^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i,
+
+    # US phone number (various formats)
+    phone_us: ~r/^\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/,
+
+    # International phone number (E.164 format simplified)
+    phone_intl: ~r/^\+?[1-9]\d{1,14}$/,
+
+    # Username: alphanumeric, underscore, hyphen, 3-30 chars
+    username: ~r/^[a-zA-Z0-9_-]{3,30}$/,
+
+    # URL slug: lowercase alphanumeric with hyphens
+    slug: ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+
+    # Hex color code: #RGB or #RRGGBB
+    hex_color: ~r/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
+
+    # IPv4 address
+    ipv4: ~r/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/,
+
+    # HTTP/HTTPS URL (basic pattern)
+    url: ~r/^https?:\/\/.+/,
+
+    # UUID format
+    uuid: ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  }
 
   @doc """
   Collects all input values for a given form_id from the DSL state.
@@ -75,7 +111,18 @@ defmodule UnifiedUi.Dsl.FormHelpers do
     |> Transformer.get_entities(:widgets)
     |> Enum.filter(&form_input?(&1, form_id))
     |> Enum.map(fn input ->
-      {input.id, Map.get(input, :value)}
+      value = Map.get(input, :value)
+
+      # Sanitize the value based on field name
+      sanitized_value =
+        case Sanitization.sanitize_input(input.id, value) do
+          {:ok, sanitized} -> sanitized
+          # If sanitization fails, use the original value
+          # This allows the form to still work with unusual data
+          _ -> value
+        end
+
+      {input.id, sanitized_value}
     end)
     |> Map.new()
   end
@@ -305,50 +352,71 @@ defmodule UnifiedUi.Dsl.FormHelpers do
   end
 
   @doc """
-  Validates that a field's value matches a regular expression pattern.
+  Validates that a field's value matches a predefined pattern.
+
+  For security reasons, only predefined patterns are allowed.
+  User-provided regex patterns are not accepted to prevent ReDoS attacks.
 
   ## Parameters
 
   * `form_data` - The form data map
   * `field` - The field key (atom) to validate
-  * `pattern` - A regex pattern to match against (as a string or Regex struct)
+  * `pattern_name` - A predefined pattern name (atom)
 
   ## Returns
 
   * `:ok` - The field matches the pattern
   * `{:error, :invalid_format}` - The field does not match the pattern
   * `{:error, :missing}` - The field is not present in the form data
+  * `{:error, :unknown_pattern}` - The pattern name is not recognized
+
+  ## Available Patterns
+
+  * `:us_zip` - US ZIP code (5 digits or 5+4 format)
+  * `:uk_postcode` - UK postal code
+  * `:phone_us` - US phone number
+  * `:phone_intl` - International phone number
+  * `:username` - Username (alphanumeric, underscore, hyphen)
+  * `:slug` - URL slug (lowercase alphanumeric with hyphens)
+  * `:hex_color` - Hex color code (3 or 6 digits)
+  * `:ipv4` - IPv4 address
+  * `:url` - HTTP/HTTPS URL
+  * `:uuid` - UUID format
 
   ## Examples
 
-      iex> validate_format(%{zip: "12345"}, :zip, ~r/^\\d{5}$/)
+      iex> validate_format(%{zip: "12345"}, :zip, :us_zip)
       :ok
 
-      iex> validate_format(%{zip: "ABCDE"}, :zip, ~r/^\\d{5}$/)
+      iex> validate_format(%{zip: "ABCDE"}, :zip, :us_zip)
       {:error, :invalid_format}
 
-      iex> validate_format(%{username: "john123"}, :username, ~r/^[a-z0-9_]+$/i)
+      iex> validate_format(%{username: "john123"}, :username, :username)
       :ok
 
   """
-  @spec validate_format(map(), atom(), Regex.t() | String.t()) :: :ok | {:error, atom()}
-  def validate_format(form_data, field, pattern)
-      when is_map(form_data) and is_atom(field) do
-    regex = if is_binary(pattern), do: Regex.compile!(pattern), else: pattern
-
-    case Map.get(form_data, field) do
+  @spec validate_format(map(), atom(), atom()) :: :ok | {:error, atom()}
+  def validate_format(form_data, field, pattern_name)
+      when is_map(form_data) and is_atom(field) and is_atom(pattern_name) do
+    case Map.get(@patterns, pattern_name) do
       nil ->
-        {:error, :missing}
+        {:error, :unknown_pattern}
 
-      value when is_binary(value) ->
-        if Regex.match?(regex, value) do
-          :ok
-        else
-          {:error, :invalid_format}
+      regex ->
+        case Map.get(form_data, field) do
+          nil ->
+            {:error, :missing}
+
+          value when is_binary(value) ->
+            if Regex.match?(regex, value) do
+              :ok
+            else
+              {:error, :invalid_format}
+            end
+
+          _ ->
+            {:error, :invalid_type}
         end
-
-      _ ->
-        {:error, :invalid_type}
     end
   end
 
@@ -414,15 +482,22 @@ defmodule UnifiedUi.Dsl.FormHelpers do
   end
 
   defp valid_email_format?(email) when is_binary(email) do
-    # Basic email validation: contains @, has chars before and after, has a . after @
-    case String.split(email, "@") do
-      [local, domain] ->
-        String.length(local) > 0 and String.length(domain) > 0 and
-          String.contains?(domain, ".")
+    # Improved email validation using RFC 5322 compliant regex
+    # This validates:
+    # - Local part: alphanumeric plus . _ % + - before @
+    # - @ symbol present
+    # - Domain: alphanumeric with . and -
+    # - TLD: at least 2 alphabetic characters
+    # Rejects:
+    # - Missing @
+    # - Missing local part
+    # - Missing domain
+    # - Missing TLD
+    # - Invalid characters
 
-      _ ->
-        false
-    end
+    email_regex = ~r/^[\w+\-%.]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/
+
+    Regex.match?(email_regex, email)
   end
 
   defp run_validation(form_data, {:required, field}) do

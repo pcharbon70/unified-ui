@@ -431,4 +431,121 @@ defmodule UnifiedUi.Dsl.SignalHelpersTest do
       assert SignalHelpers.extract_payload(submit, :form_id) == :form1
     end
   end
+
+  describe "validate_payload/1" do
+    test "accepts valid small payload" do
+      assert SignalHelpers.validate_payload(%{button_id: :save_btn}) == :ok
+    end
+
+    test "accepts payload with various data types" do
+      payload = %{
+        string: "test",
+        integer: 42,
+        float: 3.14,
+        atom: :value,
+        boolean: true,
+        nil: nil
+      }
+
+      assert SignalHelpers.validate_payload(payload) == :ok
+    end
+
+    test "accepts nested maps within depth limit" do
+      payload = %{
+        level1: %{
+          level2: %{
+            level3: %{value: "ok"}
+          }
+        }
+      }
+
+      assert SignalHelpers.validate_payload(payload) == :ok
+    end
+
+    test "accepts strings within length limit" do
+      payload = %{data: String.duplicate("a", 999)}
+
+      assert SignalHelpers.validate_payload(payload) == :ok
+    end
+
+    test "returns :invalid_payload for non-map payloads" do
+      assert SignalHelpers.validate_payload("not a map") == {:error, :invalid_payload}
+      assert SignalHelpers.validate_payload(123) == {:error, :invalid_payload}
+      assert SignalHelpers.validate_payload(nil) == {:error, :invalid_payload}
+    end
+
+    test "returns :payload_too_large for large payloads" do
+      # Create a payload larger than 10KB
+      large_string = String.duplicate("a", 11_000)
+      payload = %{data: large_string}
+
+      assert SignalHelpers.validate_payload(payload) == {:error, :payload_too_large}
+    end
+
+    test "returns :payload_too_deep for deeply nested payloads" do
+      # Create a payload 11 levels deep (max is 10)
+      payload =
+        1..11
+        |> Enum.reduce(%{deep: "value"}, fn _, acc ->
+          %{level: acc}
+        end)
+
+      assert SignalHelpers.validate_payload(payload) == {:error, :payload_too_deep}
+    end
+
+    test "returns :string_too_long for strings exceeding limit" do
+      payload = %{data: String.duplicate("a", 1_001)}
+
+      assert SignalHelpers.validate_payload(payload) == {:error, :string_too_long}
+    end
+
+    test "checks string lengths in nested payloads" do
+      payload = %{
+        level1: %{
+          level2: %{
+            data: String.duplicate("a", 1_001)
+          }
+        }
+      }
+
+      assert SignalHelpers.validate_payload(payload) == {:error, :string_too_long}
+    end
+  end
+
+  describe "build_signal/3 with payload validation" do
+    test "builds signal when payload is valid" do
+      assert {:ok, signal} = SignalHelpers.build_signal(:click, %{button_id: :save})
+      assert signal.type == "unified.button.clicked"
+    end
+
+    test "returns error when payload is too large" do
+      large_payload = %{data: String.duplicate("a", 11_000)}
+
+      assert {:error, :payload_too_large} =
+               SignalHelpers.build_signal(:click, large_payload)
+    end
+
+    test "returns error when payload is too deep" do
+      deep_payload =
+        1..11
+        |> Enum.reduce(%{deep: "value"}, fn _, acc ->
+          %{level: acc}
+        end)
+
+      assert {:error, :payload_too_deep} =
+               SignalHelpers.build_signal(:click, deep_payload)
+    end
+
+    test "returns error when string is too long" do
+      assert {:error, :string_too_long} =
+               SignalHelpers.build_signal(:click, %{data: String.duplicate("a", 1_001)})
+    end
+
+    test "can skip validation with validate: false option" do
+      large_payload = %{data: String.duplicate("a", 11_000)}
+
+      assert {:ok, _signal} =
+               SignalHelpers.build_signal(:click, large_payload, validate: false)
+    end
+  end
 end

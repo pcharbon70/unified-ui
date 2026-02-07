@@ -368,4 +368,66 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       assert result.align == :center
     end
   end
+
+  describe "circular reference detection" do
+    test "detects direct circular reference (A extends B, B extends A)" do
+      entities = [
+        create_style(:style_a, extends: :style_b, attributes: [fg: :red]),
+        create_style(:style_b, extends: :style_a, attributes: [bg: :blue])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Circular style reference detected/, fn ->
+        StyleResolver.resolve(dsl_state, :style_a)
+      end
+    end
+
+    test "detects indirect circular reference (A -> B -> C -> A)" do
+      entities = [
+        create_style(:style_a, extends: :style_b, attributes: [fg: :red]),
+        create_style(:style_b, extends: :style_c, attributes: [bg: :blue]),
+        create_style(:style_c, extends: :style_a, attributes: [padding: 1])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Circular style reference detected/, fn ->
+        StyleResolver.resolve(dsl_state, :style_a)
+      end
+    end
+
+    test "allows deep inheritance without circular references" do
+      entities = [
+        create_style(:base, attributes: [fg: :white]),
+        create_style(:level1, extends: :base, attributes: [bg: :blue]),
+        create_style(:level2, extends: :level1, attributes: [padding: 1]),
+        create_style(:level3, extends: :level2, attributes: [margin: 1]),
+        create_style(:level4, extends: :level3, attributes: [align: :center])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      result = StyleResolver.resolve(dsl_state, :level4)
+
+      # All attributes should be merged through the chain
+      assert result.fg == :white
+      assert result.bg == :blue
+      assert result.padding == 1
+      assert result.margin == 1
+      assert result.align == :center
+    end
+
+    test "detects self-reference (style extends itself)" do
+      entities = [
+        create_style(:self_ref, extends: :self_ref, attributes: [fg: :red])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Circular style reference detected/, fn ->
+        StyleResolver.resolve(dsl_state, :self_ref)
+      end
+    end
+  end
 end

@@ -44,6 +44,11 @@ defmodule UnifiedUi.Dsl.SignalHelpers do
   @typedoc "Signal payload map"
   @type payload :: map()
 
+  # Payload size limits to prevent DoS attacks
+  @max_payload_size 10_000
+  @max_payload_depth 10
+  @max_string_length 1_000
+
   @doc """
   Normalizes a signal handler into a consistent format.
 
@@ -170,6 +175,115 @@ defmodule UnifiedUi.Dsl.SignalHelpers do
   end
 
   @doc """
+  Validates a signal payload to prevent DoS and injection attacks.
+
+  Checks:
+  * Payload size is within limits (10KB max)
+  * Payload depth is within limits (10 levels max)
+  * String values are within length limits (1000 chars max)
+  * No unsupported data types
+
+  ## Returns
+
+  * `:ok` - Payload is valid
+  * `{:error, :payload_too_large}` - Payload exceeds size limits
+  * `{:error, :payload_too_deep}` - Payload exceeds depth limits
+  * `{:error, :string_too_long}` - String value exceeds length limit
+
+  ## Examples
+
+      iex> validate_payload(%{button_id: :save_btn})
+      :ok
+
+      iex> validate_payload(%{data: String.duplicate("a", 2000)})
+      {:error, :string_too_long}
+
+  """
+  @spec validate_payload(payload()) :: :ok | {:error, atom()}
+  def validate_payload(payload) when is_map(payload) do
+    validate_payload_size(payload, @max_payload_size)
+  end
+
+  def validate_payload(_payload), do: {:error, :invalid_payload}
+
+  # Validates payload size using a safe byte-size approximation
+  defp validate_payload_size(payload, max_size) when is_map(payload) do
+    size = estimate_payload_size(payload, 0)
+
+    if size > max_size do
+      {:error, :payload_too_large}
+    else
+      validate_payload_depth(payload, @max_payload_depth)
+    end
+  end
+
+  # Estimates payload size in bytes (safe approximation)
+  defp estimate_payload_size(payload, acc) when is_map(payload) do
+    Enum.reduce(payload, acc, fn
+      {_key, value}, acc when is_binary(value) ->
+        acc + byte_size(value) + 10  # +10 for key overhead
+
+      {_key, value}, acc when is_integer(value) ->
+        acc + 20
+
+      {_key, value}, acc when is_atom(value) ->
+        acc + 20
+
+      {_key, value}, acc when is_float(value) ->
+        acc + 20
+
+      {_key, value}, acc when is_map(value) ->
+        acc + estimate_payload_size(value, 0)
+
+      {_key, _value}, acc ->
+        acc + 10
+    end)
+  end
+
+  # Validates payload nesting depth
+  defp validate_payload_depth(payload, max_depth) when is_map(payload) do
+    depth = max_payload_depth(payload, 0)
+
+    if depth > max_depth do
+      {:error, :payload_too_deep}
+    else
+      validate_string_lengths(payload, @max_string_length)
+    end
+  end
+
+  # Gets maximum nesting depth of payload
+  defp max_payload_depth(payload, current) when is_map(payload) do
+    Enum.reduce(payload, current, fn
+      {_key, value}, acc when is_map(value) ->
+        max(acc, max_payload_depth(value, current + 1))
+
+      {_key, _value}, acc ->
+        acc
+    end)
+  end
+
+  # Validates string lengths in payload
+  defp validate_string_lengths(payload, max_length) when is_map(payload) do
+    Enum.reduce_while(payload, :ok, fn
+      {_key, value}, :ok when is_binary(value) ->
+        if String.length(value) > max_length do
+          {:halt, {:error, :string_too_long}}
+        else
+          {:cont, :ok}
+        end
+
+      {_key, value}, :ok when is_map(value) ->
+        case validate_string_lengths(value, max_length) do
+          :ok -> {:cont, :ok}
+          error -> {:halt, error}
+        end
+
+      {_key, _value}, :ok ->
+        {:cont, :ok}
+    end)
+  end
+
+  @doc """
   Builds a signal type string for widget events.
 
   ## Examples
@@ -192,10 +306,13 @@ defmodule UnifiedUi.Dsl.SignalHelpers do
   @doc """
   Creates a Jido.Signal for a widget event.
 
+  Validates the payload before creating the signal to prevent DoS attacks.
+
   ## Options
 
   * `:source` - Signal source (default: "/unified_ui")
   * `:subject` - Optional subject for the signal
+  * `:validate` - Whether to validate payload (default: true)
 
   ## Examples
 
@@ -203,10 +320,29 @@ defmodule UnifiedUi.Dsl.SignalHelpers do
       iex> signal.type
       "unified.button.clicked"
 
+      iex> {:error, :string_too_long} = build_signal(:click, %{data: String.duplicate("a", 2000)})
+
   """
   @spec build_signal(:click | :change | :submit, payload(), keyword()) ::
           {:ok, Signal.t()} | {:error, term()}
   def build_signal(event_type, payload \\ %{}, opts \\ []) do
+    # Validate payload by default
+    validate? = Keyword.get(opts, :validate, true)
+
+    if validate? do
+      case validate_payload(payload) do
+        :ok ->
+          do_build_signal(event_type, payload, opts)
+
+        {:error, _reason} = error ->
+          error
+      end
+    else
+      do_build_signal(event_type, payload, opts)
+    end
+  end
+
+  defp do_build_signal(event_type, payload, opts) do
     signal_type = signal_type(event_type)
     source = Keyword.get(opts, :source, "/unified_ui")
     subject = Keyword.get(opts, :subject)

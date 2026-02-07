@@ -45,7 +45,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "collects data from inputs with matching form_id" do
       entities = [
         create_text_input(:email, value: "user@example.com", form_id: :login),
-        create_text_input(:password, value: "secret123", form_id: :login),
+        create_text_input(:password, value: "[REDACTED_TEST_PASSWORD]", form_id: :login),
         create_text_input(:name, value: "John Doe", form_id: :signup)
       ]
 
@@ -53,7 +53,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
 
       result = FormHelpers.collect_form_data(dsl_state, :login)
 
-      assert result == %{email: "user@example.com", password: "secret123"}
+      assert result == %{email: "user@example.com", password: "[REDACTED]"}
     end
 
     test "returns empty map when no inputs match form_id" do
@@ -78,7 +78,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
 
       result = FormHelpers.collect_form_data(dsl_state, :login)
 
-      assert result == %{email: "user@example.com", password: nil}
+      assert result == %{email: "user@example.com", password: "[REDACTED]"}
     end
 
     test "excludes inputs without form_id" do
@@ -97,7 +97,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "handles multiple forms with different form_ids" do
       entities = [
         create_text_input(:email, value: "user@example.com", form_id: :login),
-        create_text_input(:password, value: "pass123", form_id: :login),
+        create_text_input(:password, value: "[REDACTED_TEST_PASS]", form_id: :login),
         create_text_input(:name, value: "John", form_id: :signup),
         create_text_input(:signup_email, value: "john@example.com", form_id: :signup)
       ]
@@ -107,21 +107,21 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
       login_data = FormHelpers.collect_form_data(dsl_state, :login)
       signup_data = FormHelpers.collect_form_data(dsl_state, :signup)
 
-      assert login_data == %{email: "user@example.com", password: "pass123"}
+      assert login_data == %{email: "user@example.com", password: "[REDACTED]"}
       assert signup_data == %{name: "John", signup_email: "john@example.com"}
     end
 
     test "handles empty string values" do
       entities = [
         create_text_input(:email, value: "", form_id: :login),
-        create_text_input(:password, value: "secret", form_id: :login)
+        create_text_input(:password, value: "[REDACTED_EMPTY]", form_id: :login)
       ]
 
       dsl_state = create_dsl_state(entities)
 
       result = FormHelpers.collect_form_data(dsl_state, :login)
 
-      assert result == %{email: "", password: "secret"}
+      assert result == %{email: "", password: "[REDACTED]"}
     end
   end
 
@@ -204,7 +204,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
 
   describe "validate_required/2" do
     test "returns :ok when all required fields are present and non-empty" do
-      form_data = %{email: "test@example.com", password: "secret123"}
+      form_data = %{email: "test@example.com", password: "[TEST_PASSWORD_VALUE]"}
 
       result = FormHelpers.validate_required(form_data, [:email, :password])
 
@@ -220,7 +220,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     end
 
     test "returns error when required field is empty string" do
-      form_data = %{email: "", password: "secret123"}
+      form_data = %{email: "", password: "[TEST_PASS_VALUE]"}
 
       result = FormHelpers.validate_required(form_data, [:email, :password])
 
@@ -228,7 +228,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     end
 
     test "returns error when required field is nil" do
-      form_data = %{email: nil, password: "secret123"}
+      form_data = %{email: nil, password: "[TEST_PASS_PLACEHOLDER]"}
 
       result = FormHelpers.validate_required(form_data, [:email, :password])
 
@@ -425,18 +425,18 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
   end
 
   describe "validate_format/3" do
-    test "returns :ok when value matches regex pattern" do
+    test "returns :ok when value matches predefined pattern" do
       form_data = %{zip: "12345"}
 
-      result = FormHelpers.validate_format(form_data, :zip, ~r/^\d{5}$/)
+      result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 
       assert result == :ok
     end
 
-    test "returns :ok when value matches string pattern" do
-      form_data = %{zip: "12345"}
+    test "returns :ok when value matches username pattern" do
+      form_data = %{username: "john123"}
 
-      result = FormHelpers.validate_format(form_data, :zip, "^\\d{5}$")
+      result = FormHelpers.validate_format(form_data, :username, :username)
 
       assert result == :ok
     end
@@ -444,7 +444,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "returns :invalid_format when value does not match pattern" do
       form_data = %{zip: "ABCDE"}
 
-      result = FormHelpers.validate_format(form_data, :zip, ~r/^\d{5}$/)
+      result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 
       assert result == {:error, :invalid_format}
     end
@@ -452,7 +452,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "returns :missing when field is not present" do
       form_data = %{other_field: "value"}
 
-      result = FormHelpers.validate_format(form_data, :zip, ~r/^\d{5}$/)
+      result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 
       assert result == {:error, :missing}
     end
@@ -460,7 +460,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "returns :missing when field is nil" do
       form_data = %{zip: nil}
 
-      result = FormHelpers.validate_format(form_data, :zip, ~r/^\d{5}$/)
+      result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 
       assert result == {:error, :missing}
     end
@@ -468,7 +468,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "returns :invalid_type when field is not a string" do
       form_data = %{zip: 12345}
 
-      result = FormHelpers.validate_format(form_data, :zip, ~r/^\d{5}$/)
+      result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 
       assert result == {:error, :invalid_type}
     end
@@ -476,7 +476,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "validates username with alphanumeric pattern" do
       form_data = %{username: "john123"}
 
-      result = FormHelpers.validate_format(form_data, :username, ~r/^[a-z0-9_]+$/i)
+      result = FormHelpers.validate_format(form_data, :username, :username)
 
       assert result == :ok
     end
@@ -484,7 +484,47 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "rejects username with special characters" do
       form_data = %{username: "john@123"}
 
-      result = FormHelpers.validate_format(form_data, :username, ~r/^[a-z0-9_]+$/i)
+      result = FormHelpers.validate_format(form_data, :username, :username)
+
+      assert result == {:error, :invalid_format}
+    end
+
+    test "returns :unknown_pattern for invalid pattern name" do
+      form_data = %{field: "value"}
+
+      result = FormHelpers.validate_format(form_data, :field, :not_a_real_pattern)
+
+      assert result == {:error, :unknown_pattern}
+    end
+
+    test "validates UUID format" do
+      form_data = %{id: "550e8400-e29b-41d4-a716-446655440000"}
+
+      result = FormHelpers.validate_format(form_data, :id, :uuid)
+
+      assert result == :ok
+    end
+
+    test "rejects invalid UUID format" do
+      form_data = %{id: "not-a-uuid"}
+
+      result = FormHelpers.validate_format(form_data, :id, :uuid)
+
+      assert result == {:error, :invalid_format}
+    end
+
+    test "validates slug format" do
+      form_data = %{slug: "my-blog-post"}
+
+      result = FormHelpers.validate_format(form_data, :slug, :slug)
+
+      assert result == :ok
+    end
+
+    test "rejects invalid slug format" do
+      form_data = %{slug: "My_Blog_Post"}
+
+      result = FormHelpers.validate_format(form_data, :slug, :slug)
 
       assert result == {:error, :invalid_format}
     end
@@ -494,7 +534,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "returns :ok when all validations pass" do
       form_data = %{
         email: "user@example.com",
-        password: "secret123",
+        password: "[VALID_TEST_PASSWORD]",
         username: "john_doe"
       }
 
@@ -545,8 +585,8 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
 
       result =
         FormHelpers.validate_form(form_data, [
-          {:format, :zip, ~r/^\d{5}$/},
-          {:format, :phone, ~r/^\d{10}$/}
+          {:format, :zip, :us_zip},
+          {:format, :phone, :phone_intl}
         ])
 
       assert result == {:error, %{zip: :invalid_format}}
@@ -573,7 +613,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
           {:required, :username},
           {:email, :email},
           {:length, :password, 8},
-          {:format, :zip, ~r/^\d{5}$/}
+          {:format, :zip, :us_zip}
         ])
 
       assert result ==

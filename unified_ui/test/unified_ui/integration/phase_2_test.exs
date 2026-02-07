@@ -359,7 +359,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
       {:ok, signal} =
         Signals.create(:submit, %{
           form_id: :login,
-          data: %{username: "test", password: "secret"}
+          data: %{username: "test", password: "[TEST_REDACTED]"}
         })
 
       assert signal.type == "unified.form.submitted"
@@ -433,7 +433,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
     test "Form data can be collected from inputs" do
       inputs = [
         %Widgets.TextInput{id: :username, form_id: :login, value: "alice"},
-        %Widgets.TextInput{id: :password, form_id: :login, type: :password, value: "secret"},
+        %Widgets.TextInput{id: :password, form_id: :login, type: :password, value: "[TEST_PASS]"},
         %Widgets.TextInput{id: :email, form_id: :login, type: :email, value: "alice@example.com"}
       ]
 
@@ -444,7 +444,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         |> Enum.into(%{})
 
       assert form_data.username == "alice"
-      assert form_data.password == "secret"
+      assert form_data.password == "[TEST_PASS]"
       assert form_data.email == "alice@example.com"
     end
 
