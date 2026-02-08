@@ -334,7 +334,20 @@ defmodule UnifiedUi.Renderers.Web do
   defp atom_to_event_name(atom) when is_atom(atom) do
     atom |> Atom.to_string() |> String.replace("_", "-")
   end
-  defp atom_to_event_name(other), do: to_string(other)
+
+  # Handle tuple event handlers like {:submit, %{form: :login}}
+  defp atom_to_event_name({event_name, _payload}) when is_atom(event_name) do
+    event_name |> Atom.to_string() |> String.replace("_", "-")
+  end
+
+  # Handle MFA tuples {Module, :function, args}
+  defp atom_to_event_name({_module, _function, _args}) do
+    "generic-event"
+  end
+
+  # Fallback for other types
+  defp atom_to_event_name(other) when is_binary(other), do: other
+  defp atom_to_event_name(_other), do: "event"
 
   # Convert input type atom to HTML type string
   defp input_type_to_string(nil), do: "text"
