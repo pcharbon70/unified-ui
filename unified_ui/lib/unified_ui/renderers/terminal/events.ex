@@ -1,0 +1,363 @@
+defmodule UnifiedUi.Renderers.Terminal.Events do
+  @moduledoc """
+  Event capture and signal dispatch for Terminal renderer.
+
+  This module captures TermUi events (button clicks, text input changes,
+  keyboard input) and converts them to JidoSignal messages for agent communication.
+
+  ## Event Flow
+
+  ```
+  User Action → TermUi Event → UnifiedUi Event → JidoSignal → Agent
+  ```
+
+  ## Event Types
+
+  ### Click Events
+
+  Triggered by button press in the terminal:
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.to_signal(
+        :click,
+        %{widget_id: :submit_button, action: :submit_form}
+      )
+
+  ### Change Events
+
+  Triggered by text input changes:
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.to_signal(
+        :change,
+        %{widget_id: :email_input, value: "user@example.com"}
+      )
+
+  ### Keyboard Events
+
+  Triggered by key press:
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.to_signal(
+        :key_press,
+        %{key: :enter, modifiers: []}
+      )
+
+  ## Signal Dispatch
+
+  Dispatch signals to the JidoSignal bus:
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.dispatch(
+        :click,
+        %{widget_id: :my_button, action: :clicked}
+      )
+
+  """
+
+  alias UnifiedUi.Signals
+
+  @typedoc "Terminal event type."
+  @type event_type :: :click | :change | :key_press | :mouse | :focus | :blur
+
+  @typedoc "Event payload data."
+  @type event_data :: map()
+
+  @typedoc "Terminal event."
+  @type event :: %{type: event_type(), data: event_data()}
+
+  # Event Types
+
+  @doc """
+  Returns the list of supported terminal event types.
+
+  ## Examples
+
+      iex> UnifiedUi.Renderers.Terminal.Events.event_types()
+      [:click, :change, :key_press, :mouse, :focus, :blur]
+  """
+  @spec event_types() :: [event_type()]
+  def event_types, do: [:click, :change, :key_press, :mouse, :focus, :blur]
+
+  # Event Creation
+
+  @doc """
+  Creates a terminal event from type and data.
+
+  ## Examples
+
+      iex> UnifiedUi.Renderers.Terminal.Events.create_event(:click, %{widget_id: :btn})
+      %{type: :click, data: %{widget_id: :btn}}
+
+  """
+  @spec create_event(event_type(), event_data()) :: event()
+  def create_event(type, data) do
+    %{type: type, data: data}
+  end
+
+  # Event-to-Signal Conversion
+
+  @doc """
+  Converts a terminal event to a JidoSignal.
+
+  ## Parameters
+
+  * `event_type` - The type of terminal event (:click, :change, :key_press, etc.)
+  * `data` - Event payload data
+
+  ## Options
+
+  * `:source` - Override the default source (default: "/unified_ui/terminal")
+  * `:subject` - Optional subject for the signal
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.to_signal(
+        :click,
+        %{widget_id: :submit_button, action: :submit_form}
+      )
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.to_signal(
+        :change,
+        %{widget_id: :email_input, value: "user@example.com"}
+      )
+
+  """
+  @spec to_signal(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def to_signal(event_type, data, opts \\ [])
+
+  # Click events → unified.button.clicked
+  def to_signal(:click, data, opts) do
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(:click, signal_data, [source: signal_source(opts)])
+  end
+
+  # Change events → unified.input.changed
+  def to_signal(:change, data, opts) do
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(:change, signal_data, [source: signal_source(opts)])
+  end
+
+  # Submit events → unified.form.submitted
+  def to_signal(:submit, data, opts) do
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(:submit, signal_data, [source: signal_source(opts)])
+  end
+
+  # Key press events → unified.key.pressed
+  def to_signal(:key_press, data, opts) do
+    signal_type = "unified.key.pressed"
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+  end
+
+  # Mouse events → unified.mouse.{action}
+  def to_signal(:mouse, %{action: action} = data, opts) do
+    signal_type = "unified.mouse.#{action}"
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+  end
+
+  # Focus events → unified.element.focused
+  def to_signal(:focus, data, opts) do
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(:focus, signal_data, [source: signal_source(opts)])
+  end
+
+  # Blur events → unified.element.blurred
+  def to_signal(:blur, data, opts) do
+    signal_data = Map.merge(data, %{platform: :terminal})
+    Signals.create(:blur, signal_data, [source: signal_source(opts)])
+  end
+
+  # Signal Dispatch
+
+  @doc """
+  Creates and dispatches a terminal event as a JidoSignal.
+
+  This is a convenience function that combines `to_signal/3` with dispatch.
+
+  ## Parameters
+
+  * `event_type` - The type of terminal event
+  * `data` - Event payload data
+  * `opts` - Options passed to signal creation
+
+  ## Returns
+
+  `{:ok, signal}` on success, `{:error, reason}` on failure.
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.dispatch(
+        :click,
+        %{widget_id: :my_button, action: :clicked}
+      )
+
+  """
+  @spec dispatch(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def dispatch(event_type, data, opts \\ []) do
+    with {:ok, signal} <- to_signal(event_type, data, opts) do
+      # In a full implementation, this would dispatch to JidoSignal bus
+      # For now, just return the signal
+      {:ok, signal}
+    end
+  end
+
+  # Widget-Specific Event Helpers
+
+  @doc """
+  Creates a click event signal for a button widget.
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.button_click(
+        :submit_button,
+        :submit_form
+      )
+
+  """
+  @spec button_click(atom(), atom(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def button_click(widget_id, action, opts \\ []) do
+    to_signal(:click, %{widget_id: widget_id, action: action}, opts)
+  end
+
+  @doc """
+  Creates a change event signal for a text input widget.
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.input_change(
+        :email_input,
+        "user@example.com"
+      )
+
+  """
+  @spec input_change(atom(), String.t(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def input_change(widget_id, value, opts \\ []) do
+    to_signal(:change, %{widget_id: widget_id, value: value}, opts)
+  end
+
+  @doc """
+  Creates a submit event signal for a form.
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.form_submit(
+        :login_form,
+        %{email: "user@example.com", password: "secret"}
+      )
+
+  """
+  @spec form_submit(atom(), map(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def form_submit(form_id, data, opts \\ []) do
+    to_signal(:submit, %{form_id: form_id, data: data}, opts)
+  end
+
+  @doc """
+  Creates a key press event signal.
+
+  ## Examples
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.key_press(:enter, [])
+
+      {:ok, signal} = UnifiedUi.Renderers.Terminal.Events.key_press(:char, [?a])
+
+  """
+  @spec key_press(atom(), [atom()], keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def key_press(key, modifiers \\ [], opts \\ []) do
+    to_signal(:key_press, %{key: key, modifiers: modifiers}, opts)
+  end
+
+  # Event Extraction from Render Tree
+
+  @doc """
+  Extracts event handlers from a TermUI render tree.
+
+  This function traverses the render tree to find all widgets with event
+  handlers (buttons, inputs, etc.) and returns a map of widget IDs to their
+  handler configurations.
+
+  ## Examples
+
+      handlers = UnifiedUi.Renderers.Terminal.Events.extract_handlers(render_tree)
+      # => %{submit_button: %{on_click: :submit}, email_input: %{on_change: :update_email}}
+
+  """
+  @spec extract_handlers(term()) :: map()
+  def extract_handlers(render_tree) do
+    extract_handlers(render_tree, %{})
+  end
+
+  defp extract_handlers({:button, _node, metadata}, acc) do
+    case metadata do
+      %{on_click: action, id: id} when not is_nil(id) ->
+        Map.put(acc, id, %{on_click: action})
+
+      _ ->
+        acc
+    end
+  end
+
+  defp extract_handlers({:text_input, _node, metadata}, acc) do
+    base = case metadata do
+      %{id: id, on_change: change} when not is_nil(id) and not is_nil(change) ->
+        %{on_change: change}
+
+      %{id: id, on_submit: submit} when not is_nil(id) and not is_nil(submit) ->
+        %{on_submit: submit}
+
+      %{id: id} when not is_nil(id) ->
+        %{}
+
+      _ ->
+        nil
+    end
+
+    if base do
+      Map.put(acc, metadata.id, base)
+    else
+      acc
+    end
+  end
+
+  defp extract_handlers(%{type: _type, children: children} = node, acc) when is_list(children) do
+    # Process container nodes
+    acc = Enum.reduce(children, acc, fn child, inner_acc ->
+      extract_handlers(child, inner_acc)
+    end)
+
+    # Check if this node has an ID and any handlers
+    if Map.has_key?(node, :id) do
+      case extract_node_handlers(node) do
+        nil -> acc
+        handlers -> Map.put(acc, node.id, handlers)
+      end
+    else
+      acc
+    end
+  end
+
+  defp extract_handlers(%{children: children}, acc) when is_list(children) do
+    Enum.reduce(children, acc, fn child, inner_acc ->
+      extract_handlers(child, inner_acc)
+    end)
+  end
+
+  defp extract_handlers(_, acc), do: acc
+
+  defp extract_node_handlers(%{type: :button, props: props}) do
+    case props[:on_click] do
+      nil -> nil  # Skip buttons without on_click handler
+      action -> %{on_click: action}
+    end
+  end
+
+  defp extract_node_handlers(%{type: :label, props: _props}) do
+    nil  # Labels don't have handlers
+  end
+
+  defp extract_node_handlers(_node), do: nil  # Unknown nodes have no handlers
+
+  # Private helpers
+
+  defp signal_source(opts) do
+    Keyword.get(opts, :source, "/unified_ui/terminal")
+  end
+end
