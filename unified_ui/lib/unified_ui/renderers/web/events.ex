@@ -45,6 +45,7 @@ defmodule UnifiedUi.Renderers.Web.Events do
   """
 
   alias UnifiedUi.Signals
+  alias UnifiedUi.Renderers.Security
 
   @typedoc "Web event type."
   @type event_type ::
@@ -156,53 +157,92 @@ defmodule UnifiedUi.Renderers.Web.Events do
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(:click, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(:click, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Change events → unified.input.changed
   def to_signal(:change, data, opts) do
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(:change, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(:change, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Submit events → unified.form.submitted
   def to_signal(:submit, data, opts) do
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Key press events → unified.key.pressed
   def to_signal(:key_press, data, opts) do
-    signal_type = "unified.key.pressed"
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.key.pressed"
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Key release events → unified.key.released
   def to_signal(:key_release, data, opts) do
-    signal_type = "unified.key.released"
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.key.released"
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Focus events → unified.element.focused
   def to_signal(:focus, data, opts) do
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(:focus, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(:focus, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Blur events → unified.element.blurred
   def to_signal(:blur, data, opts) do
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(:blur, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :web})
+      Signals.create(:blur, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Hook events → unified.web.{hook_name}
+  # Security: Validate hook_name against allowlist to prevent signal injection
   def to_signal(:hook, %{hook_name: hook_name} = data, opts) do
-    signal_type = "unified.web.#{hook_name}"
-    signal_data = Map.merge(data, %{platform: :web})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    # Only allow predefined hook names (no arbitrary strings)
+    # Includes WebSocket lifecycle events and LiveView hook events
+    allowed_hooks = [
+      # LiveView hook events
+      :scroll_handler,
+      :resize_handler,
+      :focus_handler,
+      :blur_handler,
+      :scroll_tracker,
+      :resize_observer,
+      :visibility_observer,
+      # WebSocket lifecycle events
+      :connecting,
+      :connected,
+      :disconnected,
+      :reconnecting
+    ]
+
+    if hook_name in allowed_hooks do
+      with :ok <- Security.validate_signal_payload(data) do
+        signal_type = "unified.web.#{hook_name}"
+        signal_data = Map.merge(data, %{platform: :web})
+        Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      end
+    else
+      {:error, :invalid_hook}
+    end
   end
 
   # Signal Dispatch
@@ -286,7 +326,9 @@ defmodule UnifiedUi.Renderers.Web.Events do
   """
   @spec form_submit(atom(), map(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
   def form_submit(form_id, data, opts \\ []) do
-    to_signal(:submit, %{form_id: form_id, data: data}, opts)
+    # Security: Redact sensitive fields (passwords, tokens) from form data
+    {:ok, redacted_data} = Security.redact_sensitive_fields(data)
+    to_signal(:submit, %{form_id: form_id, data: redacted_data}, opts)
   end
 
   @doc """

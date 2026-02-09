@@ -37,56 +37,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
 
   alias UnifiedUi.IUR.Layouts
 
-  @doc """
-  VBox (vertical box) layout entity for arranging children top-to-bottom.
-
-  ## Children
-
-  Accepts nested widget and layout entities within a `do` block.
-
-  ## Options
-
-  * `:id` - Unique identifier for the layout (optional)
-  * `:spacing` - Space between children (integer, default: 0)
-  * `:padding` - Internal padding around all children (integer, optional)
-  * `:align_items` - Horizontal (cross-axis) alignment of children
-  * `:justify_content` - Vertical (main-axis) distribution of children
-  * `:style` - Inline style as keyword list (optional)
-  * `:visible` - Whether the layout is visible (default: true)
-
-  ## Alignment Values
-
-  For `align_items` (horizontal alignment):
-  * `:start` - Children align to the left
-  * `:center` - Children are horizontally centered
-  * `:end` - Children align to the right
-  * `:stretch` - Children stretch to fill the width
-
-  For `justify_content` (vertical distribution):
-  * `:start` - Children start at the top
-  * `:center` - Children are vertically centered
-  * `:end` - Children end at the bottom
-  * `:stretch` - Children stretch to fill the height
-  * `:space_between` - Space distributed between children
-  * `:space_around` - Space distributed around children
-
-  ## Examples
-
-      vbox do
-        text "Title"
-        text "Subtitle"
-      end
-
-      vbox spacing: 2, align_items: :center do
-        button "OK"
-        button "Cancel"
-      end
-
-      vbox padding: 1 do
-        text "Padded content"
-      end
-
-  """
+  @doc false
   @vbox_entity %Spark.Dsl.Entity{
     name: :vbox,
     target: Layouts.VBox,
@@ -139,57 +90,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     """
   }
 
-  @doc """
-  HBox (horizontal box) layout entity for arranging children left-to-right.
-
-  ## Children
-
-  Accepts nested widget and layout entities within a `do` block.
-
-  ## Options
-
-  * `:id` - Unique identifier for the layout (optional)
-  * `:spacing` - Space between children (integer, default: 0)
-  * `:padding` - Internal padding around all children (integer, optional)
-  * `:align_items` - Vertical (cross-axis) alignment of children
-  * `:justify_content` - Horizontal (main-axis) distribution of children
-  * `:style` - Inline style as keyword list (optional)
-  * `:visible` - Whether the layout is visible (default: true)
-
-  ## Alignment Values
-
-  For `align_items` (vertical alignment):
-  * `:start` - Children align to the top
-  * `:center` - Children are vertically centered
-  * `:end` - Children align to the bottom
-  * `:stretch` - Children stretch to fill the height
-
-  For `justify_content` (horizontal distribution):
-  * `:start` - Children start at the left
-  * `:center` - Children are horizontally centered
-  * `:end` - Children end at the right
-  * `:stretch` - Children stretch to fill the width
-  * `:space_between` - Space distributed between children
-  * `:space_around` - Space distributed around children
-
-  ## Examples
-
-      hbox do
-        text "Label:"
-        text_input :name
-      end
-
-      hbox spacing: 2, align_items: :center do
-        button "OK"
-        button "Cancel"
-      end
-
-      hbox justify_content: :space_between do
-        text "Left"
-        text "Right"
-      end
-
-  """
+  @doc false
   @hbox_entity %Spark.Dsl.Entity{
     name: :hbox,
     target: Layouts.HBox,

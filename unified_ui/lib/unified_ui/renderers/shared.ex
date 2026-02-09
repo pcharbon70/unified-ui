@@ -111,19 +111,19 @@ defmodule UnifiedUi.Renderers.Shared do
   """
   @spec find_by_id(element(), atom()) :: {:ok, element()} | :error
   def find_by_id(iur_tree, id) when is_atom(id) do
-    try do
-      traverse_iur(iur_tree, fn element, _acc ->
+    result =
+      traverse_iur(iur_tree, fn element, acc ->
         metadata = Element.metadata(element)
         if Map.get(metadata, :id) == id do
-          throw({:found, element})
+          {:halt, {:found, element}}
         else
-          :continue
+          {:cont, acc}
         end
       end, nil, order: :pre)
 
-      :error
-    catch
+    case result do
       {:found, element} -> {:ok, element}
+      _ -> :error
     end
   end
 
@@ -357,37 +357,38 @@ defmodule UnifiedUi.Renderers.Shared do
 
     # Return early if halted
     if status == :halt do
-      throw({:halt, acc})
-    end
+      acc
+    else
+      # Traverse children
+      children = Element.children(element)
+      acc = traverse_children(children, callback, acc, order)
 
-    # Traverse children
-    children = Element.children(element)
-    acc = Enum.reduce_while(children, acc, fn child, child_acc ->
-      try do
-        {:cont, do_traverse(child, callback, child_acc, order)}
-      catch
-        {:halt, result} -> {:halt, result}
+      # Check if traversal was halted during children traversal
+      case acc do
+        {:halt, _} -> acc
+        _ ->
+          # Apply callback in post-order if requested
+          if order == :post or order == :both do
+            case callback.(element, acc) do
+              {:cont, new_acc} -> new_acc
+              {:halt, result} -> result
+              :continue -> acc
+              other -> other
+            end
+          else
+            acc
+          end
+      end
+    end
+  end
+
+  # Traverse children, handling early halt
+  defp traverse_children(children, callback, acc, order) do
+    Enum.reduce_while(children, acc, fn child, child_acc ->
+      case do_traverse(child, callback, child_acc, order) do
+        {:halt, _} = halted -> {:halt, halted}
+        result -> {:cont, result}
       end
     end)
-
-    # Check if traversal was halted
-    case acc do
-      {:halt, result} -> throw({:halt, result})
-      _ -> :ok
-    end
-
-    # Apply callback in post-order if requested
-    acc = if order == :post or order == :both do
-      case callback.(element, acc) do
-        {:cont, new_acc} -> new_acc
-        {:halt, result} -> throw({:halt, result})
-        :continue -> acc
-        other -> other
-      end
-    else
-      acc
-    end
-
-    acc
   end
 end

@@ -71,6 +71,7 @@ defmodule UnifiedUi.Renderers.Desktop.Events do
   """
 
   alias UnifiedUi.Signals
+  alias UnifiedUi.Renderers.Security
 
   @typedoc "Desktop event type."
   @type event_type ::
@@ -156,20 +157,26 @@ defmodule UnifiedUi.Renderers.Desktop.Events do
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
-    signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(:click, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :desktop})
+      Signals.create(:click, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Change events → unified.input.changed
   def to_signal(:change, data, opts) do
-    signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(:change, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :desktop})
+      Signals.create(:change, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Submit events → unified.form.submitted
   def to_signal(:submit, data, opts) do
-    signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :desktop})
+      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Key press events → unified.key.pressed
@@ -180,10 +187,14 @@ defmodule UnifiedUi.Renderers.Desktop.Events do
   end
 
   # Mouse events → unified.mouse.{action}
+  # Security: Validate action before string interpolation to prevent signal injection
   def to_signal(:mouse, %{action: action} = data, opts) do
-    signal_type = "unified.mouse.#{action}"
-    signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_event_action(:mouse, action),
+         :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.mouse.#{action}"
+      signal_data = Map.merge(data, %{platform: :desktop})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Focus events → unified.element.focused
@@ -199,10 +210,14 @@ defmodule UnifiedUi.Renderers.Desktop.Events do
   end
 
   # Window events → unified.window.{action}
+  # Security: Validate action before string interpolation to prevent signal injection
   def to_signal(:window, %{action: action} = data, opts) do
-    signal_type = "unified.window.#{action}"
-    signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_event_action(:window, action),
+         :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.window.#{action}"
+      signal_data = Map.merge(data, %{platform: :desktop})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Signal Dispatch
@@ -286,7 +301,9 @@ defmodule UnifiedUi.Renderers.Desktop.Events do
   """
   @spec form_submit(atom(), map(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
   def form_submit(form_id, data, opts \\ []) do
-    to_signal(:submit, %{form_id: form_id, data: data}, opts)
+    # Security: Redact sensitive fields (passwords, tokens) from form data
+    {:ok, redacted_data} = Security.redact_sensitive_fields(data)
+    to_signal(:submit, %{form_id: form_id, data: redacted_data}, opts)
   end
 
   @doc """

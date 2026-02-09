@@ -147,7 +147,7 @@ defmodule UnifiedUi.Signals do
       {:ok, signal} ->
         signal
 
-      {:error, reason} ->
+      {:error, _reason} ->
         raise UnifiedUi.Errors.InvalidSignalError, signal_name: name
     end
   end
@@ -157,7 +157,7 @@ defmodule UnifiedUi.Signals do
       {:ok, signal} ->
         signal
 
-      {:error, reason} ->
+      {:error, _reason} ->
         raise UnifiedUi.Errors.InvalidSignalError, signal_type: type
     end
   end

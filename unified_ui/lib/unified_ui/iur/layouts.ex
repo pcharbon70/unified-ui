@@ -59,8 +59,6 @@ defmodule UnifiedUi.IUR.Layouts do
       ... }
   """
 
-  alias UnifiedUi.IUR.Style
-
   @type alignment :: :start | :center | :end | :stretch
   @type justification :: alignment() | :space_between | :space_around
   @type child ::

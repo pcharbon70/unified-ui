@@ -26,36 +26,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
 
   alias UnifiedUi.IUR.Widgets
 
-  @doc """
-  Button entity for creating clickable buttons.
-
-  ## Arguments
-
-  * `:label` - The text to display on the button (required)
-
-  ## Options
-
-  * `:id` - Unique identifier for the button (optional)
-  * `:on_click` - Signal to emit when clicked (atom, tuple, or MFA)
-  * `:disabled` - Whether the button is disabled (default: false)
-  * `:style` - Inline style as keyword list (optional)
-  * `:visible` - Whether the button is visible (default: true)
-
-  ## Examples
-
-      button "Submit"
-      button "Click Me", id: :submit_btn
-      button "Save", on_click: :save, style: [fg: :cyan]
-      button "Disabled", disabled: true
-
-  ## Signal Handler Format
-
-  The `on_click` option accepts:
-  * An atom signal name: `on_click: :submit`
-  * A tuple with payload: `on_click: {:submit, %{form_id: :login}}`
-  * An MFA tuple: `on_click: {MyModule, :my_function, []}`
-
-  """
+  @doc false
   @button_entity %Spark.Dsl.Entity{
     name: :button,
     target: Widgets.Button,
@@ -105,25 +76,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc """
-  Text entity for displaying text content.
-
-  ## Arguments
-
-  * `:content` - The text string to display (required)
-
-  ## Options
-
-  * `:id` - Unique identifier for the text element (optional)
-  * `:style` - Inline style as keyword list (optional)
-  * `:visible` - Whether the text is visible (default: true)
-
-  ## Examples
-
-      text "Hello, World!"
-      text "Welcome", id: :greeting, style: [fg: :green, attrs: [:bold]]
-
-  """
+  @doc false
   @text_entity %Spark.Dsl.Entity{
     name: :text,
     target: Widgets.Text,
@@ -159,27 +112,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc """
-  Label entity for form input labels.
-
-  ## Arguments
-
-  * `:for` - The id of the input this label is for (required)
-  * `:text` - The label text to display (required)
-
-  ## Options
-
-  * `:id` - Unique identifier for the label (optional)
-  * `:style` - Inline style as keyword list (optional)
-  * `:visible` - Whether the label is visible (default: true)
-
-  ## Examples
-
-      label :email_input, "Email:"
-      label :password, "Password:", id: :pwd_label
-      label :username, "Username:", style: [fg: :cyan]
-
-  """
+  @doc false
   @label_entity %Spark.Dsl.Entity{
     name: :label,
     target: Widgets.Label,
@@ -221,61 +154,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc """
-  Text input entity for user data entry.
-
-  ## Arguments
-
-  * `:id` - Unique identifier for the input (required)
-
-  ## Options
-
-  * `:value` - Initial value for the input (optional)
-  * `:placeholder` - Placeholder text when empty (optional)
-  * `:type` - Input type (:text, :password, :email, :number, :tel)
-  * `:on_change` - Signal to emit when value changes
-  * `:on_submit` - Signal to emit on Enter key
-  * `:form_id` - Form identifier to group this input with a form
-  * `:disabled` - Whether the input is disabled
-  * `:style` - Inline style as keyword list
-  * `:visible` - Whether the input is visible
-
-  ## Examples
-
-      text_input :email
-      text_input :email, placeholder: "user@example.com"
-      text_input :password, type: :password
-      text_input :age, type: :number, placeholder: "Age"
-      text_input :name, on_change: {:name_changed, :value}
-      text_input :email, form_id: :login_form
-      text_input :password, form_id: :login_form, type: :password
-
-  ## Form Support
-
-  Use the `:form_id` option to group multiple inputs into a form:
-
-      text_input :email, form_id: :login
-      text_input :password, form_id: :login, type: :password
-      text_input :name, form_id: :signup
-
-  Form data can be collected using `UnifiedUi.Dsl.FormHelpers.collect_form_data/2`.
-
-  ## Input Types
-
-  * `:text` - Plain text input (default)
-  * `:password` - Password input (characters hidden)
-  * `:email` - Email input
-  * `:number` - Numeric input
-  * `:tel` - Telephone number input
-
-  ## Signal Handler Format
-
-  The `on_change` and `on_submit` options accept:
-  * An atom signal name: `on_change: :value_changed`
-  * A tuple with payload: `on_change: {:value_changed, %{field: :email}}`
-  * An MFA tuple: `on_change: {MyModule, :validate, [:email]}`
-
-  """
+  @doc false
   @text_input_entity %Spark.Dsl.Entity{
     name: :text_input,
     target: Widgets.TextInput,

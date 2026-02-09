@@ -6,6 +6,7 @@ defmodule UnifiedUi.Renderers.StateTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Renderers.State
+  alias UnifiedUi.Renderers.State.StateError
 
   describe "new/2" do
     test "creates new state for terminal platform" do
@@ -65,7 +66,7 @@ defmodule UnifiedUi.Renderers.StateTest do
     end
 
     test "get_root!/1 raises when not set", %{state: state} do
-      assert_raise RuntimeError, ~r/No root widget set/, fn ->
+      assert_raise StateError, "No root widget set in renderer state", fn ->
         State.get_root!(state)
       end
     end
@@ -100,7 +101,7 @@ defmodule UnifiedUi.Renderers.StateTest do
 
       assert State.get_widget!(state, :submit_button) == button_pid
 
-      assert_raise RuntimeError, fn ->
+      assert_raise StateError, "No widget found for ID :nonexistent", fn ->
         State.get_widget!(state, :nonexistent)
       end
     end
@@ -265,6 +266,40 @@ defmodule UnifiedUi.Renderers.StateTest do
     test "returns false for different platform", %{state: state} do
       refute State.platform?(state, :desktop)
       refute State.platform?(state, :web)
+    end
+  end
+
+  describe "StateError exception" do
+    test "exception can be raised with reason: :no_root_widget" do
+      assert_raise StateError, "No root widget set in renderer state", fn ->
+        raise StateError, reason: :no_root_widget
+      end
+    end
+
+    test "exception can be raised with reason: :widget_not_found and id" do
+      assert_raise StateError, "No widget found for ID :my_button", fn ->
+        raise StateError, reason: :widget_not_found, id: :my_button
+      end
+    end
+
+    test "exception can be raised with reason: :widget_not_found without id" do
+      assert_raise StateError, "No widget found for ID nil", fn ->
+        raise StateError, reason: :widget_not_found
+      end
+    end
+
+    test "exception has structured fields" do
+      exception = StateError.exception(reason: :widget_not_found, id: :test_widget)
+
+      assert exception.reason == :widget_not_found
+      assert exception.id == :test_widget
+      assert is_binary(exception.message)
+    end
+
+    test "exception message/1 returns the message" do
+      exception = StateError.exception(reason: :no_root_widget)
+
+      assert StateError.message(exception) == "No root widget set in renderer state"
     end
   end
 end

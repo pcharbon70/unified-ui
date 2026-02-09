@@ -70,30 +70,7 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
 
   alias UnifiedUi.Dsl.Style
 
-  @doc """
-  Style entity for creating named, reusable styles.
-
-  ## Arguments
-
-  * `:name` - The unique name for this style (required)
-
-  ## Options
-
-  * `:attributes` - Style attributes as keyword list
-  * `:extends` - Parent style name to inherit from
-
-  ## Examples
-
-      style :header do
-        attributes [fg: :cyan, attrs: [:bold]]
-      end
-
-      style :sub_header do
-        extends :header
-        attributes [padding: 1]
-      end
-
-  """
+  @doc false
   @style_entity %Spark.Dsl.Entity{
     name: :style,
     target: Style,

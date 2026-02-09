@@ -52,6 +52,7 @@ defmodule UnifiedUi.Renderers.Terminal.Events do
   """
 
   alias UnifiedUi.Signals
+  alias UnifiedUi.Renderers.Security
 
   @typedoc "Terminal event type."
   @type event_type :: :click | :change | :key_press | :mouse | :focus | :blur
@@ -124,46 +125,62 @@ defmodule UnifiedUi.Renderers.Terminal.Events do
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(:click, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(:click, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Change events → unified.input.changed
   def to_signal(:change, data, opts) do
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(:change, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(:change, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Submit events → unified.form.submitted
   def to_signal(:submit, data, opts) do
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Key press events → unified.key.pressed
   def to_signal(:key_press, data, opts) do
-    signal_type = "unified.key.pressed"
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.key.pressed"
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Mouse events → unified.mouse.{action}
+  # Security: Validate action before string interpolation to prevent signal injection
   def to_signal(:mouse, %{action: action} = data, opts) do
-    signal_type = "unified.mouse.#{action}"
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_event_action(:mouse, action),
+         :ok <- Security.validate_signal_payload(data) do
+      signal_type = "unified.mouse.#{action}"
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Focus events → unified.element.focused
   def to_signal(:focus, data, opts) do
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(:focus, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(:focus, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Blur events → unified.element.blurred
   def to_signal(:blur, data, opts) do
-    signal_data = Map.merge(data, %{platform: :terminal})
-    Signals.create(:blur, signal_data, [source: signal_source(opts)])
+    with :ok <- Security.validate_signal_payload(data) do
+      signal_data = Map.merge(data, %{platform: :terminal})
+      Signals.create(:blur, signal_data, [source: signal_source(opts)])
+    end
   end
 
   # Signal Dispatch
@@ -247,7 +264,9 @@ defmodule UnifiedUi.Renderers.Terminal.Events do
   """
   @spec form_submit(atom(), map(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
   def form_submit(form_id, data, opts \\ []) do
-    to_signal(:submit, %{form_id: form_id, data: data}, opts)
+    # Security: Redact sensitive fields (passwords, tokens) from form data
+    {:ok, redacted_data} = Security.redact_sensitive_fields(data)
+    to_signal(:submit, %{form_id: form_id, data: redacted_data}, opts)
   end
 
   @doc """

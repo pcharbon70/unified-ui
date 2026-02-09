@@ -697,4 +697,80 @@ defmodule UnifiedUi.Renderers.Desktop.EventsTest do
       assert {:ok, _close} = Events.window_close()
     end
   end
+
+  # ============================================================================
+  # Security Tests
+  # ============================================================================
+
+  describe "security" do
+    test "rejects invalid mouse actions (signal injection prevention)" do
+      # Attempt to inject malicious action
+      assert {:error, :invalid_action} =
+               Events.to_signal(:mouse, %{action: :malicious_action, x: 100, y: 200})
+
+      assert {:error, :invalid_action} =
+               Events.to_signal(:mouse, %{action: :"../../etc/passwd", x: 100, y: 200})
+
+      assert {:error, :invalid_action} =
+               Events.to_signal(:mouse, %{action: :"<script>", x: 100, y: 200})
+    end
+
+    test "rejects invalid window actions (signal injection prevention)" do
+      # Attempt to inject malicious action
+      assert {:error, :invalid_action} =
+               Events.to_signal(:window, %{action: :format_c})
+
+      assert {:error, :invalid_action} =
+               Events.to_signal(:window, %{action: :"delete_all_files"})
+
+      assert {:error, :invalid_action} =
+               Events.to_signal(:window, %{action: :"<script>alert('xss')</script>"})
+    end
+
+    test "accepts valid mouse actions" do
+      valid_actions = [:click, :double_click, :right_click, :scroll, :move]
+
+      Enum.each(valid_actions, fn action ->
+        data = %{action: action, x: 100, y: 200}
+        assert {:ok, _signal} = Events.to_signal(:mouse, data)
+      end)
+    end
+
+    test "accepts valid window actions" do
+      valid_actions = [:move, :resize, :close, :minimize, :maximize, :restore, :focus, :blur]
+
+      Enum.each(valid_actions, fn action ->
+        data = %{action: action}
+        assert {:ok, _signal} = Events.to_signal(:window, data)
+      end)
+    end
+
+    test "rejects payloads that are too large" do
+      # Create a payload that exceeds size limits
+      # The limit is 10KB, so create a map with many keys to exceed it
+      large_data = Map.new(1..500, fn i -> {:"key#{i}", String.duplicate("x", 50)} end)
+
+      assert {:error, :payload_too_large} =
+               Events.to_signal(:click, Map.put(large_data, :widget_id, :btn))
+    end
+
+    test "redacts sensitive fields in form submissions" do
+      form_data = %{
+        username: "user",
+        password: "secret123",
+        email: "user@example.com",
+        api_key: "abc123xyz"
+      }
+
+      assert {:ok, signal} = Events.form_submit(:login, form_data)
+
+      # Password and API key should be redacted
+      assert signal.data.data.password == "[REDACTED]"
+      assert signal.data.data.api_key == "[REDACTED]"
+
+      # Regular fields should be preserved
+      assert signal.data.data.username == "user"
+      assert signal.data.data.email == "user@example.com"
+    end
+  end
 end

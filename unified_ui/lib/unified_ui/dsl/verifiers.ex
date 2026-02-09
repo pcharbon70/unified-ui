@@ -100,8 +100,6 @@ defmodule UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier do
 
   alias Spark.Dsl.Verifier
 
-  @max_layout_depth 20
-
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 
@@ -371,7 +369,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
     state_section = Map.get(ui_section, :state, %{entities: []})
     state_entities = Map.get(state_section, :entities, [])
 
-    initial_state_keys =
+    _initial_state_keys =
       case state_entities do
         [%UnifiedUi.Dsl.State{attrs: attrs} | _] when is_list(attrs) ->
           Keyword.keys(attrs)

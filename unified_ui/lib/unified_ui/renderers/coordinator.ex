@@ -482,20 +482,73 @@ defmodule UnifiedUi.Renderers.Coordinator do
 
   # Detect web environment
   defp web_environment? do
-    # Check for Phoenix/Plug context
-    # This is a simplified check - actual implementation would check
-    # for the presence of Phoenix LiveView or Plug connection
-    Process.whereis(Phoenix.PubSup.PG2) != nil or
-      Application.get_env(:phoenix, :version) != nil
+    # Check for Phoenix/Plug context using multiple reliable methods
+    # 1. Check if Phoenix application is configured
+    # 2. Check for Phoenix.PubSub (more stable than process name)
+    # 3. Check for Plug connection in process dictionary (if in request)
+    Application.get_env(:phoenix, :version) != nil or
+      Application.get_env(:plug, :version) != nil or
+      pubsub_loaded?()
   end
 
   # Detect desktop environment
   defp desktop_environment? do
-    # Check for desktop environment variables or GUI framework presence
-    # This is a simplified check
+    # Check for desktop environment using multiple methods
+    # 1. Check for DesktopUi framework
+    # 2. Check for display server (X11/Wayland)
+    # 3. Check for common desktop environment variables
+    desktop_app_loaded?() or
+      has_display_server?() or
+      has_desktop_env?()
+  end
+
+  # Check if Phoenix.PubSub is available (more reliable than process name)
+  defp pubsub_loaded? do
+    # Check if Phoenix.PubSub module exists and is loaded
+    # This is more reliable than checking for specific process names
+    case Code.ensure_loaded(Phoenix.PubSub) do
+      {:module, _} -> true
+      _ -> false
+    end
+  rescue
+    _ -> false
+  end
+
+  # Check if DesktopUi application is available
+  defp desktop_app_loaded? do
+    # Check if DesktopUi is configured or module is available
+    Application.get_env(:desktop_ui, :version) != nil or
+      desktop_ui_module_loaded?()
+  end
+
+  defp desktop_ui_module_loaded? do
+    # Try to check if DesktopUi module is available
+    case Code.ensure_loaded(Draw) do
+      {:module, _} -> true
+      _ -> false
+    end
+  rescue
+    _ -> false
+  end
+
+  # Check for X11 or Wayland display server
+  defp has_display_server? do
     System.get_env("DISPLAY") != nil or
-      System.get_env("WAYLAND_DISPLAY") != nil or
-      Application.get_env(:desktop_ui, :version) != nil
+      System.get_env("WAYLAND_DISPLAY") != nil
+  end
+
+  # Check for common desktop environment variables
+  defp has_desktop_env? do
+    # Common desktop environment indicators
+    vars = [
+      "XDG_CURRENT_DESKTOP",
+      "XDG_SESSION_TYPE",
+      "GNOME_DESKTOP_SESSION_ID",
+      "KDE_FULL_SESSION",
+      "SESSION_MANAGER"
+    ]
+
+    Enum.any?(vars, fn var -> System.get_env(var) != nil end)
   end
 
   # Deep merge for nested maps

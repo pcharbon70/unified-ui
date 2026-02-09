@@ -58,6 +58,57 @@ defmodule UnifiedUi.Renderers.State do
     metadata: metadata()
   }
 
+  # Exception definitions
+
+  defmodule StateError do
+    @moduledoc """
+    Exception raised when an operation on renderer state fails.
+
+    ## Exception Fields
+
+    * `:message` - Human-readable error message
+    * `:reason` - Atom describing the error reason
+    * `:id` - Widget ID (for widget-related errors)
+
+    ## Examples
+
+        raise StateError, reason: :no_root_widget
+        raise StateError, reason: :widget_not_found, id: :my_button
+
+    """
+    defexception [:message, :reason, :id]
+
+    @impl true
+    def exception(opts) do
+      reason = Keyword.get(opts, :reason)
+      id = Keyword.get(opts, :id)
+
+      message = build_message(reason, id)
+      %__MODULE__{message: message, reason: reason, id: id}
+    end
+
+    @impl true
+    def message(%__MODULE__{} = exception) do
+      exception.message
+    end
+
+    defp build_message(:no_root_widget, nil) do
+      "No root widget set in renderer state"
+    end
+
+    defp build_message(:widget_not_found, id) when is_atom(id) do
+      "No widget found for ID #{inspect(id)}"
+    end
+
+    defp build_message(:widget_not_found, nil) do
+      "No widget found for the given ID"
+    end
+
+    defp build_message(reason, _id) do
+      "Renderer state error: #{inspect(reason)}"
+    end
+  end
+
   @doc """
   Creates a new renderer state for the given platform.
 
@@ -138,7 +189,7 @@ defmodule UnifiedUi.Renderers.State do
   def get_root!(%__MODULE__{} = state) do
     case get_root(state) do
       {:ok, root} -> root
-      :error -> raise "No root widget set"
+      :error -> raise StateError, reason: :no_root_widget
     end
   end
 
@@ -191,7 +242,7 @@ defmodule UnifiedUi.Renderers.State do
   def get_widget!(%__MODULE__{} = state, id) do
     case get_widget(state, id) do
       {:ok, widget} -> widget
-      :error -> raise "No widget found for ID #{inspect(id)}"
+      :error -> raise StateError, reason: :widget_not_found, id: id
     end
   end
 

@@ -128,7 +128,7 @@ defmodule UnifiedUi.Renderers.Desktop do
     }
   end
 
-  defp build_button(label, on_click, props \\ []) do
+  defp build_button(label, on_click, props) do
     %{
       type: :button,
       id: nil,
@@ -137,7 +137,7 @@ defmodule UnifiedUi.Renderers.Desktop do
     }
   end
 
-  defp build_container(direction, children, props \\ []) do
+  defp build_container(direction, children, props) do
     %{
       type: :container,
       id: nil,
