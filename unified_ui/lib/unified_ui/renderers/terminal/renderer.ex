@@ -214,6 +214,231 @@ defmodule UnifiedUi.Renderers.Terminal do
     }}
   end
 
+  # Data visualization converters
+
+  defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do
+    # Calculate percentage and bar width
+    min_val = gauge.min || 0
+    max_val = gauge.max || 100
+    value = max(min_val, min(max_val, gauge.value))
+    range = max_val - min_val
+    percentage = if range > 0, do: (value - min_val) / range, else: 0
+    bar_width = round(percentage * 20)  # 20 character bar
+
+    # Build the bar string
+    filled = String.duplicate("=", bar_width)
+    empty = String.duplicate(" ", 20 - bar_width)
+    bar = "[#{filled}#{empty}]"
+
+    # Add label if present
+    label_text = if gauge.label, do: "#{gauge.label}: ", else: ""
+
+    # Build display text
+    display_text = "#{label_text}#{bar} #{gauge.value}/#{max_val}"
+
+    # Create text node
+    text_node = TermUI.Component.Helpers.text(display_text)
+
+    # Apply style if present
+    style = Style.convert_style(gauge.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(text_node, style)
+    else
+      text_node
+    end
+
+    # Wrap with metadata
+    {:gauge, styled_node, %{
+      id: gauge.id,
+      value: gauge.value,
+      min: min_val,
+      max: max_val,
+      label: gauge.label
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Sparkline{} = sparkline, :sparkline, _state) do
+    data = sparkline.data || []
+
+    # Generate ASCII sparkline
+    sparkline_text = if length(data) > 1 do
+      min_val = Enum.min(data)
+      max_val = Enum.max(data)
+      range = max_val - min_val
+
+      chars = ["_", "", "-", ".", "o", "O", "@", "#"]
+
+      points = Enum.map(data, fn val ->
+        if range > 0 do
+          normalized = (val - min_val) / range
+          index = min(trunc(normalized * length(chars)), length(chars) - 1)
+          Enum.at(chars, index)
+        else
+          ""
+        end
+      end)
+
+      Enum.join(points)
+    else
+      ""
+    end
+
+    # Create text node
+    text_node = TermUI.Component.Helpers.text(sparkline_text)
+
+    # Apply style if present
+    style = Style.convert_style(sparkline.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(text_node, style)
+    else
+      text_node
+    end
+
+    # Wrap with metadata
+    {:sparkline, styled_node, %{
+      id: sparkline.id,
+      data: data,
+      show_dots: sparkline.show_dots,
+      show_area: sparkline.show_area
+    }}
+  end
+
+  defp convert_by_type(%Widgets.BarChart{} = chart, :bar_chart, _state) do
+    data = chart.data || []
+
+    # Find max value for scaling
+    max_val = if length(data) > 0 do
+      data |> Enum.map(fn {_, v} -> v end) |> Enum.max(fn -> 0 end)
+    else
+      0
+    end
+
+    # Build bar lines based on orientation
+    lines = if chart.orientation == :horizontal do
+      # Horizontal bars
+      Enum.map(data, fn {label, value} ->
+        bar_width = if max_val > 0, do: round(value / max_val * 20), else: 0
+        bar = String.duplicate("=", bar_width)
+        formatted_label = String.pad_trailing(label, 10)
+        "#{formatted_label} [#{bar}] #{value}"
+      end)
+    else
+      # Vertical bars (simplified ASCII representation)
+      if length(data) > 0 do
+        max_value = max_val
+        num_bars = min(length(data), 10)
+
+        # Build from top to bottom
+        Enum.map(max_value..0//-1, fn y ->
+          bars_at_level = Enum.map(0..(num_bars - 1), fn i ->
+            if i < length(data) do
+              {_, val} = Enum.at(data, i)
+              threshold = (y + 1) * max_value / 5
+              if val >= threshold, do: "|", else: " "
+            else
+              " "
+            end
+          end)
+          "#{String.pad_leading(Integer.to_string(y * 20), 4)} |#{Enum.join(bars_at_level, " ")}|"
+        end) ++ ["      #{Enum.map(0..(num_bars - 1), fn _ -> "--" end) |> Enum.join(" ")}"]
+      else
+        ["No data"]
+      end
+    end
+
+    display_text = Enum.join(lines, "\n")
+
+    # Create text node
+    text_node = TermUI.Component.Helpers.text(display_text)
+
+    # Apply style if present
+    style = Style.convert_style(chart.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(text_node, style)
+    else
+      text_node
+    end
+
+    # Wrap with metadata
+    {:bar_chart, styled_node, %{
+      id: chart.id,
+      data: data,
+      orientation: chart.orientation,
+      show_labels: chart.show_labels
+    }}
+  end
+
+  defp convert_by_type(%Widgets.LineChart{} = chart, :line_chart, _state) do
+    data = chart.data || []
+
+    # Generate ASCII line chart
+    chart_text = if length(data) > 1 do
+      min_val = Enum.map(data, fn {_, v} -> v end) |> Enum.min()
+      max_val = Enum.map(data, fn {_, v} -> v end) |> Enum.max()
+      range = max_val - min_val
+
+      # Create a simple line chart with height of 5 lines
+      height = 5
+      width = length(data)
+
+      # Build grid
+      grid = for y <- (height - 1)..0//-1 do
+        row = for x <- 0..(width - 1) do
+          if x < length(data) do
+            {_, val} = Enum.at(data, x)
+            y_level = if range > 0 do
+              round((val - min_val) / range * (height - 1))
+            else
+              0
+            end
+
+            if y == y_level do
+              if chart.show_dots, do: "o", else: "*"
+            else
+              " "
+            end
+          else
+            " "
+          end
+        end
+        Enum.join(row)
+      end
+
+      # Add labels if requested
+      x_labels = if chart.show_labels do
+        labels = Enum.map(data, fn {label, _} ->
+          String.slice(label, 0, 3) |> String.pad_trailing(4)
+        end)
+        Enum.join(labels)
+      else
+        ""
+      end
+
+      Enum.join(grid, "\n") <> "\n" <> x_labels
+    else
+      "No data"
+    end
+
+    # Create text node
+    text_node = TermUI.Component.Helpers.text(chart_text)
+
+    # Apply style if present
+    style = Style.convert_style(chart.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(text_node, style)
+    else
+      text_node
+    end
+
+    # Wrap with metadata
+    {:line_chart, styled_node, %{
+      id: chart.id,
+      data: data,
+      show_dots: chart.show_dots,
+      show_area: chart.show_area
+    }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

@@ -12,6 +12,10 @@ defmodule UnifiedUi.IUR.Widgets do
   * `Button` - Clickable button with label
   * `Label` - Label for form inputs
   * `TextInput` - Text input field for data entry
+  * `Gauge` - Display a value within a range
+  * `Sparkline` - Display trend data in a compact format
+  * `BarChart` - Display categorical data comparison
+  * `LineChart` - Display time series or sequential data
 
   ## Common Fields
 
@@ -201,6 +205,159 @@ defmodule UnifiedUi.IUR.Widgets do
             on_submit: atom() | {atom(), any()} | nil,
             form_id: atom() | nil,
             disabled: boolean(),
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
+          }
+  end
+
+  defmodule Gauge do
+    @moduledoc """
+    Gauge widget for displaying a value within a range.
+
+    ## Fields
+
+    * `id` - Required identifier for the gauge
+    * `value` - Current value of the gauge
+    * `min` - Minimum value of the range (default: 0)
+    * `max` - Maximum value of the range (default: 100)
+    * `label` - Optional label to display with the gauge
+    * `width` - Width of the gauge
+    * `height` - Height of the gauge
+    * `color_zones` - Optional color zones as keyword list
+    * `style` - Optional style struct
+    * `visible` - Whether the gauge is visible (default: true)
+
+    ## Examples
+
+        iex> %Gauge{id: :cpu, value: 75, min: 0, max: 100}
+        %Gauge{id: :cpu, value: 75, min: 0, max: 100, ...}
+    """
+
+    @type color_zone :: [{integer(), atom()}]
+
+    defstruct [:id, :value, :min, :max, :label, :width, :height, :color_zones, style: nil, visible: true]
+
+    @type t :: %__MODULE__{
+            id: atom(),
+            value: integer(),
+            min: integer() | nil,
+            max: integer() | nil,
+            label: String.t() | nil,
+            width: integer() | nil,
+            height: integer() | nil,
+            color_zones: color_zone() | nil,
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
+          }
+  end
+
+  defmodule Sparkline do
+    @moduledoc """
+    Sparkline widget for displaying trend data in a compact format.
+
+    ## Fields
+
+    * `id` - Required identifier for the sparkline
+    * `data` - List of numeric values to display
+    * `width` - Width of the sparkline
+    * `height` - Height of the sparkline
+    * `color` - Color for the sparkline line
+    * `show_dots` - Whether to show dots at each data point (default: false)
+    * `show_area` - Whether to fill the area under the line (default: false)
+    * `style` - Optional style struct
+    * `visible` - Whether the sparkline is visible (default: true)
+
+    ## Examples
+
+        iex> %Sparkline{id: :cpu_trend, data: [10, 25, 20, 35, 30]}
+        %Sparkline{id: :cpu_trend, data: [10, 25, 20, 35, 30], ...}
+    """
+
+    defstruct [:id, :data, :width, :height, :color, show_dots: false, show_area: false, style: nil, visible: true]
+
+    @type t :: %__MODULE__{
+            id: atom(),
+            data: [integer()],
+            width: integer() | nil,
+            height: integer() | nil,
+            color: atom() | nil,
+            show_dots: boolean(),
+            show_area: boolean(),
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
+          }
+  end
+
+  defmodule BarChart do
+    @moduledoc """
+    Bar chart widget for displaying categorical data comparison.
+
+    ## Fields
+
+    * `id` - Required identifier for the bar chart
+    * `data` - List of {label, value} tuples for the bars
+    * `width` - Width of the bar chart
+    * `height` - Height of the bar chart
+    * `orientation` - Orientation of bars (:horizontal or :vertical, default: :horizontal)
+    * `show_labels` - Whether to show labels on the bars (default: true)
+    * `style` - Optional style struct
+    * `visible` - Whether the bar chart is visible (default: true)
+
+    ## Examples
+
+        iex> %BarChart{id: :sales, data: [{"Jan", 100}, {"Feb", 150}]}
+        %BarChart{id: :sales, data: [{"Jan", 100}, {"Feb", 150}], ...}
+    """
+
+    @type orientation :: :horizontal | :vertical
+    @type data_point :: {String.t(), integer()}
+
+    defstruct [:id, :data, :width, :height, orientation: :horizontal, show_labels: true, style: nil, visible: true]
+
+    @type t :: %__MODULE__{
+            id: atom(),
+            data: [data_point()],
+            width: integer() | nil,
+            height: integer() | nil,
+            orientation: orientation(),
+            show_labels: boolean(),
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
+          }
+  end
+
+  defmodule LineChart do
+    @moduledoc """
+    Line chart widget for displaying time series or sequential data.
+
+    ## Fields
+
+    * `id` - Required identifier for the line chart
+    * `data` - List of {label, value} tuples for the data points
+    * `width` - Width of the line chart
+    * `height` - Height of the line chart
+    * `show_dots` - Whether to show dots at each data point (default: true)
+    * `show_area` - Whether to fill the area under the line (default: false)
+    * `style` - Optional style struct
+    * `visible` - Whether the line chart is visible (default: true)
+
+    ## Examples
+
+        iex> %LineChart{id: :temp, data: [{"Mon", 20}, {"Tue", 22}]}
+        %LineChart{id: :temp, data: [{"Mon", 20}, {"Tue", 22}], ...}
+    """
+
+    @type data_point :: {String.t(), integer()}
+
+    defstruct [:id, :data, :width, :height, show_dots: true, show_area: false, style: nil, visible: true]
+
+    @type t :: %__MODULE__{
+            id: atom(),
+            data: [data_point()],
+            width: integer() | nil,
+            height: integer() | nil,
+            show_dots: boolean(),
+            show_area: boolean(),
             style: UnifiedUi.IUR.Style.t() | nil,
             visible: boolean()
           }

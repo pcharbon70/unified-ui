@@ -108,7 +108,12 @@ defmodule UnifiedUi.Dsl.Extension do
       UnifiedUi.Dsl.Entities.Widgets.text_entity(),
       UnifiedUi.Dsl.Entities.Widgets.button_entity(),
       UnifiedUi.Dsl.Entities.Widgets.label_entity(),
-      UnifiedUi.Dsl.Entities.Widgets.text_input_entity()
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity(),
+      # Data visualization widgets
+      UnifiedUi.Dsl.Entities.DataViz.gauge_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.sparkline_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.line_chart_entity()
     ],
     top_level?: true
   }
@@ -126,7 +131,12 @@ defmodule UnifiedUi.Dsl.Extension do
       UnifiedUi.Dsl.Entities.Widgets.button_entity(),
       UnifiedUi.Dsl.Entities.Widgets.text_entity(),
       UnifiedUi.Dsl.Entities.Widgets.label_entity(),
-      UnifiedUi.Dsl.Entities.Widgets.text_input_entity()
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity(),
+      # Data visualization widgets
+      UnifiedUi.Dsl.Entities.DataViz.gauge_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.sparkline_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.line_chart_entity()
     ]
   }
 
