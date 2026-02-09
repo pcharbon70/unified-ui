@@ -180,6 +180,89 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Layouts.HBox do
   end
 end
 
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Gauge do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_gauge), do: []
+
+  def metadata(gauge) do
+    %{
+      type: :gauge,
+      id: gauge.id,
+      value: gauge.value,
+      min: gauge.min,
+      max: gauge.max,
+      label: gauge.label,
+      width: gauge.width,
+      height: gauge.height,
+      color_zones: gauge.color_zones,
+      visible: gauge.visible
+    }
+    |> build_metadata(style: gauge.style)
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Sparkline do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_sparkline), do: []
+
+  def metadata(sparkline) do
+    %{
+      type: :sparkline,
+      id: sparkline.id,
+      data: sparkline.data,
+      width: sparkline.width,
+      height: sparkline.height,
+      color: sparkline.color,
+      show_dots: sparkline.show_dots,
+      show_area: sparkline.show_area,
+      visible: sparkline.visible
+    }
+    |> build_metadata(style: sparkline.style)
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.BarChart do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_bar_chart), do: []
+
+  def metadata(bar_chart) do
+    %{
+      type: :bar_chart,
+      id: bar_chart.id,
+      data: bar_chart.data,
+      width: bar_chart.width,
+      height: bar_chart.height,
+      orientation: bar_chart.orientation,
+      show_labels: bar_chart.show_labels,
+      visible: bar_chart.visible
+    }
+    |> build_metadata(style: bar_chart.style)
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.LineChart do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_line_chart), do: []
+
+  def metadata(line_chart) do
+    %{
+      type: :line_chart,
+      id: line_chart.id,
+      data: line_chart.data,
+      width: line_chart.width,
+      height: line_chart.height,
+      show_dots: line_chart.show_dots,
+      show_area: line_chart.show_area,
+      visible: line_chart.visible
+    }
+    |> build_metadata(style: line_chart.style)
+  end
+end
+
 defimpl UnifiedUi.IUR.Element, for: Any do
   def children(_element), do: []
 

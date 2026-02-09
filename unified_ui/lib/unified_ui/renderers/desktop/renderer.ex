@@ -242,6 +242,130 @@ defmodule UnifiedUi.Renderers.Desktop do
     }}
   end
 
+  # Data visualization converters
+
+  defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do
+    # Build display text for desktop gauge
+    min_val = gauge.min || 0
+    max_val = gauge.max || 100
+    value = max(min_val, min(max_val, gauge.value))
+
+    label_text = if gauge.label, do: "#{gauge.label}: ", else: ""
+    display_text = "#{label_text}#{value}/#{max_val}"
+
+    # Build base props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, gauge.style)
+
+    # Create desktop widget
+    base_widget = build_label(display_text, props)
+
+    # Wrap with metadata
+    {:gauge, base_widget, %{
+      id: gauge.id,
+      value: value,
+      min: min_val,
+      max: max_val,
+      label: gauge.label,
+      width: gauge.width,
+      height: gauge.height,
+      color_zones: gauge.color_zones
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Sparkline{} = sparkline, :sparkline, _state) do
+    data = sparkline.data || []
+
+    # Build display text for desktop sparkline
+    display_text = if length(data) > 0 do
+      "Sparkline: #{length(data)} points"
+    else
+      "No data"
+    end
+
+    # Build base props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, sparkline.style)
+
+    # Create desktop widget
+    base_widget = build_label(display_text, props)
+
+    # Wrap with metadata
+    {:sparkline, base_widget, %{
+      id: sparkline.id,
+      data: data,
+      width: sparkline.width,
+      height: sparkline.height,
+      color: sparkline.color,
+      show_dots: sparkline.show_dots,
+      show_area: sparkline.show_area
+    }}
+  end
+
+  defp convert_by_type(%Widgets.BarChart{} = chart, :bar_chart, _state) do
+    data = chart.data || []
+
+    # Build display text for desktop bar chart
+    display_text = if length(data) > 0 do
+      "Bar Chart: #{length(data)} items"
+    else
+      "No data"
+    end
+
+    # Build base props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, chart.style)
+
+    # Create desktop widget
+    base_widget = build_label(display_text, props)
+
+    # Wrap with metadata
+    {:bar_chart, base_widget, %{
+      id: chart.id,
+      data: data,
+      width: chart.width,
+      height: chart.height,
+      orientation: chart.orientation,
+      show_labels: chart.show_labels
+    }}
+  end
+
+  defp convert_by_type(%Widgets.LineChart{} = chart, :line_chart, _state) do
+    data = chart.data || []
+
+    # Build display text for desktop line chart
+    display_text = if length(data) > 0 do
+      "Line Chart: #{length(data)} points"
+    else
+      "No data"
+    end
+
+    # Build base props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, chart.style)
+
+    # Create desktop widget
+    base_widget = build_label(display_text, props)
+
+    # Wrap with metadata
+    {:line_chart, base_widget, %{
+      id: chart.id,
+      data: data,
+      width: chart.width,
+      height: chart.height,
+      show_dots: chart.show_dots,
+      show_area: chart.show_area
+    }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

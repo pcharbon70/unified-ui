@@ -207,6 +207,187 @@ defmodule UnifiedUi.IURTest do
     end
   end
 
+  describe "Widgets.Gauge" do
+    test "creates a gauge with id and value" do
+      gauge = %Widgets.Gauge{id: :cpu, value: 75}
+      assert gauge.id == :cpu
+      assert gauge.value == 75
+      assert gauge.min == nil
+      assert gauge.max == nil
+      assert gauge.label == nil
+      assert gauge.visible == true
+    end
+
+    test "creates a gauge with all options" do
+      gauge = %Widgets.Gauge{
+        id: :memory,
+        value: 50,
+        min: 0,
+        max: 100,
+        label: "Memory Usage",
+        width: 200,
+        height: 20,
+        color_zones: [{0, :green}, {50, :yellow}, {80, :red}]
+      }
+
+      assert gauge.id == :memory
+      assert gauge.value == 50
+      assert gauge.min == 0
+      assert gauge.max == 100
+      assert gauge.label == "Memory Usage"
+      assert gauge.width == 200
+      assert gauge.height == 20
+      assert gauge.color_zones == [{0, :green}, {50, :yellow}, {80, :red}]
+    end
+
+    test "creates a gauge with visible false" do
+      gauge = %Widgets.Gauge{id: :hidden, value: 0, visible: false}
+      assert gauge.visible == false
+    end
+
+    test "creates a gauge with style" do
+      style = %Style{fg: :cyan}
+      gauge = %Widgets.Gauge{id: :styled, value: 100, style: style}
+      assert gauge.style == style
+    end
+  end
+
+  describe "Widgets.Sparkline" do
+    test "creates a sparkline with id and data" do
+      sparkline = %Widgets.Sparkline{id: :trend, data: [10, 20, 15, 25, 30]}
+      assert sparkline.id == :trend
+      assert sparkline.data == [10, 20, 15, 25, 30]
+      assert sparkline.show_dots == false
+      assert sparkline.show_area == false
+      assert sparkline.visible == true
+    end
+
+    test "creates a sparkline with all options" do
+      sparkline = %Widgets.Sparkline{
+        id: :cpu_trend,
+        data: [45, 50, 55, 60, 58],
+        width: 200,
+        height: 50,
+        color: :cyan,
+        show_dots: true,
+        show_area: true
+      }
+
+      assert sparkline.id == :cpu_trend
+      assert sparkline.data == [45, 50, 55, 60, 58]
+      assert sparkline.width == 200
+      assert sparkline.height == 50
+      assert sparkline.color == :cyan
+      assert sparkline.show_dots == true
+      assert sparkline.show_area == true
+    end
+
+    test "creates a sparkline with empty data" do
+      sparkline = %Widgets.Sparkline{id: :empty, data: []}
+      assert sparkline.data == []
+    end
+
+    test "creates a sparkline with style" do
+      style = %Style{fg: :green}
+      sparkline = %Widgets.Sparkline{id: :styled, data: [1, 2, 3], style: style}
+      assert sparkline.style == style
+    end
+  end
+
+  describe "Widgets.BarChart" do
+    test "creates a bar_chart with id and data" do
+      bar_chart = %Widgets.BarChart{
+        id: :sales,
+        data: [{"Jan", 100}, {"Feb", 150}, {"Mar", 200}]
+      }
+
+      assert bar_chart.id == :sales
+      assert bar_chart.data == [{"Jan", 100}, {"Feb", 150}, {"Mar", 200}]
+      assert bar_chart.orientation == :horizontal
+      assert bar_chart.show_labels == true
+      assert bar_chart.visible == true
+    end
+
+    test "creates a bar_chart with all options" do
+      bar_chart = %Widgets.BarChart{
+        id: :monthly_stats,
+        data: [{"A", 10}, {"B", 20}, {"C", 30}],
+        width: 300,
+        height: 200,
+        orientation: :vertical,
+        show_labels: false
+      }
+
+      assert bar_chart.id == :monthly_stats
+      assert bar_chart.width == 300
+      assert bar_chart.height == 200
+      assert bar_chart.orientation == :vertical
+      assert bar_chart.show_labels == false
+    end
+
+    test "creates a bar_chart with empty data" do
+      bar_chart = %Widgets.BarChart{id: :empty, data: []}
+      assert bar_chart.data == []
+    end
+
+    test "creates a bar_chart with style" do
+      style = %Style{fg: :blue}
+      bar_chart = %Widgets.BarChart{
+        id: :styled,
+        data: [{"X", 1}],
+        style: style
+      }
+      assert bar_chart.style == style
+    end
+  end
+
+  describe "Widgets.LineChart" do
+    test "creates a line_chart with id and data" do
+      line_chart = %Widgets.LineChart{
+        id: :temperature,
+        data: [{"Mon", 20}, {"Tue", 22}, {"Wed", 18}]
+      }
+
+      assert line_chart.id == :temperature
+      assert line_chart.data == [{"Mon", 20}, {"Tue", 22}, {"Wed", 18}]
+      assert line_chart.show_dots == true
+      assert line_chart.show_area == false
+      assert line_chart.visible == true
+    end
+
+    test "creates a line_chart with all options" do
+      line_chart = %Widgets.LineChart{
+        id: :revenue,
+        data: [{"Q1", 1000}, {"Q2", 1500}, {"Q3", 1300}, {"Q4", 2000}],
+        width: 400,
+        height: 250,
+        show_dots: false,
+        show_area: true
+      }
+
+      assert line_chart.id == :revenue
+      assert line_chart.width == 400
+      assert line_chart.height == 250
+      assert line_chart.show_dots == false
+      assert line_chart.show_area == true
+    end
+
+    test "creates a line_chart with empty data" do
+      line_chart = %Widgets.LineChart{id: :empty, data: []}
+      assert line_chart.data == []
+    end
+
+    test "creates a line_chart with style" do
+      style = %Style{fg: :red}
+      line_chart = %Widgets.LineChart{
+        id: :styled,
+        data: [{"A", 1}],
+        style: style
+      }
+      assert line_chart.style == style
+    end
+  end
+
   describe "Layouts.VBox" do
     test "creates an empty VBox" do
       vbox = %Layouts.VBox{}
@@ -458,6 +639,150 @@ defmodule UnifiedUi.IURTest do
       assert metadata.id == :form_row
       assert metadata.spacing == 2
       assert metadata.align_items == :center
+    end
+  end
+
+  describe "Element protocol for Gauge" do
+    test "children/1 returns empty list for gauge" do
+      gauge = %Widgets.Gauge{id: :cpu, value: 75}
+      assert Element.children(gauge) == []
+    end
+
+    test "metadata/1 returns gauge properties" do
+      gauge = %Widgets.Gauge{
+        id: :memory,
+        value: 50,
+        min: 0,
+        max: 100,
+        label: "Memory Usage"
+      }
+
+      metadata = Element.metadata(gauge)
+
+      assert metadata.type == :gauge
+      assert metadata.id == :memory
+      assert metadata.value == 50
+      assert metadata.min == 0
+      assert metadata.max == 100
+      assert metadata.label == "Memory Usage"
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :cyan}
+      gauge = %Widgets.Gauge{id: :styled, value: 100, style: style}
+      metadata = Element.metadata(gauge)
+
+      assert metadata.style == style
+    end
+  end
+
+  describe "Element protocol for Sparkline" do
+    test "children/1 returns empty list for sparkline" do
+      sparkline = %Widgets.Sparkline{id: :trend, data: [10, 20, 30]}
+      assert Element.children(sparkline) == []
+    end
+
+    test "metadata/1 returns sparkline properties" do
+      sparkline = %Widgets.Sparkline{
+        id: :cpu_trend,
+        data: [45, 50, 55, 60],
+        show_dots: true,
+        show_area: false
+      }
+
+      metadata = Element.metadata(sparkline)
+
+      assert metadata.type == :sparkline
+      assert metadata.id == :cpu_trend
+      assert metadata.data == [45, 50, 55, 60]
+      assert metadata.show_dots == true
+      assert metadata.show_area == false
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :green}
+      sparkline = %Widgets.Sparkline{id: :styled, data: [1, 2, 3], style: style}
+      metadata = Element.metadata(sparkline)
+
+      assert metadata.style == style
+    end
+  end
+
+  describe "Element protocol for BarChart" do
+    test "children/1 returns empty list for bar_chart" do
+      bar_chart = %Widgets.BarChart{
+        id: :sales,
+        data: [{"Jan", 100}, {"Feb", 150}]
+      }
+      assert Element.children(bar_chart) == []
+    end
+
+    test "metadata/1 returns bar_chart properties" do
+      bar_chart = %Widgets.BarChart{
+        id: :monthly_stats,
+        data: [{"A", 10}, {"B", 20}],
+        orientation: :vertical,
+        show_labels: true
+      }
+
+      metadata = Element.metadata(bar_chart)
+
+      assert metadata.type == :bar_chart
+      assert metadata.id == :monthly_stats
+      assert metadata.data == [{"A", 10}, {"B", 20}]
+      assert metadata.orientation == :vertical
+      assert metadata.show_labels == true
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :blue}
+      bar_chart = %Widgets.BarChart{
+        id: :styled,
+        data: [{"X", 1}],
+        style: style
+      }
+      metadata = Element.metadata(bar_chart)
+
+      assert metadata.style == style
+    end
+  end
+
+  describe "Element protocol for LineChart" do
+    test "children/1 returns empty list for line_chart" do
+      line_chart = %Widgets.LineChart{
+        id: :temperature,
+        data: [{"Mon", 20}, {"Tue", 22}]
+      }
+      assert Element.children(line_chart) == []
+    end
+
+    test "metadata/1 returns line_chart properties" do
+      line_chart = %Widgets.LineChart{
+        id: :revenue,
+        data: [{"Q1", 1000}, {"Q2", 1500}],
+        show_dots: false,
+        show_area: true
+      }
+
+      metadata = Element.metadata(line_chart)
+
+      assert metadata.type == :line_chart
+      assert metadata.id == :revenue
+      assert metadata.data == [{"Q1", 1000}, {"Q2", 1500}]
+      assert metadata.show_dots == false
+      assert metadata.show_area == true
+    end
+
+    test "metadata/1 includes style when present" do
+      style = %Style{fg: :red}
+      line_chart = %Widgets.LineChart{
+        id: :styled,
+        data: [{"A", 1}],
+        style: style
+      }
+      metadata = Element.metadata(line_chart)
+
+      assert metadata.style == style
     end
   end
 

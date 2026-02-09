@@ -213,6 +213,231 @@ defmodule UnifiedUi.Renderers.Web do
     ~s(<input#{attrs} />)
   end
 
+  # Data visualization converters
+
+  defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do
+    # Calculate gauge dimensions
+    min_val = gauge.min || 0
+    max_val = gauge.max || 100
+    value = max(min_val, min(max_val, gauge.value))
+    range = max_val - min_val
+    percentage = if range > 0, do: (value - min_val) / range * 100, else: 0
+
+    width = gauge.width || 200
+    height = gauge.height || 20
+
+    # Build SVG gauge
+    svg_content = """
+    <svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="#{width}" height="#{height}" fill="#e0e0e0" rx="4"/>
+      <rect x="0" y="0" width="#{width * percentage / 100}" height="#{height}" fill="#4CAF50" rx="4">
+        <animate attributeName="width" from="0" to="#{width * percentage / 100}" dur="0.5s" fill="freeze"/>
+      </rect>
+      <text x="#{width / 2}" y="#{height / 2 + 5}" text-anchor="middle" font-size="12" fill="#333">#{value}/#{max_val}</text>
+    </svg>
+    """
+
+    # Wrap with label if present
+    if gauge.label do
+      ~s(<div class="gauge-container">) <>
+      escape_html(gauge.label) <>
+      ~s(</div>) <>
+      svg_content
+    else
+      svg_content
+    end
+  end
+
+  defp convert_by_type(%Widgets.Sparkline{} = sparkline, :sparkline, _state) do
+    data = sparkline.data || []
+    width = sparkline.width || 200
+    height = sparkline.height || 50
+
+    # Generate SVG sparkline
+    svg_content = if length(data) > 1 do
+      min_val = Enum.min(data)
+      max_val = Enum.max(data)
+      range = max_val - min_val
+
+      # Build points for polyline
+      points = data
+      |> Enum.with_index()
+      |> Enum.map(fn {val, idx} ->
+        x = idx * (width / max(length(data) - 1, 1))
+        y = if range > 0 do
+          height - ((val - min_val) / range * height)
+        else
+          height / 2
+        end
+        "#{x},#{y}"
+      end)
+      |> Enum.join(" ")
+
+      # Build area polygon if show_area
+      area_polygon = if sparkline.show_area do
+        "<polygon points=\"0,#{height} " <> points <> " #{width},#{height}\" fill=\"rgba(76, 175, 80, 0.2)\"/>"
+      else
+        ""
+      end
+
+      # Build color
+      color = case sparkline.color do
+        :cyan -> "#00BCD4"
+        :green -> "#4CAF50"
+        :blue -> "#2196F3"
+        :red -> "#F44336"
+        :yellow -> "#FFEB3B"
+        _ -> "#4CAF50"
+      end
+
+      "<svg width=\"#{width}\" height=\"#{height}\" xmlns=\"http://www.w3.org/2000/svg\">" <>
+        area_polygon <>
+        "<polyline points=\"" <> points <> "\" fill=\"none\" stroke=\"" <> color <> "\" stroke-width=\"2\"/>" <>
+        "</svg>"
+    else
+      ~s(<span>No data</span>)
+    end
+
+    svg_content
+  end
+
+  defp convert_by_type(%Widgets.BarChart{} = chart, :bar_chart, _state) do
+    data = chart.data || []
+    width = chart.width || 300
+    height = chart.height || 200
+
+    # Generate SVG bar chart
+    svg_content = if length(data) > 0 do
+      max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max(fn -> 0 end)
+
+      bar_width = if chart.orientation == :horizontal do
+        width / max(length(data), 1) - 10
+      else
+        width / max(length(data), 1) - 10
+      end
+
+      bars = if chart.orientation == :horizontal do
+        # Horizontal bars
+        Enum.with_index(data)
+        |> Enum.map(fn {{label, value}, idx} ->
+          bar_width_px = if max_val > 0, do: (value / max_val * (width - 80)), else: 0
+          y = idx * 30 + 10
+          """
+            <text x="0" y="#{y + 15}" font-size="12">#{escape_html(label)}</text>
+            <rect x="70" y="#{y}" width="#{bar_width_px}" height="20" fill="#2196F3" rx="2">
+              <animate attributeName="width" from="0" to="#{bar_width_px}" dur="0.5s" fill="freeze"/>
+            </rect>
+            <text x="#{bar_width_px + 75}" y="#{y + 15}" font-size="12">#{value}</text>
+          """
+        end)
+        |> Enum.join("\n")
+      else
+        # Vertical bars
+        Enum.with_index(data)
+        |> Enum.map(fn {{label, value}, idx} ->
+          bar_height_px = if max_val > 0, do: (value / max_val * (height - 40)), else: 0
+          x = idx * (width / max(length(data), 1)) + 10
+          y = height - bar_height_px - 30
+          """
+            <rect x="#{x}" y="#{y}" width="#{bar_width}" height="#{bar_height_px}" fill="#2196F3" rx="2">
+              <animate attributeName="height" from="0" to="#{bar_height_px}" dur="0.5s" fill="freeze"/>
+              <animate attributeName="y" from="#{height - 30}" to="#{y}" dur="0.5s" fill="freeze"/>
+            </rect>
+            <text x="#{x + bar_width / 2}" y="#{height - 10}" text-anchor="middle" font-size="10">#{escape_html(String.slice(label, 0, 5))}</text>
+          """
+        end)
+        |> Enum.join("\n")
+      end
+
+      """
+      <svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">
+        #{bars}
+      </svg>
+      """
+    else
+      ~s(<span>No data</span>)
+    end
+
+    svg_content
+  end
+
+  defp convert_by_type(%Widgets.LineChart{} = chart, :line_chart, _state) do
+    data = chart.data || []
+    width = chart.width || 300
+    height = chart.height || 200
+
+    # Generate SVG line chart
+    svg_content = if length(data) > 1 do
+      min_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.min()
+      max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max()
+      range = max_val - min_val
+
+      # Build points for polyline
+      points = data
+      |> Enum.with_index()
+      |> Enum.map(fn {{_label, val}, idx} ->
+        x = idx * (width / max(length(data) - 1, 1))
+        y = if range > 0 do
+          height - 30 - ((val - min_val) / range * (height - 50))
+        else
+          height / 2
+        end
+        "#{x},#{y}"
+      end)
+      |> Enum.join(" ")
+
+      # Build area polygon if show_area
+      area_polygon = if chart.show_area do
+        "<polygon points=\"0,#{height - 30} " <> points <> " #{width},#{height - 30}\" fill=\"rgba(33, 150, 243, 0.2)\"/>"
+      else
+        ""
+      end
+
+      # Build dots if show_dots
+      dots = if chart.show_dots do
+        data
+        |> Enum.with_index()
+        |> Enum.map(fn {{_label, val}, idx} ->
+          x = idx * (width / max(length(data) - 1, 1))
+          y = if range > 0 do
+            height - 30 - ((val - min_val) / range * (height - 50))
+          else
+            height / 2
+          end
+          "<circle cx=\"#{x}\" cy=\"#{y}\" r=\"4\" fill=\"#2196F3\"/>"
+        end)
+        |> Enum.join("\n")
+      else
+        ""
+      end
+
+      # Build labels
+      labels = if length(data) <= 10 do
+        data
+        |> Enum.with_index()
+        |> Enum.map(fn {{label, _val}, idx} ->
+          x = idx * (width / max(length(data) - 1, 1))
+          escaped_label = escape_html(String.slice(label, 0, 6))
+          "<text x=\"#{x}\" y=\"#{height - 5}\" text-anchor=\"middle\" font-size=\"10\">#{escaped_label}</text>"
+        end)
+        |> Enum.join("\n")
+      else
+        ""
+      end
+
+      "<svg width=\"#{width}\" height=\"#{height}\" xmlns=\"http://www.w3.org/2000/svg\">" <>
+        area_polygon <>
+        "<polyline points=\"" <> points <> "\" fill=\"none\" stroke=\"#2196F3\" stroke-width=\"2\"/>" <>
+        dots <>
+        labels <>
+        "</svg>"
+    else
+      ~s(<span>No data</span>)
+    end
+
+    svg_content
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
