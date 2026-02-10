@@ -384,8 +384,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic widgets + 4 data visualization widgets = 8 total
-      assert length(widgets_section.entities) == 8
+      # 4 basic widgets + 4 data visualization widgets + 1 table = 9 total
+      assert length(widgets_section.entities) == 9
     end
 
     test "widget entities are accessible from extension" do
@@ -404,6 +404,11 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       assert %Spark.Dsl.Entity{name: :sparkline} = UnifiedUi.Dsl.Entities.DataViz.sparkline_entity()
       assert %Spark.Dsl.Entity{name: :bar_chart} = UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity()
       assert %Spark.Dsl.Entity{name: :line_chart} = UnifiedUi.Dsl.Entities.DataViz.line_chart_entity()
+    end
+
+    test "table widget entity is accessible from extension" do
+      # Table widget entity function should be callable
+      assert %Spark.Dsl.Entity{name: :table} = UnifiedUi.Dsl.Entities.Tables.table_entity()
     end
   end
 

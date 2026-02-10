@@ -29,8 +29,8 @@ defmodule UnifiedUiTest do
       assert File.dir?("lib/unified_ui/iur")
     end
 
-    test "lib/unified_ui/renderers directory exists" do
-      assert File.dir?("lib/unified_ui/renderers")
+    test "lib/unified_ui/adapters directory exists" do
+      assert File.dir?("lib/unified_ui/adapters")
     end
   end
 
@@ -55,8 +55,8 @@ defmodule UnifiedUiTest do
       assert File.dir?("test/unified_ui/iur")
     end
 
-    test "test/unified_ui/renderers directory exists" do
-      assert File.dir?("test/unified_ui/renderers")
+    test "test/unified_ui/adapters directory exists" do
+      assert File.dir?("test/unified_ui/adapters")
     end
   end
 

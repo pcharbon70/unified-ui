@@ -31,8 +31,8 @@ defmodule UnifiedUi.Integration.Phase3Test do
   use ExUnit.Case, async: false
 
   alias UnifiedUi.IUR.{Layouts, Widgets, Element}
-  alias UnifiedUi.Renderers.{Terminal, Desktop, Web, Coordinator}
-  alias UnifiedUi.Renderers.{Terminal.Events, Desktop.Events, Web.Events}
+  alias UnifiedUi.Adapters.{Terminal, Desktop, Web, Coordinator}
+  alias UnifiedUi.Adapters.{Terminal.Events, Desktop.Events, Web.Events}
   alias UnifiedUi.Signals
 
   # ============================================================================
@@ -670,9 +670,9 @@ defmodule UnifiedUi.Integration.Phase3Test do
     end
 
     test "Renderer selection works for each platform" do
-      assert {:ok, UnifiedUi.Renderers.Terminal} = Coordinator.select_renderer(:terminal)
-      assert {:ok, UnifiedUi.Renderers.Desktop} = Coordinator.select_renderer(:desktop)
-      assert {:ok, UnifiedUi.Renderers.Web} = Coordinator.select_renderer(:web)
+      assert {:ok, UnifiedUi.Adapters.Terminal} = Coordinator.select_renderer(:terminal)
+      assert {:ok, UnifiedUi.Adapters.Desktop} = Coordinator.select_renderer(:desktop)
+      assert {:ok, UnifiedUi.Adapters.Web} = Coordinator.select_renderer(:web)
     end
 
     test "Invalid platform returns error" do

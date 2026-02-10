@@ -263,6 +263,47 @@ defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.LineChart do
   end
 end
 
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Column do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_column), do: []
+
+  def metadata(column) do
+    %{
+      type: :column,
+      key: column.key,
+      header: column.header,
+      sortable: column.sortable,
+      formatter: column.formatter,
+      width: column.width,
+      align: column.align
+    }
+  end
+end
+
+defimpl UnifiedUi.IUR.Element, for: UnifiedUi.IUR.Widgets.Table do
+  import UnifiedUi.IUR.ElementHelpers
+
+  def children(_table), do: []
+
+  def metadata(table) do
+    %{
+      type: :table,
+      id: table.id,
+      data: table.data,
+      columns: table.columns,
+      selected_row: table.selected_row,
+      height: table.height,
+      on_row_select: table.on_row_select,
+      on_sort: table.on_sort,
+      sort_column: table.sort_column,
+      sort_direction: table.sort_direction,
+      visible: table.visible
+    }
+    |> build_metadata(style: table.style)
+  end
+end
+
 defimpl UnifiedUi.IUR.Element, for: Any do
   def children(_element), do: []
 

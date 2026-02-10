@@ -16,6 +16,8 @@ defmodule UnifiedUi.IUR.Widgets do
   * `Sparkline` - Display trend data in a compact format
   * `BarChart` - Display categorical data comparison
   * `LineChart` - Display time series or sequential data
+  * `Column` - Table column definition (nested within Table)
+  * `Table` - Display tabular data with rows and columns
 
   ## Common Fields
 
@@ -358,6 +360,135 @@ defmodule UnifiedUi.IUR.Widgets do
             height: integer() | nil,
             show_dots: boolean(),
             show_area: boolean(),
+            style: UnifiedUi.IUR.Style.t() | nil,
+            visible: boolean()
+          }
+  end
+
+  defmodule Column do
+    @moduledoc """
+    Column widget for table column definitions.
+
+    Columns define how to extract and display data from each row in a table.
+    They are nested within Table widgets and specify column properties.
+
+    ## Fields
+
+    * `key` - The atom key to access data from each row
+    * `header` - The header text to display for this column
+    * `sortable` - Whether this column can be sorted (default: true)
+    * `formatter` - Optional function to format cell values for display
+    * `width` - Width of the column in characters/percentage (optional)
+    * `align` - Text alignment (:left, :center, :right, default: :left)
+
+    ## Formatter Function
+
+    The formatter is an arity-1 function that receives the raw value
+    and should return a string for display:
+
+        formatter: fn date -> Calendar.strftime(date, "%Y-%m-%d") end
+
+    ## Examples
+
+        iex> %Column{key: :id, header: "ID", width: 5, align: :right}
+        %Column{key: :id, header: "ID", width: 5, align: :right, sortable: true, ...}
+
+        iex> %Column{key: :name, header: "Name", sortable: true}
+        %Column{key: :name, header: "Name", sortable: true, align: :left, ...}
+    """
+
+    @type formatter :: (any() -> String.t())
+    @type alignment :: :left | :center | :right
+
+    defstruct [:key, :header, :formatter, :width, sortable: true, align: :left]
+
+    @type t :: %__MODULE__{
+            key: atom(),
+            header: String.t(),
+            sortable: boolean(),
+            formatter: formatter() | nil,
+            width: integer() | nil,
+            align: alignment()
+          }
+  end
+
+  defmodule Table do
+    @moduledoc """
+    Table widget for displaying tabular data.
+
+    Tables are ideal for displaying structured data in rows and columns.
+    They support sorting, selection, and scrolling for large datasets.
+
+    ## Fields
+
+    * `id` - Required identifier for the table
+    * `data` - The data to display (list of maps, keyword lists, or structs)
+    * `columns` - List of column definitions (auto-generated if not provided)
+    * `selected_row` - Index of currently selected row (0-based, nil for none)
+    * `height` - Visible height in rows (enables scrolling if set)
+    * `on_row_select` - Signal to emit when a row is selected
+    * `on_sort` - Signal to emit when a column is sorted
+    * `sort_column` - The column key to sort by
+    * `sort_direction` - Sort direction (:asc or :desc, default: :asc)
+    * `style` - Optional style struct
+    * `visible` - Whether the table is visible (default: true)
+
+    ## Data Format
+
+    The table accepts data as a list of maps, keyword lists, or structs:
+
+        # List of maps
+        [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}]
+
+        # List of keyword lists
+        [[id: 1, name: "Alice"], [id: 2, name: "Bob"]]
+
+        # List of structs
+        [%User{id: 1, name: "Alice"}, %User{id: 2, name: "Bob"}]
+
+    ## Signal Format
+
+    The `on_row_select` and `on_sort` fields can be:
+    * An atom signal name: `:row_selected`
+    * A tuple with payload: `{:row_selected, %{index: 0, data: row}}`
+    * An MFA tuple: `{Module, :function, [args]}`
+
+    ## Examples
+
+        iex> %Table{id: :users, data: [%{id: 1, name: "Alice"}]}
+        %Table{id: :users, data: [%{id: 1, name: "Alice"}], columns: nil, ...}
+
+        iex> %Table{id: :orders, data: @orders, height: 10, on_row_select: :order_selected}
+        %Table{id: :orders, data: @orders, height: 10, on_row_select: :order_selected, ...}
+    """
+
+    @type row_data :: map() | keyword()
+    @type signal :: atom() | {atom(), map()} | {atom(), atom(), list()}
+
+    defstruct [
+      :id,
+      :data,
+      :columns,
+      :selected_row,
+      :height,
+      :on_row_select,
+      :on_sort,
+      :sort_column,
+      sort_direction: :asc,
+      style: nil,
+      visible: true
+    ]
+
+    @type t :: %__MODULE__{
+            id: atom(),
+            data: [row_data()],
+            columns: [Column.t()] | nil,
+            selected_row: integer() | nil,
+            height: integer() | nil,
+            on_row_select: signal() | nil,
+            on_sort: signal() | nil,
+            sort_column: atom() | nil,
+            sort_direction: :asc | :desc,
             style: UnifiedUi.IUR.Style.t() | nil,
             visible: boolean()
           }
