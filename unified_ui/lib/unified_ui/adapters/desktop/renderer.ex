@@ -417,6 +417,278 @@ defmodule UnifiedUi.Adapters.Desktop do
     }}
   end
 
+  # Navigation widget converters
+
+  defp convert_by_type(%Widgets.MenuItem{} = item, :menu_item, _state) do
+    # Build label text with icon and shortcut
+    label_text = item.label
+
+    # Build base props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, nil)
+
+    # Create base widget for menu item
+    base_widget = build_label(label_text, props)
+
+    # Wrap with metadata
+    {:menu_item, base_widget, %{
+      id: item.id,
+      label: item.label,
+      action: item.action,
+      disabled: item.disabled,
+      icon: item.icon,
+      shortcut: item.shortcut,
+      has_submenu: item.submenu != nil,
+      submenu: item.submenu
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Menu{} = menu, :menu, state) do
+    # Convert menu items
+    items = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+
+    # Build container props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, menu.style)
+
+    # Add position prop
+    props = if menu.position, do: [{:position, menu.position} | props], else: props
+
+    # Add title prop if present
+    props = if menu.title, do: [{:title, menu.title} | props], else: props
+
+    # Create menu container widget
+    base_widget = %{
+      type: :menu,
+      id: menu.id,
+      props: props,
+      children: items
+    }
+
+    # Wrap with metadata
+    {:menu, base_widget, %{
+      id: menu.id,
+      title: menu.title,
+      position: menu.position
+    }}
+  end
+
+  defp convert_by_type(%Widgets.ContextMenu{} = menu, :context_menu, state) do
+    # Convert menu items
+    items = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+
+    # Build container props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, menu.style)
+
+    # Add trigger_on prop
+    props = [{:trigger_on, menu.trigger_on} | props]
+
+    # Create context menu container widget
+    base_widget = %{
+      type: :context_menu,
+      id: menu.id,
+      props: props,
+      children: items
+    }
+
+    # Wrap with metadata
+    {:context_menu, base_widget, %{
+      id: menu.id,
+      trigger_on: menu.trigger_on
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Tab{} = tab, :tab, _state) do
+    # Build label text with icon
+    label_text = tab.label
+
+    # Build base props
+    props = []
+
+    # Add disabled state
+    props = if tab.disabled, do: [{:disabled, true} | props], else: props
+
+    # Add closable state
+    props = if tab.closable, do: [{:closable, true} | props], else: props
+
+    # Add icon if present
+    props = if tab.icon, do: [{:icon, tab.icon} | props], else: props
+
+    # Create tab header widget
+    base_widget = %{
+      type: :tab_header,
+      id: tab.id,
+      props: [label: label_text] ++ props,
+      children: []
+    }
+
+    # Wrap with metadata
+    {:tab, base_widget, %{
+      id: tab.id,
+      label: tab.label,
+      icon: tab.icon,
+      disabled: tab.disabled,
+      closable: tab.closable,
+      content: tab.content
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Tabs{} = tabs, :tabs, state) do
+    # Convert tab headers
+    tab_headers = Enum.map(tabs.tabs || [], fn tab ->
+      convert_iur(tab, state)
+    end)
+
+    # Get active tab content
+    active_content = if tabs.active_tab do
+      Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
+      |> case do
+        nil -> nil
+        tab ->
+          # Only convert content if it exists
+          if tab.content do
+            convert_iur(tab.content, state)
+          else
+            nil
+          end
+      end
+    else
+      nil
+    end
+
+    # Build container props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, tabs.style)
+
+    # Add position prop
+    props = if tabs.position, do: [{:position, tabs.position} | props], else: props
+
+    # Add active_tab prop
+    props = [{:active_tab, tabs.active_tab} | props]
+
+    # Build children list (tab headers + active content)
+    children = tab_headers ++ if(active_content, do: [active_content], else: [])
+
+    # Create tabs container widget
+    base_widget = %{
+      type: :tabs,
+      id: tabs.id,
+      props: props,
+      children: children
+    }
+
+    # Wrap with metadata
+    {:tabs, base_widget, %{
+      id: tabs.id,
+      active_tab: tabs.active_tab,
+      position: tabs.position,
+      on_change: tabs.on_change,
+      tabs: tabs.tabs
+    }}
+  end
+
+  defp convert_by_type(%Widgets.TreeNode{} = node, :tree_node, state) do
+    # Build label text
+    label_text = node.label
+
+    # Build base props
+    props = []
+
+    # Add expanded state
+    props = [{:expanded, node.expanded} | props]
+
+    # Add selectable state
+    props = [{:selectable, node.selectable} | props]
+
+    # Add icon if present
+    props = if node.icon, do: [{:icon, node.icon} | props], else: props
+
+    # Add icon_expanded if present
+    props = if node.icon_expanded, do: [{:icon_expanded, node.icon_expanded} | props], else: props
+
+    # Convert children if any
+    children = if node.children do
+      Enum.map(node.children, fn child ->
+        convert_iur(child, state)
+      end)
+    else
+      []
+    end
+
+    # Create tree node widget
+    base_widget = %{
+      type: :tree_node,
+      id: node.id,
+      props: [label: label_text] ++ props,
+      children: children
+    }
+
+    # Wrap with metadata
+    {:tree_node, base_widget, %{
+      id: node.id,
+      label: node.label,
+      value: node.value,
+      expanded: node.expanded,
+      icon: node.icon,
+      icon_expanded: node.icon_expanded,
+      selectable: node.selectable,
+      has_children: node.children != nil
+    }}
+  end
+
+  defp convert_by_type(%Widgets.TreeView{} = tree, :tree_view, state) do
+    # Convert root nodes
+    root_nodes = Enum.map(tree.root_nodes || [], fn node ->
+      convert_iur(node, state)
+    end)
+
+    # Build container props
+    props = []
+
+    # Add style props if present
+    props = Style.add_props(props, tree.style)
+
+    # Add selected_node prop
+    props = if tree.selected_node, do: [{:selected_node, tree.selected_node} | props], else: props
+
+    # Add expanded_nodes prop
+    props = if tree.expanded_nodes, do: [{:expanded_nodes, tree.expanded_nodes} | props], else: props
+
+    # Add show_root prop
+    props = [{:show_root, tree.show_root} | props]
+
+    # Create tree view container widget
+    base_widget = %{
+      type: :tree_view,
+      id: tree.id,
+      props: props,
+      children: root_nodes
+    }
+
+    # Wrap with metadata
+    {:tree_view, base_widget, %{
+      id: tree.id,
+      selected_node: tree.selected_node,
+      expanded_nodes: tree.expanded_nodes,
+      on_select: tree.on_select,
+      on_toggle: tree.on_toggle,
+      show_root: tree.show_root
+    }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

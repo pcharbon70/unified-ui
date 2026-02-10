@@ -554,6 +554,246 @@ defmodule UnifiedUi.Adapters.Terminal do
     }}
   end
 
+  # Navigation widget converters
+
+  defp convert_by_type(%Widgets.MenuItem{} = item, :menu_item, _state) do
+    # Build label with optional icon and shortcut
+    icon_part = if item.icon, do: "[#{item.icon}] ", else: ""
+    shortcut_part = if item.shortcut, do: " (#{item.shortcut})", else: ""
+    disabled_indicator = if item.disabled, do: "× ", else: ""
+    submenu_indicator = if item.submenu != nil, do: " >", else: ""
+
+    label_text = "#{disabled_indicator}#{icon_part}#{item.label}#{shortcut_part}#{submenu_indicator}"
+
+    # Create text node
+    text_node = TermUI.Component.Helpers.text(label_text)
+
+    # Wrap with metadata
+    {:menu_item, text_node, %{
+      id: item.id,
+      label: item.label,
+      action: item.action,
+      disabled: item.disabled,
+      icon: item.icon,
+      shortcut: item.shortcut,
+      has_submenu: item.submenu != nil,
+      submenu: item.submenu
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Menu{} = menu, :menu, state) do
+    # Convert menu items
+    items = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+
+    # Build menu title line if present
+    title_line = if menu.title do
+      title_text = if menu.position == :top do
+        "── #{menu.title} ──"
+      else
+        "#{menu.title}"
+      end
+      [TermUI.Component.Helpers.text(title_text)]
+    else
+      []
+    end
+
+    # Combine title and items
+    all_children = title_line ++ items
+
+    # Create vertical stack for menu
+    menu_node = TermUI.Component.Helpers.stack(:vertical, all_children, spacing: 0)
+
+    # Apply style if present
+    style = Style.convert_style(menu.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(menu_node, style)
+    else
+      menu_node
+    end
+
+    # Wrap with metadata
+    {:menu, styled_node, %{
+      id: menu.id,
+      title: menu.title,
+      position: menu.position
+    }}
+  end
+
+  defp convert_by_type(%Widgets.ContextMenu{} = menu, :context_menu, state) do
+    # Convert menu items (same as regular menu)
+    items = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+
+    # Create vertical stack for context menu
+    menu_node = TermUI.Component.Helpers.stack(:vertical, items, spacing: 0)
+
+    # Apply style if present
+    style = Style.convert_style(menu.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(menu_node, style)
+    else
+      menu_node
+    end
+
+    # Wrap with metadata for context menu handling
+    {:context_menu, styled_node, %{
+      id: menu.id,
+      trigger_on: menu.trigger_on
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Tab{} = tab, :tab, _state) do
+    # Build tab label with icon
+    icon_part = if tab.icon, do: "[#{tab.icon}] ", else: ""
+    disabled_indicator = if tab.disabled, do: "(×) ", else: ""
+    closable_indicator = if tab.closable, do: " ×", else: ""
+
+    label_text = "#{disabled_indicator}#{icon_part}#{tab.label}#{closable_indicator}"
+
+    # Create text node for tab
+    text_node = TermUI.Component.Helpers.text(label_text)
+
+    # Wrap with metadata
+    {:tab, text_node, %{
+      id: tab.id,
+      label: tab.label,
+      icon: tab.icon,
+      disabled: tab.disabled,
+      closable: tab.closable,
+      content: tab.content
+    }}
+  end
+
+  defp convert_by_type(%Widgets.Tabs{} = tabs, :tabs, state) do
+    # Convert tab headers only
+    tab_headers = Enum.map(tabs.tabs || [], fn tab ->
+      convert_iur(tab, state)
+    end)
+
+    # Build tab bar as horizontal stack
+    tab_bar = TermUI.Component.Helpers.stack(:horizontal, tab_headers, spacing: 2)
+
+    # Apply style if present
+    style = Style.convert_style(tabs.style)
+    styled_tab_bar = if style do
+      TermUI.Component.Helpers.styled(tab_bar, style)
+    else
+      tab_bar
+    end
+
+    # Get active tab content
+    active_content = if tabs.active_tab do
+      Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
+      |> case do
+        nil -> nil
+        tab ->
+          # Only convert content if it exists
+          if tab.content do
+            convert_iur(tab.content, state)
+          else
+            nil
+          end
+      end
+    else
+      nil
+    end
+
+    # Combine tab bar and active content
+    children = [styled_tab_bar | if(active_content, do: [active_content], else: [])]
+
+    tabs_node = TermUI.Component.Helpers.stack(:vertical, children, spacing: 1)
+
+    # Wrap with metadata
+    {:tabs, tabs_node, %{
+      id: tabs.id,
+      active_tab: tabs.active_tab,
+      position: tabs.position,
+      on_change: tabs.on_change,
+      tabs: tabs.tabs
+    }}
+  end
+
+  defp convert_by_type(%Widgets.TreeNode{} = node, :tree_node, state) do
+    # Build tree node label with expand/collapse indicator
+    expand_indicator = if node.children != nil do
+      if node.expanded, do: "[-] ", else: "[+] "
+    else
+      "    "
+    end
+
+    icon_part = if node.icon do
+      icon_to_use = if node.expanded and node.icon_expanded do
+        node.icon_expanded
+      else
+        node.icon
+      end
+      "[#{icon_to_use}] "
+    else
+      ""
+    end
+
+    label_text = "#{expand_indicator}#{icon_part}#{node.label}"
+
+    # Create text node for tree node
+    text_node = TermUI.Component.Helpers.text(label_text)
+
+    # Convert children if expanded
+    child_nodes = if node.expanded and node.children != nil do
+      Enum.map(node.children, fn child ->
+        # Indent child nodes
+        child_node = convert_iur(child, state)
+        # Add indentation by wrapping in a styled container
+        child_node
+      end)
+    else
+      []
+    end
+
+    # Wrap with metadata
+    {:tree_node, text_node, %{
+      id: node.id,
+      label: node.label,
+      value: node.value,
+      expanded: node.expanded,
+      icon: node.icon,
+      icon_expanded: node.icon_expanded,
+      selectable: node.selectable,
+      has_children: node.children != nil,
+      children: child_nodes
+    }}
+  end
+
+  defp convert_by_type(%Widgets.TreeView{} = tree, :tree_view, state) do
+    # Convert root nodes
+    root_nodes = Enum.map(tree.root_nodes || [], fn node ->
+      convert_iur(node, state)
+    end)
+
+    # Create vertical stack for tree
+    tree_node = TermUI.Component.Helpers.stack(:vertical, root_nodes, spacing: 0)
+
+    # Apply style if present
+    style = Style.convert_style(tree.style)
+    styled_node = if style do
+      TermUI.Component.Helpers.styled(tree_node, style)
+    else
+      tree_node
+    end
+
+    # Wrap with metadata
+    {:tree_view, styled_node, %{
+      id: tree.id,
+      selected_node: tree.selected_node,
+      expanded_nodes: tree.expanded_nodes,
+      on_select: tree.on_select,
+      on_toggle: tree.on_toggle,
+      show_root: tree.show_root
+    }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

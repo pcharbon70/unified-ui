@@ -531,6 +531,297 @@ defmodule UnifiedUi.Adapters.Web do
     table_html
   end
 
+  # Navigation widget converters
+
+  defp convert_by_type(%Widgets.MenuItem{} = item, :menu_item, _state) do
+    label = escape_html(item.label)
+
+    # Build attributes list
+    attrs_list = []
+
+    # Add disabled attribute
+    attrs_list = if item.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
+
+    # Add phx-click binding if action is present
+    attrs_list = if item.action do
+      event_name = atom_to_event_name(item.action)
+      [{"phx-click", event_name} | attrs_list]
+    else
+      attrs_list
+    end
+
+    # Add data attributes for metadata
+    attrs_list = if item.id, do: [{"data-id", item.id} | attrs_list], else: attrs_list
+    attrs_list = if item.shortcut, do: [{"data-shortcut", item.shortcut} | attrs_list], else: attrs_list
+    attrs_list = if item.icon, do: [{"data-icon", item.icon} | attrs_list], else: attrs_list
+    attrs_list = if item.submenu != nil, do: [{"data-has-submenu", "true"} | attrs_list], else: attrs_list
+
+    # Build icon HTML if present
+    icon_html = if item.icon do
+      ~s(<span class="menu-icon">[#{escape_html(to_string(item.icon))}]</span>)
+    else
+      ""
+    end
+
+    # Build shortcut HTML if present
+    shortcut_html = if item.shortcut do
+      ~s(<span class="menu-shortcut">#{escape_html(item.shortcut)}</span>)
+    else
+      ""
+    end
+
+    # Build submenu indicator
+    submenu_html = if item.submenu != nil do
+      ~s(<span class="submenu-indicator">&#9654;</span>)
+    else
+      ""
+    end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<li class="menu-item"#{attrs}>#{icon_html}<span class="menu-label">#{label}</span>#{shortcut_html}#{submenu_html}</li>)
+  end
+
+  defp convert_by_type(%Widgets.Menu{} = menu, :menu, state) do
+    # Build attributes list
+    attrs_list = []
+
+    # Add id if present
+    attrs_list = if menu.id, do: [{"id", menu.id} | attrs_list], else: attrs_list
+
+    # Add class based on position
+    position_class = if menu.position, do: " menu-#{menu.position}", else: ""
+    attrs_list = [{"class", "unified-menu#{position_class}"} | attrs_list]
+
+    # Add style
+    style = Style.to_css(menu.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+
+    # Build menu title if present
+    title_html = if menu.title do
+      ~s(<div class="menu-title">#{escape_html(menu.title)}</div>)
+    else
+      ""
+    end
+
+    # Convert menu items
+    items_html = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+    |> Enum.join("\n")
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<nav#{attrs}>#{title_html}<ul class="menu-items">#{items_html}</ul></nav>)
+  end
+
+  defp convert_by_type(%Widgets.ContextMenu{} = menu, :context_menu, state) do
+    # Build attributes list
+    attrs_list = [{"class", "unified-context-menu"}]
+
+    # Add id if present
+    attrs_list = if menu.id, do: [{"id", menu.id} | attrs_list], else: attrs_list
+
+    # Add data attribute for trigger
+    attrs_list = [{"data-trigger-on", menu.trigger_on} | attrs_list]
+
+    # Add style
+    style = Style.to_css(menu.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+
+    # Convert menu items
+    items_html = Enum.map(menu.items || [], fn item ->
+      convert_iur(item, state)
+    end)
+    |> Enum.join("\n")
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}><ul class="context-menu-items">#{items_html}</ul></div>)
+  end
+
+  defp convert_by_type(%Widgets.Tab{} = tab, :tab, _state) do
+    label = escape_html(tab.label)
+
+    # Build attributes list
+    attrs_list = [{"data-tab-id", tab.id}]
+
+    # Add disabled attribute
+    attrs_list = if tab.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
+
+    # Add data attribute for closable
+    attrs_list = if tab.closable, do: [{"data-closable", "true"} | attrs_list], else: attrs_list
+
+    # Build icon HTML if present
+    icon_html = if tab.icon do
+      ~s(<span class="tab-icon">[#{escape_html(to_string(tab.icon))}]</span>)
+    else
+      ""
+    end
+
+    # Build close button HTML if closable
+    close_html = if tab.closable do
+      ~s(<span class="tab-close" data-close-tab="#{tab.id}">&times;</span>)
+    else
+      ""
+    end
+
+    disabled_class = if tab.disabled, do: " disabled", else: ""
+
+    ~s(<button class="tab-button#{disabled_class}"#{build_attributes(attrs_list)}>#{icon_html}<span class="tab-label">#{label}</span>#{close_html}</button>)
+  end
+
+  defp convert_by_type(%Widgets.Tabs{} = tabs, :tabs, state) do
+    # Build attributes list
+    attrs_list = [{"class", "unified-tabs"}]
+
+    # Add id if present
+    attrs_list = if tabs.id, do: [{"id", tabs.id} | attrs_list], else: attrs_list
+
+    # Add data attribute for active tab
+    attrs_list = if tabs.active_tab, do: [{"data-active-tab", tabs.active_tab} | attrs_list], else: attrs_list
+
+    # Add data attribute for position
+    attrs_list = if tabs.position, do: [{"data-position", tabs.position} | attrs_list], else: attrs_list
+
+    # Add phx-change binding if on_change is present
+    attrs_list = if tabs.on_change do
+      event_name = atom_to_event_name(tabs.on_change)
+      [{"phx-change", event_name} | attrs_list]
+    else
+      attrs_list
+    end
+
+    # Add style
+    style = Style.to_css(tabs.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+
+    # Build position class
+    position_class = if tabs.position, do: " tabs-#{tabs.position}", else: ""
+
+    # Convert tab headers
+    tab_headers_html = Enum.map(tabs.tabs || [], fn tab ->
+      convert_iur(tab, state)
+    end)
+    |> Enum.join("\n")
+
+    # Get active tab content
+    active_content_html = if tabs.active_tab do
+      Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
+      |> case do
+        nil -> ""
+        tab ->
+          # Only convert content if it exists
+          if tab.content do
+            convert_iur(tab.content, state)
+          else
+            ""
+          end
+      end
+    else
+      ""
+    end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}><div class="tab-bar#{position_class}">#{tab_headers_html}</div><div class="tab-content">#{active_content_html}</div></div>)
+  end
+
+  defp convert_by_type(%Widgets.TreeNode{} = node, :tree_node, state) do
+    label = escape_html(node.label)
+
+    # Build attributes list
+    attrs_list = [{"data-node-id", node.id}]
+
+    # Add data attribute for expanded state
+    attrs_list = [{"data-expanded", node.expanded} | attrs_list]
+
+    # Add data attribute for selectable
+    attrs_list = [{"data-selectable", node.selectable} | attrs_list]
+
+    # Build icon HTML if present
+    icon_html = if node.icon do
+      icon_to_use = if node.expanded and node.icon_expanded do
+        node.icon_expanded
+      else
+        node.icon
+      end
+      ~s(<span class="tree-icon">[#{escape_html(to_string(icon_to_use))}]</span>)
+    else
+      ""
+    end
+
+    # Build expand/collapse button if has children
+    toggle_html = if node.children != nil do
+      if node.expanded do
+        ~s(<span class="tree-toggle tree-toggle-expanded" data-toggle="#{node.id}">[-]</span>)
+      else
+        ~s(<span class="tree-toggle tree-toggle-collapsed" data-toggle="#{node.id}">[+]</span>)
+      end
+    else
+      ~s(<span class="tree-toggle-placeholder"></span>)
+    end
+
+    # Convert children if expanded
+    children_html = if node.expanded and node.children != nil do
+      Enum.map(node.children, fn child ->
+        convert_iur(child, state)
+      end)
+      |> Enum.join("\n")
+    else
+      ""
+    end
+
+    children_container = if children_html != "" do
+      ~s(<ul class="tree-children">#{children_html}</ul>)
+    else
+      ""
+    end
+
+    ~s(<li class="tree-node"#{build_attributes(attrs_list)}>#{toggle_html}#{icon_html}<span class="tree-label">#{label}</span>#{children_container}</li>)
+  end
+
+  defp convert_by_type(%Widgets.TreeView{} = tree, :tree_view, state) do
+    # Build attributes list
+    attrs_list = [{"class", "unified-tree-view"}]
+
+    # Add id if present
+    attrs_list = if tree.id, do: [{"id", tree.id} | attrs_list], else: attrs_list
+
+    # Add data attribute for selected node
+    attrs_list = if tree.selected_node, do: [{"data-selected-node", tree.selected_node} | attrs_list], else: attrs_list
+
+    # Add phx-click binding if on_select is present
+    attrs_list = if tree.on_select do
+      event_name = atom_to_event_name(tree.on_select)
+      [{"phx-click", event_name} | attrs_list]
+    else
+      attrs_list
+    end
+
+    # Add phx-click binding for toggle if on_toggle is present
+    attrs_list = if tree.on_toggle do
+      event_name = atom_to_event_name(tree.on_toggle)
+      [{"data-toggle-event", event_name} | attrs_list]
+    else
+      attrs_list
+    end
+
+    # Add style
+    style = Style.to_css(tree.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+
+    # Convert root nodes
+    root_nodes_html = Enum.map(tree.root_nodes || [], fn node ->
+      convert_iur(node, state)
+    end)
+    |> Enum.join("\n")
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}><ul class="tree-root">#{root_nodes_html}</ul></div>)
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

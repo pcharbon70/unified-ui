@@ -115,7 +115,12 @@ defmodule UnifiedUi.Dsl.Extension do
       UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
       UnifiedUi.Dsl.Entities.DataViz.line_chart_entity(),
       # Table widget
-      UnifiedUi.Dsl.Entities.Tables.table_entity()
+      UnifiedUi.Dsl.Entities.Tables.table_entity(),
+      # Navigation widgets
+      UnifiedUi.Dsl.Entities.Navigation.menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.context_menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tabs_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity()
     ],
     top_level?: true
   }
@@ -140,7 +145,12 @@ defmodule UnifiedUi.Dsl.Extension do
       UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
       UnifiedUi.Dsl.Entities.DataViz.line_chart_entity(),
       # Table widget
-      UnifiedUi.Dsl.Entities.Tables.table_entity()
+      UnifiedUi.Dsl.Entities.Tables.table_entity(),
+      # Navigation widgets
+      UnifiedUi.Dsl.Entities.Navigation.menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.context_menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tabs_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity()
     ]
   }
 

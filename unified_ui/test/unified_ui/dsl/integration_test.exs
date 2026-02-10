@@ -384,8 +384,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic widgets + 4 data visualization widgets + 1 table = 9 total
-      assert length(widgets_section.entities) == 9
+      # 4 basic widgets + 4 data visualization widgets + 1 table + 4 navigation widgets = 13 total
+      assert length(widgets_section.entities) == 13
     end
 
     test "widget entities are accessible from extension" do

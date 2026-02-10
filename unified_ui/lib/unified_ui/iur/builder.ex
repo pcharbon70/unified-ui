@@ -133,6 +133,22 @@ defmodule UnifiedUi.IUR.Builder do
     build_hbox(entity, dsl_state)
   end
 
+  def build_entity(%{name: :menu} = entity, dsl_state) do
+    build_menu(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :context_menu} = entity, dsl_state) do
+    build_context_menu(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :tabs} = entity, dsl_state) do
+    build_tabs(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :tree_view} = entity, dsl_state) do
+    build_tree_view(entity, dsl_state)
+  end
+
   def build_entity(_entity, _dsl_state) do
     # Unknown entity type, return nil
     nil
@@ -255,6 +271,162 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  # Navigation widget builders
+
+  @doc """
+  Builds a Menu IUR struct from a menu DSL entity.
+
+  Recursively builds all menu items.
+  """
+  @spec build_menu(map(), Dsl.t()) :: Widgets.Menu.t()
+  def build_menu(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    items = build_nested_entities(entity, dsl_state, :menu_items, &build_menu_item/2)
+
+    %Widgets.Menu{
+      id: Map.get(attrs, :id),
+      title: Map.get(attrs, :title),
+      position: Map.get(attrs, :position),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state),
+      items: items
+    }
+  end
+
+  @doc """
+  Builds a menu item IUR struct from a menu_item DSL entity.
+  """
+  @spec build_menu_item(map(), Dsl.t()) :: Widgets.MenuItem.t()
+  def build_menu_item(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    # Menu items can have submenus - check for nested entities
+    submenu = build_nested_entities(entity, dsl_state, :submenu, &build_menu_item/2)
+
+    %Widgets.MenuItem{
+      label: Map.get(attrs, :label),
+      id: Map.get(attrs, :id),
+      action: Map.get(attrs, :action),
+      disabled: Map.get(attrs, :disabled, false),
+      submenu: case submenu do
+        [] -> nil
+        items -> items
+      end,
+      icon: Map.get(attrs, :icon),
+      shortcut: Map.get(attrs, :shortcut),
+      visible: Map.get(attrs, :visible, true)
+    }
+  end
+
+  @doc """
+  Builds a ContextMenu IUR struct from a context_menu DSL entity.
+  """
+  @spec build_context_menu(map(), Dsl.t()) :: Widgets.ContextMenu.t()
+  def build_context_menu(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    items = build_nested_entities(entity, dsl_state, :items, &build_menu_item/2)
+
+    %Widgets.ContextMenu{
+      id: Map.get(attrs, :id),
+      trigger_on: Map.get(attrs, :trigger_on, :right_click),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state),
+      items: items
+    }
+  end
+
+  @doc """
+  Builds a Tabs IUR struct from a tabs DSL entity.
+
+  Recursively builds all tabs.
+  """
+  @spec build_tabs(map(), Dsl.t()) :: Widgets.Tabs.t()
+  def build_tabs(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    tabs = build_nested_entities(entity, dsl_state, :tabs, &build_tab/2)
+
+    %Widgets.Tabs{
+      id: Map.get(attrs, :id),
+      active_tab: Map.get(attrs, :active_tab),
+      position: Map.get(attrs, :position),
+      on_change: Map.get(attrs, :on_change),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state),
+      tabs: tabs
+    }
+  end
+
+  @doc """
+  Builds a Tab IUR struct from a tab DSL entity.
+  """
+  @spec build_tab(map(), Dsl.t()) :: Widgets.Tab.t()
+  def build_tab(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    # Tab content is nested children
+    content = build_children(entity, dsl_state)
+
+    %Widgets.Tab{
+      id: Map.get(attrs, :id),
+      label: Map.get(attrs, :label),
+      icon: Map.get(attrs, :icon),
+      disabled: Map.get(attrs, :disabled, false),
+      closable: Map.get(attrs, :closable, false),
+      visible: Map.get(attrs, :visible, true),
+      content: case content do
+        [] -> nil
+        [single] -> single
+        multiple -> multiple
+      end
+    }
+  end
+
+  @doc """
+  Builds a TreeView IUR struct from a tree_view DSL entity.
+
+  Recursively builds all tree nodes.
+  """
+  @spec build_tree_view(map(), Dsl.t()) :: Widgets.TreeView.t()
+  def build_tree_view(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    root_nodes = build_nested_entities(entity, dsl_state, :root_nodes, &build_tree_node/2)
+
+    %Widgets.TreeView{
+      id: Map.get(attrs, :id),
+      selected_node: Map.get(attrs, :selected_node),
+      expanded_nodes: Map.get(attrs, :expanded_nodes),
+      on_select: Map.get(attrs, :on_select),
+      on_toggle: Map.get(attrs, :on_toggle),
+      show_root: Map.get(attrs, :show_root, true),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state),
+      root_nodes: root_nodes
+    }
+  end
+
+  @doc """
+  Builds a TreeNode IUR struct from a tree_node DSL entity.
+  """
+  @spec build_tree_node(map(), Dsl.t()) :: Widgets.TreeNode.t()
+  def build_tree_node(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    # Tree nodes can have child nodes
+    children = build_nested_entities(entity, dsl_state, :children, &build_tree_node/2)
+
+    %Widgets.TreeNode{
+      id: Map.get(attrs, :id),
+      label: Map.get(attrs, :label),
+      value: Map.get(attrs, :value),
+      expanded: Map.get(attrs, :expanded, false),
+      icon: Map.get(attrs, :icon),
+      icon_expanded: Map.get(attrs, :icon_expanded),
+      selectable: Map.get(attrs, :selectable, true),
+      visible: Map.get(attrs, :visible, true),
+      children: case children do
+        [] -> nil
+        nodes -> nodes
+      end
+    }
+  end
+
   # Children building
 
   @doc """
@@ -273,6 +445,29 @@ defmodule UnifiedUi.IUR.Builder do
       entities when is_list(entities) ->
         Enum.map(entities, &build_entity(&1, dsl_state))
         |> Enum.reject(&is_nil/1)
+
+      _ ->
+        []
+    end
+  end
+
+  @doc """
+  Builds nested entities with a specific key.
+
+  Similar to build_children but for named nested entity collections
+  like menu_items, tabs, root_nodes, etc.
+  """
+  @spec build_nested_entities(map(), Dsl.t(), atom(), fun()) :: [struct()]
+  def build_nested_entities(entity, dsl_state, key, builder_fn) do
+    case Map.get(entity, :entities) do
+      nil ->
+        []
+
+      entities when is_list(entities) ->
+        # Find entities with the specified key
+        entities
+        |> Enum.filter(fn e -> Map.get(e, :name) == key end)
+        |> Enum.map(fn e -> builder_fn.(e, dsl_state) end)
 
       _ ->
         []

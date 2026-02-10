@@ -397,4 +397,525 @@ defmodule UnifiedUi.Adapters.TerminalTest do
       assert {:ok, _root} = State.get_root(state)
     end
   end
+
+  # ============================================================================
+  # Navigation Widget Tests
+  # ============================================================================
+
+  describe "convert_iur/2 - MenuItem" do
+    test "converts menu item without options" do
+      item = %Widgets.MenuItem{label: "Open"}
+
+      result = Terminal.convert_iur(item)
+
+      assert result != nil
+      assert {:menu_item, _node, _meta} = result
+    end
+
+    test "converts menu item with action" do
+      item = %Widgets.MenuItem{label: "Save", action: :save_file}
+
+      result = Terminal.convert_iur(item)
+
+      assert result != nil
+      assert {:menu_item, _node, meta} = result
+      assert meta.action == :save_file
+    end
+
+    test "converts menu item with icon and shortcut" do
+      item = %Widgets.MenuItem{
+        label: "Save",
+        icon: :floppy,
+        shortcut: "Ctrl+S"
+      }
+
+      result = Terminal.convert_iur(item)
+
+      assert result != nil
+      assert {:menu_item, _node, meta} = result
+      assert meta.icon == :floppy
+      assert meta.shortcut == "Ctrl+S"
+    end
+
+    test "converts disabled menu item" do
+      item = %Widgets.MenuItem{label: "Exit", disabled: true}
+
+      result = Terminal.convert_iur(item)
+
+      assert result != nil
+      assert {:menu_item, _node, meta} = result
+      assert meta.disabled == true
+    end
+
+    test "converts menu item with submenu" do
+      item = %Widgets.MenuItem{
+        label: "File",
+        submenu: [
+          %Widgets.MenuItem{label: "New"},
+          %Widgets.MenuItem{label: "Open"}
+        ]
+      }
+
+      result = Terminal.convert_iur(item)
+
+      assert result != nil
+      assert {:menu_item, _node, meta} = result
+      assert meta.has_submenu == true
+      assert length(meta.submenu) == 2
+    end
+  end
+
+  describe "convert_iur/2 - Menu" do
+    test "converts menu without title" do
+      menu = %Widgets.Menu{
+        id: :file_menu,
+        items: [
+          %Widgets.MenuItem{label: "New"}
+        ]
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:menu, _node, meta} = result
+      assert meta.id == :file_menu
+    end
+
+    test "converts menu with title" do
+      menu = %Widgets.Menu{
+        id: :edit_menu,
+        title: "Edit",
+        items: [
+          %Widgets.MenuItem{label: "Undo"}
+        ]
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:menu, _node, meta} = result
+      assert meta.title == "Edit"
+    end
+
+    test "converts menu with position" do
+      menu = %Widgets.Menu{
+        id: :top_menu,
+        position: :top,
+        items: []
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:menu, _node, meta} = result
+      assert meta.position == :top
+    end
+
+    test "converts menu with multiple items" do
+      menu = %Widgets.Menu{
+        id: :main_menu,
+        items: [
+          %Widgets.MenuItem{label: "File", action: :file},
+          %Widgets.MenuItem{label: "Edit", action: :edit},
+          %Widgets.MenuItem{label: "View", action: :view}
+        ]
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+    end
+  end
+
+  describe "convert_iur/2 - ContextMenu" do
+    test "converts context menu" do
+      menu = %Widgets.ContextMenu{
+        id: :context_menu,
+        items: [
+          %Widgets.MenuItem{label: "Copy", action: :copy},
+          %Widgets.MenuItem{label: "Paste", action: :paste}
+        ]
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:context_menu, _node, meta} = result
+      assert meta.id == :context_menu
+    end
+
+    test "converts context menu with trigger_on" do
+      menu = %Widgets.ContextMenu{
+        id: :right_click_menu,
+        trigger_on: :right_click,
+        items: []
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:context_menu, _node, meta} = result
+      assert meta.trigger_on == :right_click
+    end
+
+    test "converts context menu with long_press trigger" do
+      menu = %Widgets.ContextMenu{
+        id: :long_press_menu,
+        trigger_on: :long_press,
+        items: []
+      }
+
+      result = Terminal.convert_iur(menu)
+
+      assert result != nil
+      assert {:context_menu, _node, meta} = result
+      assert meta.trigger_on == :long_press
+    end
+  end
+
+  describe "convert_iur/2 - Tab" do
+    test "converts tab without options" do
+      tab = %Widgets.Tab{id: :home, label: "Home"}
+
+      result = Terminal.convert_iur(tab)
+
+      assert result != nil
+      assert {:tab, _node, meta} = result
+      assert meta.id == :home
+      assert meta.label == "Home"
+    end
+
+    test "converts tab with icon" do
+      tab = %Widgets.Tab{
+        id: :settings,
+        label: "Settings",
+        icon: :gear
+      }
+
+      result = Terminal.convert_iur(tab)
+
+      assert result != nil
+      assert {:tab, _node, meta} = result
+      assert meta.icon == :gear
+    end
+
+    test "converts disabled tab" do
+      tab = %Widgets.Tab{
+        id: :locked,
+        label: "Locked",
+        disabled: true
+      }
+
+      result = Terminal.convert_iur(tab)
+
+      assert result != nil
+      assert {:tab, _node, meta} = result
+      assert meta.disabled == true
+    end
+
+    test "converts closable tab" do
+      tab = %Widgets.Tab{
+        id: :document,
+        label: "Document.txt",
+        closable: true
+      }
+
+      result = Terminal.convert_iur(tab)
+
+      assert result != nil
+      assert {:tab, _node, meta} = result
+      assert meta.closable == true
+    end
+
+    test "converts tab with content" do
+      tab = %Widgets.Tab{
+        id: :dashboard,
+        label: "Dashboard",
+        content: %Widgets.Text{content: "Dashboard content"}
+      }
+
+      result = Terminal.convert_iur(tab)
+
+      assert result != nil
+      assert {:tab, _node, meta} = result
+      assert meta.content != nil
+    end
+  end
+
+  describe "convert_iur/2 - Tabs" do
+    test "converts tabs with active tab" do
+      tabs = %Widgets.Tabs{
+        id: :main_tabs,
+        active_tab: :home,
+        tabs: [
+          %Widgets.Tab{id: :home, label: "Home"},
+          %Widgets.Tab{id: :about, label: "About"}
+        ]
+      }
+
+      result = Terminal.convert_iur(tabs)
+
+      assert result != nil
+      assert {:tabs, _node, meta} = result
+      assert meta.id == :main_tabs
+      assert meta.active_tab == :home
+    end
+
+    test "converts tabs with position" do
+      tabs = %Widgets.Tabs{
+        id: :side_tabs,
+        position: :left,
+        tabs: [
+          %Widgets.Tab{id: :tab1, label: "Tab 1"}
+        ]
+      }
+
+      result = Terminal.convert_iur(tabs)
+
+      assert result != nil
+      assert {:tabs, _node, meta} = result
+      assert meta.position == :left
+    end
+
+    test "converts tabs with on_change handler" do
+      tabs = %Widgets.Tabs{
+        id: :switchable_tabs,
+        on_change: :tab_changed,
+        tabs: []
+      }
+
+      result = Terminal.convert_iur(tabs)
+
+      assert result != nil
+      assert {:tabs, _node, meta} = result
+      assert meta.on_change == :tab_changed
+    end
+
+    test "converts tabs with content" do
+      tabs = %Widgets.Tabs{
+        id: :content_tabs,
+        active_tab: :home,
+        tabs: [
+          %Widgets.Tab{
+            id: :home,
+            label: "Home",
+            content: %Widgets.Text{content: "Home content"}
+          }
+        ]
+      }
+
+      result = Terminal.convert_iur(tabs)
+
+      assert result != nil
+    end
+  end
+
+  describe "convert_iur/2 - TreeNode" do
+    test "converts leaf node" do
+      node = %Widgets.TreeNode{
+        id: :file1,
+        label: "main.ex"
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.id == :file1
+      assert meta.label == "main.ex"
+      assert meta.has_children == false
+    end
+
+    test "converts node with children" do
+      node = %Widgets.TreeNode{
+        id: :src,
+        label: "src",
+        children: [
+          %Widgets.TreeNode{id: :file1, label: "main.ex"}
+        ]
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.has_children == true
+    end
+
+    test "converts expanded node" do
+      node = %Widgets.TreeNode{
+        id: :lib,
+        label: "lib",
+        expanded: true,
+        children: []
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.expanded == true
+    end
+
+    test "converts collapsed node" do
+      node = %Widgets.TreeNode{
+        id: :config,
+        label: "config",
+        expanded: false,
+        children: []
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.expanded == false
+    end
+
+    test "converts node with icon" do
+      node = %Widgets.TreeNode{
+        id: :folder,
+        label: "My Folder",
+        icon: :folder,
+        icon_expanded: :folder_open,
+        children: []
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.icon == :folder
+      assert meta.icon_expanded == :folder_open
+    end
+
+    test "converts non-selectable node" do
+      node = %Widgets.TreeNode{
+        id: :readonly,
+        label: "Read Only",
+        selectable: false
+      }
+
+      result = Terminal.convert_iur(node)
+
+      assert result != nil
+      assert {:tree_node, _node, meta} = result
+      assert meta.selectable == false
+    end
+  end
+
+  describe "convert_iur/2 - TreeView" do
+    test "converts tree view with root nodes" do
+      tree = %Widgets.TreeView{
+        id: :file_tree,
+        root_nodes: [
+          %Widgets.TreeNode{id: :src, label: "src"},
+          %Widgets.TreeNode{id: :test, label: "test"}
+        ]
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.id == :file_tree
+    end
+
+    test "converts tree view with selected node" do
+      tree = %Widgets.TreeView{
+        id: :project_tree,
+        selected_node: :main_file,
+        root_nodes: []
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.selected_node == :main_file
+    end
+
+    test "converts tree view with expanded nodes" do
+      tree = %Widgets.TreeView{
+        id: :config_tree,
+        expanded_nodes: [:database, :server],
+        root_nodes: []
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.expanded_nodes == [:database, :server]
+    end
+
+    test "converts tree view with on_select handler" do
+      tree = %Widgets.TreeView{
+        id: :selectable_tree,
+        on_select: :node_selected,
+        root_nodes: []
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.on_select == :node_selected
+    end
+
+    test "converts tree view with on_toggle handler" do
+      tree = %Widgets.TreeView{
+        id: :toggleable_tree,
+        on_toggle: :node_toggled,
+        root_nodes: []
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.on_toggle == :node_toggled
+    end
+
+    test "converts tree view without showing root" do
+      tree = %Widgets.TreeView{
+        id: :hidden_root_tree,
+        show_root: false,
+        root_nodes: []
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+      assert {:tree_view, _node, meta} = result
+      assert meta.show_root == false
+    end
+
+    test "converts nested tree structure" do
+      tree = %Widgets.TreeView{
+        id: :project_tree,
+        root_nodes: [
+          %Widgets.TreeNode{
+            id: :src,
+            label: "src",
+            expanded: true,
+            children: [
+              %Widgets.TreeNode{
+                id: :my_app,
+                label: "my_app",
+                expanded: true,
+                children: [
+                  %Widgets.TreeNode{id: :app, label: "app.ex"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      result = Terminal.convert_iur(tree)
+
+      assert result != nil
+    end
+  end
 end
