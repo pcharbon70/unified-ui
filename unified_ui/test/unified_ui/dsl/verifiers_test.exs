@@ -20,7 +20,7 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
     StateReferenceVerifier
   }
 
-  alias UnifiedUi.IUR.{Widgets, Layouts}
+  alias UnifiedIUR.{Widgets, Layouts}
   alias UnifiedUi.Dsl.State
 
   # Helper to create a mock DSL state that matches Spark's structure

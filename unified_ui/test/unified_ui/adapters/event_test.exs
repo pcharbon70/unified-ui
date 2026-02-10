@@ -6,7 +6,7 @@ defmodule UnifiedUi.Adapters.EventTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Event
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   describe "to_signal/3" do
     test "creates click signal with element ID" do

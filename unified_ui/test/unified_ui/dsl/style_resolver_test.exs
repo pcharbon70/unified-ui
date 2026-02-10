@@ -13,7 +13,7 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
 
   alias UnifiedUi.Dsl.StyleResolver
   alias UnifiedUi.Dsl.Style, as: DslStyle
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Style
 
   # Helper to create a mock DSL state with styles
   defp create_dsl_state(styles_entities) do

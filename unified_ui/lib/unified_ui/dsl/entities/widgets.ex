@@ -24,7 +24,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
       end
   """
 
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   @doc false
   @button_entity %Spark.Dsl.Entity{

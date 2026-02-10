@@ -107,13 +107,13 @@ defmodule UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier do
     input_ids =
       dsl_state
       |> Verifier.get_entities(:widgets)
-      |> Enum.filter(&(&1.__struct__ == UnifiedUi.IUR.Widgets.TextInput))
+      |> Enum.filter(&(&1.__struct__ == UnifiedIUR.Widgets.TextInput))
       |> Enum.map(& &1.id)
 
     # Verify label :for attributes
     dsl_state
     |> Verifier.get_entities(:widgets)
-    |> Enum.filter(&(&1.__struct__ == UnifiedUi.IUR.Widgets.Label))
+    |> Enum.filter(&(&1.__struct__ == UnifiedIUR.Widgets.Label))
     |> Enum.each(fn label ->
       verify_label_for(module, label, input_ids)
     end)
@@ -176,12 +176,12 @@ defmodule UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier do
     entity_name = Keyword.get(entity.__meta__, :entity, "widget")
 
     # Check on_click for buttons
-    if entity.__struct__ == UnifiedUi.IUR.Widgets.Button and Map.get(entity, :on_click) do
+    if entity.__struct__ == UnifiedIUR.Widgets.Button and Map.get(entity, :on_click) do
       verify_handler(module, entity.on_click, :on_click, entity_name)
     end
 
     # Check on_change and on_submit for text_inputs
-    if entity.__struct__ == UnifiedUi.IUR.Widgets.TextInput do
+    if entity.__struct__ == UnifiedIUR.Widgets.TextInput do
       if Map.get(entity, :on_change) do
         verify_handler(module, entity.on_change, :on_change, entity_name)
       end

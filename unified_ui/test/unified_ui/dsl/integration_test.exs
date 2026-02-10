@@ -140,9 +140,9 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
   end
 
   describe "IUR Element protocol integration" do
-    alias UnifiedUi.IUR.Layouts.VBox
-    alias UnifiedUi.IUR.Widgets.Text
-    alias UnifiedUi.IUR.Widgets.Button
+    alias UnifiedIUR.Layouts.VBox
+    alias UnifiedIUR.Widgets.Text
+    alias UnifiedIUR.Widgets.Button
 
     test "VBox with children returns children via protocol" do
       vbox = %VBox{
@@ -152,13 +152,13 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         ]
       }
 
-      children = UnifiedUi.IUR.Element.children(vbox)
+      children = UnifiedIUR.Element.children(vbox)
       assert length(children) == 2
     end
 
     test "VBox metadata includes all properties" do
       vbox = %VBox{id: :main, spacing: 2, align_items: :center}
-      metadata = UnifiedUi.IUR.Element.metadata(vbox)
+      metadata = UnifiedIUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :main
@@ -168,12 +168,12 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
     test "Text widget returns empty children list" do
       text = %Text{content: "Hello"}
-      assert UnifiedUi.IUR.Element.children(text) == []
+      assert UnifiedIUR.Element.children(text) == []
     end
 
     test "Text widget metadata includes content" do
       text = %Text{content: "Test", id: :greeting}
-      metadata = UnifiedUi.IUR.Element.metadata(text)
+      metadata = UnifiedIUR.Element.metadata(text)
 
       assert metadata.type == :text
       assert metadata.id == :greeting
@@ -181,7 +181,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
     test "Button widget metadata includes label" do
       button = %Button{label: "Submit", id: :submit_btn}
-      metadata = UnifiedUi.IUR.Element.metadata(button)
+      metadata = UnifiedIUR.Element.metadata(button)
 
       assert metadata.type == :button
       assert metadata.label == "Submit"
@@ -208,7 +208,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
   describe "Widget entity integration" do
     alias UnifiedUi.Dsl.Entities.Widgets, as: WidgetEntities
-    alias UnifiedUi.IUR.Widgets
+    alias UnifiedIUR.Widgets
 
     test "Button entity creates correct IUR struct" do
       entity = WidgetEntities.button_entity()
@@ -271,8 +271,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         disabled: false
       }
 
-      assert UnifiedUi.IUR.Element.children(button) == []
-      metadata = UnifiedUi.IUR.Element.metadata(button)
+      assert UnifiedIUR.Element.children(button) == []
+      metadata = UnifiedIUR.Element.metadata(button)
 
       assert metadata.type == :button
       assert metadata.label == "Submit"
@@ -287,8 +287,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         id: :greeting
       }
 
-      assert UnifiedUi.IUR.Element.children(text) == []
-      metadata = UnifiedUi.IUR.Element.metadata(text)
+      assert UnifiedIUR.Element.children(text) == []
+      metadata = UnifiedIUR.Element.metadata(text)
 
       assert metadata.type == :text
       assert metadata.id == :greeting
@@ -301,8 +301,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         id: :email_label
       }
 
-      assert UnifiedUi.IUR.Element.children(label) == []
-      metadata = UnifiedUi.IUR.Element.metadata(label)
+      assert UnifiedIUR.Element.children(label) == []
+      metadata = UnifiedIUR.Element.metadata(label)
 
       assert metadata.type == :label
       assert metadata.for == :email_input
@@ -317,8 +317,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         placeholder: "user@example.com"
       }
 
-      assert UnifiedUi.IUR.Element.children(input) == []
-      metadata = UnifiedUi.IUR.Element.metadata(input)
+      assert UnifiedIUR.Element.children(input) == []
+      metadata = UnifiedIUR.Element.metadata(input)
 
       assert metadata.type == :text_input
       assert metadata.id == :email
@@ -332,10 +332,10 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       label = %Widgets.Label{for: :test, text: "Test", visible: true}
       input = %Widgets.TextInput{id: :test, visible: false}
 
-      button_meta = UnifiedUi.IUR.Element.metadata(button)
-      text_meta = UnifiedUi.IUR.Element.metadata(text)
-      label_meta = UnifiedUi.IUR.Element.metadata(label)
-      input_meta = UnifiedUi.IUR.Element.metadata(input)
+      button_meta = UnifiedIUR.Element.metadata(button)
+      text_meta = UnifiedIUR.Element.metadata(text)
+      label_meta = UnifiedIUR.Element.metadata(label)
+      input_meta = UnifiedIUR.Element.metadata(input)
 
       assert button_meta.visible == true
       assert text_meta.visible == false
@@ -414,7 +414,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
   describe "Layout entity integration" do
     alias UnifiedUi.Dsl.Entities.Layouts, as: LayoutEntities
-    alias UnifiedUi.IUR.Layouts
+    alias UnifiedIUR.Layouts
 
     test "VBox entity creates correct IUR struct" do
       entity = LayoutEntities.vbox_entity()
@@ -447,8 +447,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     end
 
     test "VBox IUR struct integrates with Element protocol" do
-      text = %UnifiedUi.IUR.Widgets.Text{content: "A"}
-      button = %UnifiedUi.IUR.Widgets.Button{label: "B", on_click: :b}
+      text = %UnifiedIUR.Widgets.Text{content: "A"}
+      button = %UnifiedIUR.Widgets.Button{label: "B", on_click: :b}
 
       vbox = %Layouts.VBox{
         id: :main,
@@ -457,8 +457,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         align_items: :center
       }
 
-      assert UnifiedUi.IUR.Element.children(vbox) == [text, button]
-      metadata = UnifiedUi.IUR.Element.metadata(vbox)
+      assert UnifiedIUR.Element.children(vbox) == [text, button]
+      metadata = UnifiedIUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :main
@@ -467,8 +467,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     end
 
     test "HBox IUR struct integrates with Element protocol" do
-      text = %UnifiedUi.IUR.Widgets.Text{content: "Label:"}
-      input = %UnifiedUi.IUR.Widgets.TextInput{id: :name}
+      text = %UnifiedIUR.Widgets.Text{content: "Label:"}
+      input = %UnifiedIUR.Widgets.TextInput{id: :name}
 
       hbox = %Layouts.HBox{
         id: :form_row,
@@ -477,8 +477,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         align_items: :center
       }
 
-      assert UnifiedUi.IUR.Element.children(hbox) == [text, input]
-      metadata = UnifiedUi.IUR.Element.metadata(hbox)
+      assert UnifiedIUR.Element.children(hbox) == [text, input]
+      metadata = UnifiedIUR.Element.metadata(hbox)
 
       assert metadata.type == :hbox
       assert metadata.id == :form_row
@@ -487,7 +487,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     end
 
     test "Layouts can be nested" do
-      button = %UnifiedUi.IUR.Widgets.Button{label: "OK", on_click: :ok}
+      button = %UnifiedIUR.Widgets.Button{label: "OK", on_click: :ok}
 
       inner_hbox = %Layouts.HBox{
         id: :button_row,
@@ -501,16 +501,16 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
         spacing: 2
       }
 
-      assert UnifiedUi.IUR.Element.children(vbox) == [inner_hbox]
-      assert UnifiedUi.IUR.Element.children(inner_hbox) == [button]
+      assert UnifiedIUR.Element.children(vbox) == [inner_hbox]
+      assert UnifiedIUR.Element.children(inner_hbox) == [button]
     end
 
     test "All layouts have visible field for state binding" do
       vbox = %Layouts.VBox{visible: true}
       hbox = %Layouts.HBox{visible: false}
 
-      vbox_meta = UnifiedUi.IUR.Element.metadata(vbox)
-      hbox_meta = UnifiedUi.IUR.Element.metadata(hbox)
+      vbox_meta = UnifiedIUR.Element.metadata(vbox)
+      hbox_meta = UnifiedIUR.Element.metadata(hbox)
 
       assert vbox_meta.visible == true
       assert hbox_meta.visible == false

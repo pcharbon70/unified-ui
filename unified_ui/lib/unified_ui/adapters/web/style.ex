@@ -2,7 +2,7 @@ defmodule UnifiedUi.Adapters.Web.Style do
   @moduledoc """
   Style conversion utilities for Web renderer.
 
-  Converts UnifiedUi.IUR.Style to CSS inline style strings.
+  Converts UnifiedIUR.Style to CSS inline style strings.
 
   ## Color Mapping
 
@@ -28,7 +28,7 @@ defmodule UnifiedUi.Adapters.Web.Style do
 
   """
 
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Style
 
   @type css_string :: String.t()
 

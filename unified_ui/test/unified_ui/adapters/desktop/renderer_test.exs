@@ -7,9 +7,9 @@ defmodule UnifiedUi.Adapters.DesktopTest do
 
   alias UnifiedUi.Adapters.Desktop
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.IUR.Widgets
-  alias UnifiedUi.IUR.Layouts
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Widgets
+  alias UnifiedIUR.Layouts
+  alias UnifiedIUR.Style
 
   describe "render/2" do
     test "renders a simple text widget" do

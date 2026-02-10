@@ -18,7 +18,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
       def view(state) do
         # The builder converts DSL entities to IUR structs
         case UnifiedUi.IUR.Builder.build(__dsl_state__()) do
-          nil -> %UnifiedUi.IUR.Layouts.VBox{children: []}
+          nil -> %UnifiedIUR.Layouts.VBox{children: []}
           iur -> iur
         end
       end
@@ -41,7 +41,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
           case UnifiedUi.IUR.Builder.build(dsl_state) do
             nil ->
               # Fallback to empty VBox if no entities defined
-              %UnifiedUi.IUR.Layouts.VBox{
+              %UnifiedIUR.Layouts.VBox{
                 id: nil,
                 spacing: nil,
                 align_items: nil,

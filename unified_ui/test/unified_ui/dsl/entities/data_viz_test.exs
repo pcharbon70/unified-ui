@@ -8,7 +8,7 @@ defmodule UnifiedUi.Dsl.Entities.DataVizTest do
       entity = DataViz.gauge_entity()
 
       assert entity.name == :gauge
-      assert entity.target == UnifiedUi.IUR.Widgets.Gauge
+      assert entity.target == UnifiedIUR.Widgets.Gauge
       assert entity.args == [:id, :value]
     end
 
@@ -54,7 +54,7 @@ defmodule UnifiedUi.Dsl.Entities.DataVizTest do
       entity = DataViz.sparkline_entity()
 
       assert entity.name == :sparkline
-      assert entity.target == UnifiedUi.IUR.Widgets.Sparkline
+      assert entity.target == UnifiedIUR.Widgets.Sparkline
       assert entity.args == [:id, :data]
     end
 
@@ -93,7 +93,7 @@ defmodule UnifiedUi.Dsl.Entities.DataVizTest do
       entity = DataViz.bar_chart_entity()
 
       assert entity.name == :bar_chart
-      assert entity.target == UnifiedUi.IUR.Widgets.BarChart
+      assert entity.target == UnifiedIUR.Widgets.BarChart
       assert entity.args == [:id, :data]
     end
 
@@ -132,7 +132,7 @@ defmodule UnifiedUi.Dsl.Entities.DataVizTest do
       entity = DataViz.line_chart_entity()
 
       assert entity.name == :line_chart
-      assert entity.target == UnifiedUi.IUR.Widgets.LineChart
+      assert entity.target == UnifiedIUR.Widgets.LineChart
       assert entity.args == [:id, :data]
     end
 

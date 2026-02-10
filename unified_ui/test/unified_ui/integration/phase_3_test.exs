@@ -30,7 +30,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
 
   use ExUnit.Case, async: false
 
-  alias UnifiedUi.IUR.{Layouts, Widgets, Element}
+  alias UnifiedIUR.{Layouts, Widgets, Element}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web, Coordinator}
   alias UnifiedUi.Adapters.{Terminal.Events, Desktop.Events, Web.Events}
   alias UnifiedUi.Signals
@@ -475,7 +475,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Inline fg color applies on all platforms" do
       iur = %Widgets.Text{
         content: "Colored",
-        style: %UnifiedUi.IUR.Style{fg: :cyan}
+        style: %UnifiedIUR.Style{fg: :cyan}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -486,7 +486,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Inline bg color applies on all platforms" do
       iur = %Widgets.Text{
         content: "Background",
-        style: %UnifiedUi.IUR.Style{bg: :blue}
+        style: %UnifiedIUR.Style{bg: :blue}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -497,7 +497,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Inline text attributes apply on all platforms" do
       iur = %Widgets.Text{
         content: "Styled",
-        style: %UnifiedUi.IUR.Style{attrs: [:bold, :italic, :underline]}
+        style: %UnifiedIUR.Style{attrs: [:bold, :italic, :underline]}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -508,7 +508,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Padding/margin styles apply on all platforms" do
       iur = %Widgets.Text{
         content: "Spaced",
-        style: %UnifiedUi.IUR.Style{padding: 2, margin: 1}
+        style: %UnifiedIUR.Style{padding: 2, margin: 1}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -519,7 +519,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Width/height styles apply on all platforms" do
       iur = %Widgets.Text{
         content: "Sized",
-        style: %UnifiedUi.IUR.Style{width: :fill, height: :auto}
+        style: %UnifiedIUR.Style{width: :fill, height: :auto}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -530,7 +530,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
     test "Align styles apply on all platforms" do
       iur = %Widgets.Text{
         content: "Aligned",
-        style: %UnifiedUi.IUR.Style{align: :center}
+        style: %UnifiedIUR.Style{align: :center}
       }
 
       assert {:ok, _} = Terminal.render(iur)
@@ -540,7 +540,7 @@ defmodule UnifiedUi.Integration.Phase3Test do
 
     test "Style on layout applies on all platforms" do
       iur = %Layouts.VBox{
-        style: %UnifiedUi.IUR.Style{fg: :white, bg: :black},
+        style: %UnifiedIUR.Style{fg: :white, bg: :black},
         children: [
           %Widgets.Text{content: "In styled layout"}
         ]

@@ -32,7 +32,7 @@ defmodule UnifiedUi.Renderer do
       defmodule MyRenderer do
         @behaviour UnifiedUi.Renderer
 
-        alias UnifiedUi.IUR.Element
+        alias UnifiedIUR.Element
 
         @impl true
         def render(iur_tree, opts \\ []) do
@@ -73,12 +73,12 @@ defmodule UnifiedUi.Renderer do
   Errors should be descriptive and include context about what went wrong.
   """
 
-  @type iur_element :: UnifiedUi.IUR.Widgets.Text.t() |
-                       UnifiedUi.IUR.Widgets.Button.t() |
-                       UnifiedUi.IUR.Widgets.Label.t() |
-                       UnifiedUi.IUR.Widgets.TextInput.t() |
-                       UnifiedUi.IUR.Layouts.VBox.t() |
-                       UnifiedUi.IUR.Layouts.HBox.t()
+  @type iur_element :: UnifiedIUR.Widgets.Text.t() |
+                       UnifiedIUR.Widgets.Button.t() |
+                       UnifiedIUR.Widgets.Label.t() |
+                       UnifiedIUR.Widgets.TextInput.t() |
+                       UnifiedIUR.Layouts.VBox.t() |
+                       UnifiedIUR.Layouts.HBox.t()
 
   @type iur_tree :: iur_element()
 

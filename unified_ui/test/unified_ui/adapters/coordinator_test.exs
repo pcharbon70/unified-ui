@@ -6,8 +6,8 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Coordinator
-  alias UnifiedUi.IUR.Widgets
-  alias UnifiedUi.IUR.Layouts
+  alias UnifiedIUR.Widgets
+  alias UnifiedIUR.Layouts
 
   # Helper to create a simple IUR tree for testing
   defp simple_iur_tree do

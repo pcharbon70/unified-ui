@@ -42,7 +42,7 @@ defmodule UnifiedUi.Dsl.Entities.DataViz do
       end
   """
 
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   @gauge_entity %Spark.Dsl.Entity{
     name: :gauge,

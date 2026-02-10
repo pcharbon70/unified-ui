@@ -51,7 +51,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   """
 
   alias Spark.Dsl.Transformer
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Style
   alias UnifiedUi.Dsl.Style, as: DslStyle
 
   @doc """

@@ -12,7 +12,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Dsl.Entities.Layouts, as: LayoutEntities
-  alias UnifiedUi.IUR.Layouts
+  alias UnifiedIUR.Layouts
 
   describe "vbox_entity/0" do
     test "returns a valid Spark.Dsl.Entity" do
@@ -169,7 +169,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
         align_items: :center,
         justify_content: :space_between,
         padding: 1,
-        style: %UnifiedUi.IUR.Style{fg: :blue},
+        style: %UnifiedIUR.Style{fg: :blue},
         visible: true
       }
 
@@ -203,7 +203,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
         align_items: :center,
         justify_content: :space_around,
         padding: 2,
-        style: %UnifiedUi.IUR.Style{bg: :white},
+        style: %UnifiedIUR.Style{bg: :white},
         visible: true
       }
 

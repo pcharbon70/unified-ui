@@ -12,7 +12,7 @@ defmodule UnifiedUi.Dsl.Entities.WidgetsTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Dsl.Entities.Widgets, as: WidgetEntities
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   describe "button_entity/0" do
     test "returns a valid Spark.Dsl.Entity" do

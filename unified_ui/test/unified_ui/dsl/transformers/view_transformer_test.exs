@@ -11,7 +11,8 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Dsl.Transformers.ViewTransformer
-  alias UnifiedUi.IUR.{Builder, Layouts, Widgets}
+  alias UnifiedIUR.{Layouts, Widgets}
+  alias UnifiedUi.IUR.Builder
 
   describe "ViewTransformer module" do
     test "module exists and is compiled" do
@@ -146,8 +147,8 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
     test "VBox struct implements IUR.Element protocol" do
       vbox = %Layouts.VBox{id: :test}
 
-      assert UnifiedUi.IUR.Element.children(vbox) == []
-      metadata = UnifiedUi.IUR.Element.metadata(vbox)
+      assert UnifiedIUR.Element.children(vbox) == []
+      metadata = UnifiedIUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :test
@@ -156,8 +157,8 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformerTest do
     test "HBox struct implements IUR.Element protocol" do
       hbox = %Layouts.HBox{id: :row}
 
-      assert UnifiedUi.IUR.Element.children(hbox) == []
-      metadata = UnifiedUi.IUR.Element.metadata(hbox)
+      assert UnifiedIUR.Element.children(hbox) == []
+      metadata = UnifiedIUR.Element.metadata(hbox)
 
       assert metadata.type == :hbox
       assert metadata.id == :row

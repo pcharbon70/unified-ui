@@ -19,7 +19,8 @@ defmodule UnifiedUi.Integration.Phase2Test do
 
   use ExUnit.Case, async: false
 
-  alias UnifiedUi.IUR.{Builder, Layouts, Widgets}
+  alias UnifiedIUR.{Layouts, Widgets}
+  alias UnifiedUi.IUR.Builder
   alias UnifiedUi.Signals
 
   # ============================================================================
@@ -88,24 +89,24 @@ defmodule UnifiedUi.Integration.Phase2Test do
       input = %Widgets.TextInput{id: :input, type: :text}
 
       # All widgets should return empty children list
-      assert UnifiedUi.IUR.Element.children(text) == []
-      assert UnifiedUi.IUR.Element.children(button) == []
-      assert UnifiedUi.IUR.Element.children(label) == []
-      assert UnifiedUi.IUR.Element.children(input) == []
+      assert UnifiedIUR.Element.children(text) == []
+      assert UnifiedIUR.Element.children(button) == []
+      assert UnifiedIUR.Element.children(label) == []
+      assert UnifiedIUR.Element.children(input) == []
 
       # All widgets should have metadata
-      text_meta = UnifiedUi.IUR.Element.metadata(text)
+      text_meta = UnifiedIUR.Element.metadata(text)
       assert text_meta.type == :text
       assert text_meta.id == :test_text
 
-      button_meta = UnifiedUi.IUR.Element.metadata(button)
+      button_meta = UnifiedIUR.Element.metadata(button)
       assert button_meta.type == :button
       assert button_meta.label == "Click"
 
-      label_meta = UnifiedUi.IUR.Element.metadata(label)
+      label_meta = UnifiedIUR.Element.metadata(label)
       assert label_meta.type == :label
 
-      input_meta = UnifiedUi.IUR.Element.metadata(input)
+      input_meta = UnifiedIUR.Element.metadata(input)
       assert input_meta.type == :text_input
     end
   end
@@ -149,16 +150,16 @@ defmodule UnifiedUi.Integration.Phase2Test do
       }
 
       # Traverse to level 5
-      level_2 = hd(UnifiedUi.IUR.Element.children(deep_tree))
-      level_3 = hd(UnifiedUi.IUR.Element.children(level_2))
-      level_4 = hd(UnifiedUi.IUR.Element.children(level_3))
-      level_5 = hd(UnifiedUi.IUR.Element.children(level_4))
+      level_2 = hd(UnifiedIUR.Element.children(deep_tree))
+      level_3 = hd(UnifiedIUR.Element.children(level_2))
+      level_4 = hd(UnifiedIUR.Element.children(level_3))
+      level_5 = hd(UnifiedIUR.Element.children(level_4))
 
       # Verify we're at level 5
       assert level_5.id == :level_5
-      assert length(UnifiedUi.IUR.Element.children(level_5)) == 1
+      assert length(UnifiedIUR.Element.children(level_5)) == 1
 
-      deep_content = hd(UnifiedUi.IUR.Element.children(level_5))
+      deep_content = hd(UnifiedIUR.Element.children(level_5))
       assert deep_content.content == "Deep content"
     end
 
@@ -199,17 +200,17 @@ defmodule UnifiedUi.Integration.Phase2Test do
       assert tree.spacing == 1
       assert tree.padding == 1
 
-      level_2 = hd(UnifiedUi.IUR.Element.children(tree))
+      level_2 = hd(UnifiedIUR.Element.children(tree))
       assert level_2.id == :level_2
       assert level_2.spacing == 2
       assert level_2.align_items == :center
 
-      level_3 = hd(UnifiedUi.IUR.Element.children(level_2))
+      level_3 = hd(UnifiedIUR.Element.children(level_2))
       assert level_3.id == :level_3
       assert level_3.spacing == 3
       assert level_3.justify_content == :center
 
-      level_4 = hd(UnifiedUi.IUR.Element.children(level_3))
+      level_4 = hd(UnifiedIUR.Element.children(level_3))
       assert level_4.id == :level_4
       assert level_4.spacing == 4
       assert level_4.align_items == :end
@@ -245,10 +246,10 @@ defmodule UnifiedUi.Integration.Phase2Test do
 
       # Verify alternating types
       l1 = tree
-      l2 = hd(UnifiedUi.IUR.Element.children(l1))
-      l3 = hd(UnifiedUi.IUR.Element.children(l2))
-      l4 = hd(UnifiedUi.IUR.Element.children(l3))
-      l5 = hd(UnifiedUi.IUR.Element.children(l4))
+      l2 = hd(UnifiedIUR.Element.children(l1))
+      l3 = hd(UnifiedIUR.Element.children(l2))
+      l4 = hd(UnifiedIUR.Element.children(l3))
+      l5 = hd(UnifiedIUR.Element.children(l4))
 
       assert l1.id == :starts_vbox
       assert l2.id == :then_hbox
@@ -503,23 +504,23 @@ defmodule UnifiedUi.Integration.Phase2Test do
     test "Inline styles apply to all widgets" do
       text = %Widgets.Text{
         content: "Styled",
-        style: %UnifiedUi.IUR.Style{fg: :cyan, attrs: [:bold]}
+        style: %UnifiedIUR.Style{fg: :cyan, attrs: [:bold]}
       }
 
       button = %Widgets.Button{
         label: "Styled",
-        style: %UnifiedUi.IUR.Style{fg: :green, bg: :black}
+        style: %UnifiedIUR.Style{fg: :green, bg: :black}
       }
 
       label = %Widgets.Label{
         for: :input,
         text: "Label:",
-        style: %UnifiedUi.IUR.Style{attrs: [:underline]}
+        style: %UnifiedIUR.Style{attrs: [:underline]}
       }
 
       input = %Widgets.TextInput{
         id: :input,
-        style: %UnifiedUi.IUR.Style{fg: :white}
+        style: %UnifiedIUR.Style{fg: :white}
       }
 
       assert text.style.fg == :cyan
@@ -540,13 +541,13 @@ defmodule UnifiedUi.Integration.Phase2Test do
         id: :main,
         spacing: 1,
         padding: 2,
-        style: %UnifiedUi.IUR.Style{fg: :blue}
+        style: %UnifiedIUR.Style{fg: :blue}
       }
 
       hbox = %Layouts.HBox{
         id: :row,
         align_items: :center,
-        style: %UnifiedUi.IUR.Style{bg: :black}
+        style: %UnifiedIUR.Style{bg: :black}
       }
 
       # Layout properties
@@ -564,7 +565,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
     end
 
     test "Style attributes include all basic properties" do
-      style = %UnifiedUi.IUR.Style{
+      style = %UnifiedIUR.Style{
         fg: :red,
         bg: :blue,
         attrs: [:bold, :italic, :underline],
@@ -643,8 +644,8 @@ defmodule UnifiedUi.Integration.Phase2Test do
       outer_vbox = %Layouts.VBox{children: [inner_hbox]}
 
       # Traverse
-      hbox = hd(UnifiedUi.IUR.Element.children(outer_vbox))
-      button = hd(UnifiedUi.IUR.Element.children(hbox))
+      hbox = hd(UnifiedIUR.Element.children(outer_vbox))
+      button = hd(UnifiedIUR.Element.children(hbox))
 
       assert button.label == "Leaf"
       assert button.on_click == :leaf
@@ -661,7 +662,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         ]
       }
 
-      metadata = UnifiedUi.IUR.Element.metadata(vbox)
+      metadata = UnifiedIUR.Element.metadata(vbox)
 
       assert metadata.type == :vbox
       assert metadata.id == :test_vbox
@@ -669,8 +670,8 @@ defmodule UnifiedUi.Integration.Phase2Test do
       assert metadata.padding == 1
       assert metadata.align_items == :center
 
-      button = hd(UnifiedUi.IUR.Element.children(vbox))
-      button_meta = UnifiedUi.IUR.Element.metadata(button)
+      button = hd(UnifiedIUR.Element.children(vbox))
+      button_meta = UnifiedIUR.Element.metadata(button)
 
       assert button_meta.type == :button
       assert button_meta.label == "Test"
@@ -710,7 +711,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
       }
 
       # Extract label and input
-      [label, input] = UnifiedUi.IUR.Element.children(valid_tree)
+      [label, input] = UnifiedIUR.Element.children(valid_tree)
       assert label.for == input.id
     end
 
@@ -723,7 +724,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         ]
       }
 
-      [label, input] = UnifiedUi.IUR.Element.children(invalid_tree)
+      [label, input] = UnifiedIUR.Element.children(invalid_tree)
 
       # Label.for doesn't match any input ID
       assert label.for == :non_existent
@@ -829,7 +830,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
   # ============================================================================
 
   defp collect_ids(element, acc \\ []) do
-    metadata = UnifiedUi.IUR.Element.metadata(element)
+    metadata = UnifiedIUR.Element.metadata(element)
 
     acc =
       if Map.has_key?(metadata, :id) && metadata.id != nil do
@@ -838,7 +839,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         acc
       end
 
-    children = UnifiedUi.IUR.Element.children(element)
+    children = UnifiedIUR.Element.children(element)
 
     Enum.reduce(children, acc, fn child, inner_acc ->
       collect_ids(child, inner_acc)
@@ -865,7 +866,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
   defp is_valid_signal_handler_format(_), do: false
 
   defp count_elements(element) do
-    1 + Enum.reduce(UnifiedUi.IUR.Element.children(element), 0, fn child, acc ->
+    1 + Enum.reduce(UnifiedIUR.Element.children(element), 0, fn child, acc ->
       acc + count_elements(child)
     end)
   end

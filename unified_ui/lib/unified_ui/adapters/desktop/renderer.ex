@@ -61,9 +61,9 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Desktop.Style
-  alias UnifiedUi.IUR.Element
-  alias UnifiedUi.IUR.Widgets
-  alias UnifiedUi.IUR.Layouts
+  alias UnifiedIUR.Element
+  alias UnifiedIUR.Widgets
+  alias UnifiedIUR.Layouts
 
   @impl true
   def render(iur_tree, opts \\ []) do

@@ -5,7 +5,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
 
   use ExUnit.Case, async: true
   alias UnifiedUi.Dsl.Entities.Tables
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   describe "column_entity/0" do
     test "returns entity with correct name" do
@@ -149,7 +149,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
   end
 
   describe "Column IUR struct" do
-    alias UnifiedUi.IUR.Widgets.Column
+    alias UnifiedIUR.Widgets.Column
 
     test "can be created with required fields" do
       column = %Column{key: :id, header: "ID"}
@@ -186,8 +186,8 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
   end
 
   describe "Table IUR struct" do
-    alias UnifiedUi.IUR.Widgets.Table
-    alias UnifiedUi.IUR.Widgets.Column
+    alias UnifiedIUR.Widgets.Table
+    alias UnifiedIUR.Widgets.Column
 
     test "can be created with required fields" do
       data = [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}]
@@ -238,8 +238,8 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
   end
 
   describe "Element protocol for Column" do
-    alias UnifiedUi.IUR.Element
-    alias UnifiedUi.IUR.Widgets.Column
+    alias UnifiedIUR.Element
+    alias UnifiedIUR.Widgets.Column
 
     test "children/1 returns empty list" do
       column = %Column{key: :id, header: "ID"}
@@ -270,10 +270,10 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
   end
 
   describe "Element protocol for Table" do
-    alias UnifiedUi.IUR.Element
-    alias UnifiedUi.IUR.Widgets.Table
-    alias UnifiedUi.IUR.Widgets.Column
-    alias UnifiedUi.IUR.Style
+    alias UnifiedIUR.Element
+    alias UnifiedIUR.Widgets.Table
+    alias UnifiedIUR.Widgets.Column
+    alias UnifiedIUR.Style
 
     test "children/1 returns empty list" do
       table = %Table{id: :users, data: []}

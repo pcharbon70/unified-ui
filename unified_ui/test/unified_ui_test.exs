@@ -51,12 +51,14 @@ defmodule UnifiedUiTest do
       assert File.dir?("test/unified_ui/styles")
     end
 
-    test "test/unified_ui/iur directory exists" do
-      assert File.dir?("test/unified_ui/iur")
-    end
+    # Note: test/unified_ui/iur directory was removed when IUR was extracted to unified_iur package
 
     test "test/unified_ui/adapters directory exists" do
       assert File.dir?("test/unified_ui/adapters")
+    end
+
+    test "test/unified_ui/integration directory exists" do
+      assert File.dir?("test/unified_ui/integration")
     end
   end
 

@@ -2,7 +2,7 @@ defmodule UnifiedUi.Adapters.Desktop.Style do
   @moduledoc """
   Style conversion utilities for Desktop renderer.
 
-  Converts UnifiedUi.IUR.Style to DesktopUi widget properties.
+  Converts UnifiedIUR.Style to DesktopUi widget properties.
 
   ## Color Mapping
 
@@ -27,7 +27,7 @@ defmodule UnifiedUi.Adapters.Desktop.Style do
 
   """
 
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Style
 
   @type desktop_props :: keyword()
 

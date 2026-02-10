@@ -12,7 +12,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Dsl.FormHelpers
-  alias UnifiedUi.IUR.Widgets.TextInput
+  alias UnifiedIUR.Widgets.TextInput
 
   # Helper to create a mock DSL state
   defp create_dsl_state(widgets_entities) do

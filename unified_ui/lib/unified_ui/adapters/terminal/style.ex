@@ -2,7 +2,7 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
   @moduledoc """
   Style conversion utilities for Terminal renderer.
 
-  Converts UnifiedUi.IUR.Style to TermUI.Renderer.Style.
+  Converts UnifiedIUR.Style to TermUI.Renderer.Style.
 
   ## Color Mapping
 
@@ -28,7 +28,7 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
 
   """
 
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Style
 
   @type termui_style :: term()
 

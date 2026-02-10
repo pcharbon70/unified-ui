@@ -35,7 +35,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   hierarchical UI structures.
   """
 
-  alias UnifiedUi.IUR.Layouts
+  alias UnifiedIUR.Layouts
 
   @doc false
   @vbox_entity %Spark.Dsl.Entity{

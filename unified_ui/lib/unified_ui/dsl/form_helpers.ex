@@ -42,7 +42,7 @@ defmodule UnifiedUi.Dsl.FormHelpers do
   """
 
   alias Spark.Dsl.Transformer
-  alias UnifiedUi.IUR.Widgets.TextInput
+  alias UnifiedIUR.Widgets.TextInput
   alias UnifiedUi.Dsl.Sanitization
 
   # Predefined validation patterns - carefully crafted to avoid ReDoS

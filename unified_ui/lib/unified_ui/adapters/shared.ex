@@ -30,7 +30,7 @@ defmodule UnifiedUi.Adapters.Shared do
 
   """
 
-  alias UnifiedUi.IUR.Element
+  alias UnifiedIUR.Element
 
   @type element :: UnifiedUi.Renderer.iur_element()
   @type accumulator :: term()
@@ -160,7 +160,7 @@ defmodule UnifiedUi.Adapters.Shared do
 
   ## Returns
 
-  A list of `UnifiedUi.IUR.Style` structs.
+  A list of `UnifiedIUR.Style` structs.
 
   ## Examples
 
@@ -168,7 +168,7 @@ defmodule UnifiedUi.Adapters.Shared do
       [%Style{fg: :cyan}, %Style{bg: :blue, attrs: [:bold]}]
 
   """
-  @spec collect_styles(element()) :: [UnifiedUi.IUR.Style.t()]
+  @spec collect_styles(element()) :: [UnifiedIUR.Style.t()]
   def collect_styles(iur_tree) do
     traverse_iur(iur_tree, fn element, acc ->
       metadata = Element.metadata(element)

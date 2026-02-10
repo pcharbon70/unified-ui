@@ -6,9 +6,9 @@ defmodule UnifiedUi.Adapters.SharedTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Shared
-  alias UnifiedUi.IUR.Widgets
-  alias UnifiedUi.IUR.Layouts
-  alias UnifiedUi.IUR.Style
+  alias UnifiedIUR.Widgets
+  alias UnifiedIUR.Layouts
+  alias UnifiedIUR.Style
 
   # Helper to create a simple IUR tree
   defp create_simple_tree do
@@ -105,7 +105,7 @@ defmodule UnifiedUi.Adapters.SharedTest do
       tree = create_nested_tree()
 
       types = Shared.traverse_iur(tree, fn el, acc ->
-        [UnifiedUi.IUR.Element.metadata(el).type | acc]
+        [UnifiedIUR.Element.metadata(el).type | acc]
       end, [])
 
       # Should have all types (order may vary due to prepending)
@@ -129,7 +129,7 @@ defmodule UnifiedUi.Adapters.SharedTest do
       # We can't actually test halt without the callback returning {:halt, result}
       # but we can verify the accumulator is modified
       result = Shared.traverse_iur(tree, fn el, acc ->
-        if UnifiedUi.IUR.Element.metadata(el).id == :greeting do
+        if UnifiedIUR.Element.metadata(el).id == :greeting do
           {:halt, :found}
         else
           {:cont, acc}

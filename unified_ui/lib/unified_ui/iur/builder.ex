@@ -64,7 +64,7 @@ defmodule UnifiedUi.IUR.Builder do
       }
   """
 
-  alias UnifiedUi.IUR.{Style, Widgets, Layouts}
+  alias UnifiedIUR.{Style, Widgets, Layouts}
   alias UnifiedUi.Dsl.StyleResolver
   alias Spark.Dsl
 

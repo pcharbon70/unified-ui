@@ -48,14 +48,14 @@ defmodule UnifiedUi.ElmArchitecture do
 
         @impl true
         def view(state) do
-          %UnifiedUi.IUR.Layouts.VBox{
+          %UnifiedIUR.Layouts.VBox{
             spacing: 1,
             children: [
-              %UnifiedUi.IUR.Widgets.Text{
+              %UnifiedIUR.Widgets.Text{
                 content: "Count: " <> Integer.to_string(state.count)
               },
-              %UnifiedUi.IUR.Widgets.Button{label: "+", on_click: {:increment, %{}}},
-              %UnifiedUi.IUR.Widgets.Button{label: "-", on_click: {:decrement, %{}}}
+              %UnifiedIUR.Widgets.Button{label: "+", on_click: {:increment, %{}}},
+              %UnifiedIUR.Widgets.Button{label: "-", on_click: {:decrement, %{}}}
             ]
           }
         end
@@ -151,21 +151,21 @@ defmodule UnifiedUi.ElmArchitecture do
 
   ## Returns
 
-  An IUR struct implementing `UnifiedUi.IUR.Element` protocol.
+  An IUR struct implementing `UnifiedIUR.Element` protocol.
 
   ## Examples
 
       def view(state) do
-        %UnifiedUi.IUR.Layouts.VBox{
+        %UnifiedIUR.Layouts.VBox{
           spacing: 1,
           children: [
-            %UnifiedUi.IUR.Widgets.Text{content: "Hello, " <> Map.get(state, :name, "World")},
-            %UnifiedUi.IUR.Widgets.Button{label: "Click", on_click: :button_click}
+            %UnifiedIUR.Widgets.Text{content: "Hello, " <> Map.get(state, :name, "World")},
+            %UnifiedIUR.Widgets.Button{label: "Click", on_click: :button_click}
           ]
         }
       end
   """
-  @callback view(%{atom() => any()}) :: UnifiedUi.IUR.Element.t()
+  @callback view(%{atom() => any()}) :: UnifiedIUR.Element.t()
 
   @optional_callbacks []
 end

@@ -39,7 +39,7 @@ defmodule UnifiedUi.Adapters.Event do
 
   """
 
-  alias UnifiedUi.IUR.Element
+  alias UnifiedIUR.Element
 
   @type event_type :: :click | :change | :submit | :focus | :blur | :key_down | :key_up | :mouse_move | :scroll
   @type element_id :: atom()

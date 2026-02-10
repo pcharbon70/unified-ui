@@ -48,7 +48,7 @@ defmodule UnifiedUi.Dsl.Entities.Tables do
       end
   """
 
-  alias UnifiedUi.IUR.Widgets
+  alias UnifiedIUR.Widgets
 
   @column_entity %Spark.Dsl.Entity{
     name: :column,
