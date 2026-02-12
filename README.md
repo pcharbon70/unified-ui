@@ -135,10 +135,10 @@ graph TB
 ## Platform Support
 
 | Platform | Status | Renderer | Target |
-|----------|--------|----------|
-| **Terminal** | ✅ Complete | ASCII-based UI via TermUi |
-| **Desktop** | 🚧 In Progress | Native desktop widgets via DesktopUi |
-| **Web** | 🚧 In Progress | HTML/CSS via Phoenix LiveView |
+|----------|--------|----------|--------|
+| **Terminal** | ✅ Complete | ASCII-based UI | TermUi |
+| **Desktop** | 🚧 In Progress | Native widgets | DesktopUi |
+| **Web** | 🚧 In Progress | HTML/CSS | Phoenix LiveView |
 
 ## Installation
 
