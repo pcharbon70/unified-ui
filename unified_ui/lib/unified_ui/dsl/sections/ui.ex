@@ -1,47 +1,61 @@
 defmodule UnifiedUi.Dsl.Sections.Ui do
   @moduledoc """
-  The UI section for the UnifiedUi DSL.
+  Canonical UI section definition used by the UnifiedUi DSL.
 
-  This is the top-level section for defining user interfaces.
-  It serves as the entry point for all UI definitions and can contain
-  layouts, widgets, and style definitions.
-
-  ## Example
-
-  ```elixir
-  ui do
-    vbox style: [padding: 2] do
-      text "Hello, World!"
-      button "Click me"
-    end
-  end
-  ```
+  This module exists for section-level introspection and compatibility.
+  The extension currently composes equivalent section definitions directly.
   """
+
+  @state_entity %Spark.Dsl.Entity{
+    name: :state,
+    target: UnifiedUi.Dsl.State,
+    args: [:attrs],
+    schema: [
+      attrs: [
+        type: :keyword_list,
+        doc: "Initial state as keyword list with atom keys",
+        required: true
+      ]
+    ],
+    describe: "Define initial component state"
+  }
 
   @ui_section %Spark.Dsl.Section{
     name: :ui,
     describe: """
-    The top-level UI definition section.
-
-    This section contains the entire UI definition for a component or screen.
-    It can contain layouts, widgets, and style definitions.
+    Top-level UI definition section.
     """,
     schema: [
       id: [
         type: :atom,
-        doc: "A unique identifier for this UI component.",
+        doc: "Optional unique identifier for this UI component.",
         required: false
       ],
       theme: [
         type: :atom,
-        doc: "The theme to apply to this UI component.",
+        doc: "Optional theme to apply to this UI component.",
         required: false
       ]
     ],
     entities: [
-      # Layout entities will be added here in future phases
-      # Widget entities will be added here in future phases
-    ]
+      @state_entity,
+      UnifiedUi.Dsl.Entities.Layouts.vbox_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.hbox_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.button_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.label_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.gauge_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.sparkline_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.line_chart_entity(),
+      UnifiedUi.Dsl.Entities.Tables.table_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.context_menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tabs_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity()
+    ],
+    top_level?: true
   }
 
   @doc false
@@ -50,8 +64,6 @@ defmodule UnifiedUi.Dsl.Sections.Ui do
   @doc false
   def entities, do: @ui_section.entities
 
-  # Top-level section following the Reactor pattern
-  # Entities are written directly in the module body without a `ui do...end` wrapper
   @doc false
   def top_level?, do: true
 

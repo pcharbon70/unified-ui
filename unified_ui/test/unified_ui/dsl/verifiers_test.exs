@@ -317,6 +317,67 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
       assert StateReferenceVerifier.verify(dsl_state) == :ok
     end
+
+    test "passes when state references exist and keys are defined" do
+      dsl_state = %{
+        persist: %{module: TestModule},
+        ui: %{state: %{entities: [%State{attrs: [username: "guest"]}]}},
+        widgets: %{
+          entities: [
+            %{
+              __struct__: Widgets.Text,
+              content: {:state, :username},
+              __meta__: [entity: "username_text"]
+            }
+          ]
+        },
+        layouts: %{entities: []}
+      }
+
+      assert StateReferenceVerifier.verify(dsl_state) == :ok
+    end
+
+    test "fails when referenced state key is undefined" do
+      dsl_state = %{
+        persist: %{module: TestModule},
+        ui: %{state: %{entities: [%State{attrs: [username: "guest"]}]}},
+        widgets: %{
+          entities: [
+            %{
+              __struct__: Widgets.Text,
+              content: {:state, :missing_key},
+              __meta__: [entity: "bad_state_ref"]
+            }
+          ]
+        },
+        layouts: %{entities: []}
+      }
+
+      assert_raise Spark.Error.DslError, ~r/Undefined state keys referenced/, fn ->
+        StateReferenceVerifier.verify(dsl_state)
+      end
+    end
+
+    test "fails when state reference key is not an atom" do
+      dsl_state = %{
+        persist: %{module: TestModule},
+        ui: %{state: %{entities: [%State{attrs: [username: "guest"]}]}},
+        widgets: %{
+          entities: [
+            %{
+              __struct__: Widgets.Text,
+              content: {:state, "username"},
+              __meta__: [entity: "invalid_state_ref"]
+            }
+          ]
+        },
+        layouts: %{entities: []}
+      }
+
+      assert_raise Spark.Error.DslError, ~r/Invalid state references found/, fn ->
+        StateReferenceVerifier.verify(dsl_state)
+      end
+    end
   end
 
   describe "integration tests" do

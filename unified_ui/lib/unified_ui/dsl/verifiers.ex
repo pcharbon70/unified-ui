@@ -369,20 +369,18 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
     state_section = Map.get(ui_section, :state, %{entities: []})
     state_entities = Map.get(state_section, :entities, [])
 
-    _initial_state_keys =
+    initial_state_keys =
       case state_entities do
         [%UnifiedUi.Dsl.State{attrs: attrs} | _] when is_list(attrs) ->
           Keyword.keys(attrs)
 
         _ ->
-          # No initial state defined - that's ok, just no state references allowed
           []
       end
 
-    # For Phase 2.6, state interpolation isn't fully implemented yet
-    # This is a placeholder for when we add {:state, :key} references
-    # For now, we just verify initial state structure is valid
     verify_initial_state_structure(module, state_entities)
+    state_references = collect_state_references(dsl_state)
+    verify_state_references(module, state_references, initial_state_keys)
 
     :ok
   end
@@ -429,5 +427,117 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
     end
 
     :ok
+  end
+
+  defp collect_state_references(dsl_state) do
+    [
+      safe_get_entities(dsl_state, :widgets),
+      safe_get_entities(dsl_state, :layouts),
+      safe_get_entities(dsl_state, :ui)
+    ]
+    |> List.flatten()
+    |> Enum.flat_map(&extract_state_refs/1)
+    |> Enum.uniq()
+  end
+
+  defp safe_get_entities(dsl_state, path) do
+    Verifier.get_entities(dsl_state, path)
+  rescue
+    _ -> []
+  catch
+    _, _ -> []
+  end
+
+  defp extract_state_refs({:state, key}) when is_atom(key), do: [key]
+  defp extract_state_refs({:state, key}), do: [{:invalid, key}]
+
+  defp extract_state_refs(value) when is_list(value) do
+    Enum.flat_map(value, &extract_state_refs/1)
+  end
+
+  defp extract_state_refs(%_{} = struct) do
+    struct
+    |> Map.from_struct()
+    |> extract_state_refs()
+  end
+
+  defp extract_state_refs(value) when is_map(value) do
+    value
+    |> Enum.flat_map(fn
+      {:__meta__, _} -> []
+      {:__struct__, _} -> []
+      {_key, nested} -> extract_state_refs(nested)
+    end)
+  end
+
+  defp extract_state_refs(value) when is_tuple(value) do
+    value
+    |> Tuple.to_list()
+    |> Enum.flat_map(&extract_state_refs/1)
+  end
+
+  defp extract_state_refs(_), do: []
+
+  defp verify_state_references(module, state_references, initial_state_keys) do
+    invalid_refs =
+      state_references
+      |> Enum.flat_map(fn
+        {:invalid, key} -> [key]
+        _ -> []
+      end)
+
+    if invalid_refs != [] do
+      raise Spark.Error.DslError,
+        module: module,
+        path: [:ui],
+        message: """
+        Invalid state references found.
+
+        State references must use the format `{:state, :key}` where `:key` is an atom.
+
+        Invalid keys:
+
+        #{Enum.map(invalid_refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        """
+    end
+
+    refs =
+      state_references
+      |> Enum.filter(&is_atom/1)
+
+    if refs != [] and initial_state_keys == [] do
+      raise Spark.Error.DslError,
+        module: module,
+        path: [:ui],
+        message: """
+        State references were found, but no initial state is defined.
+
+        Add a state declaration, for example:
+
+          state [
+            count: 0
+          ]
+        """
+    end
+
+    missing_refs = Enum.reject(refs, &(&1 in initial_state_keys))
+
+    if missing_refs != [] do
+      raise Spark.Error.DslError,
+        module: module,
+        path: [:ui],
+        message: """
+        Undefined state keys referenced in UI entities.
+
+        Referenced keys:
+        #{Enum.map(refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+
+        Defined keys:
+        #{Enum.map(initial_state_keys, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+
+        Missing keys:
+        #{Enum.map(missing_refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        """
+    end
   end
 end
