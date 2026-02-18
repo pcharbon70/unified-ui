@@ -37,7 +37,7 @@ defmodule UnifiedUi.Dsl.Transformers.InitTransformer do
         end
       end
 
-    Spark.Dsl.Transformer.eval(dsl_state, [], code)
+    {:ok, Spark.Dsl.Transformer.eval(dsl_state, [], code)}
   end
 
   # Extract initial state from DSL state entity
