@@ -245,25 +245,8 @@ defmodule UnifiedUi.Dsl do
 
   """
 
-  @doc """
-  Uses the UnifiedUi DSL in the current module.
-
-  When you `use UnifiedUi.Dsl`, the following happens:
-  - The Spark DSL is set up with the UnifiedUi Extension
-  - DSL entities (layouts, widgets, state) become available
-  - Elm Architecture functions (`init/1`, `update/2`, `view/1`) are generated
-
-  ## Options
-
-  Currently, no options are supported. This allows for future extensions.
-
-  """
-  defmacro __using__(_opts) do
-    quote do
-      use Spark.Dsl,
-        default_extensions: [extensions: [UnifiedUi.Dsl.Extension]]
-    end
-  end
+  use Spark.Dsl,
+    default_extensions: [extensions: [UnifiedUi.Dsl.Extension]]
 
   @doc """
   Returns the list of standard signal types.

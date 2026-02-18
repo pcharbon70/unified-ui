@@ -23,9 +23,9 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   @impl true
   def transform(dsl_state) do
     routes = extract_routes(dsl_state)
-    click_route_cases = click_route_cases_ast(routes.click)
-    change_route_cases = change_route_cases_ast(routes.change)
-    submit_route_cases = submit_route_cases_ast(routes.submit)
+    click_routes = Macro.escape(routes.click)
+    change_routes = Macro.escape(routes.change)
+    submit_routes = Macro.escape(routes.submit)
 
     code =
       quote do
@@ -65,23 +65,29 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         end
 
         defp dispatch_click_signal(state, signal) do
-          case extract_click_route_key(signal) do
-            unquote_splicing(click_route_cases)
-            _ -> handle_click_signal(state, signal)
+          route_key = extract_click_route_key(signal)
+
+          case Enum.find(unquote(click_routes), fn route -> route.key == route_key end) do
+            nil -> handle_click_signal(state, signal)
+            route -> handle_click_signal(state, signal, route)
           end
         end
 
         defp dispatch_change_signal(state, signal) do
-          case extract_change_route_key(signal) do
-            unquote_splicing(change_route_cases)
-            _ -> handle_change_signal(state, signal)
+          route_key = extract_change_route_key(signal)
+
+          case Enum.find(unquote(change_routes), fn route -> route.key == route_key end) do
+            nil -> handle_change_signal(state, signal)
+            route -> handle_change_signal(state, signal, route)
           end
         end
 
         defp dispatch_submit_signal(state, signal) do
-          case extract_submit_route_key(signal) do
-            unquote_splicing(submit_route_cases)
-            _ -> handle_submit_signal(state, signal)
+          route_key = extract_submit_route_key(signal)
+
+          case Enum.find(unquote(submit_routes), fn route -> route.key == route_key end) do
+            nil -> handle_submit_signal(state, signal)
+            route -> handle_submit_signal(state, signal, route)
           end
         end
 
@@ -165,7 +171,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         defoverridable handle_submit_signal: 3
       end
 
-    Transformer.eval(dsl_state, [], code)
+    {:ok, Transformer.eval(dsl_state, [], code)}
   end
 
   defp extract_routes(dsl_state) do
@@ -325,7 +331,10 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   end
 
   defp handler_key(handler, _fallback_key) when is_atom(handler), do: handler
-  defp handler_key({signal_name, _payload}, _fallback_key) when is_atom(signal_name), do: signal_name
+
+  defp handler_key({signal_name, _payload}, _fallback_key) when is_atom(signal_name),
+    do: signal_name
+
   defp handler_key({_module, _function, _args}, fallback_key), do: fallback_key
   defp handler_key(_handler, fallback_key), do: fallback_key
 
@@ -349,37 +358,4 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   defp attr_get(attrs, key) when is_map(attrs), do: Map.get(attrs, key)
   defp attr_get(attrs, key) when is_list(attrs), do: Keyword.get(attrs, key)
   defp attr_get(_attrs, _key), do: nil
-
-  defp click_route_cases_ast(routes) do
-    Enum.map(routes, fn route ->
-      route_ast = Macro.escape(route)
-
-      quote do
-        unquote(route.key) ->
-          handle_click_signal(state, signal, unquote(route_ast))
-      end
-    end)
-  end
-
-  defp change_route_cases_ast(routes) do
-    Enum.map(routes, fn route ->
-      route_ast = Macro.escape(route)
-
-      quote do
-        unquote(route.key) ->
-          handle_change_signal(state, signal, unquote(route_ast))
-      end
-    end)
-  end
-
-  defp submit_route_cases_ast(routes) do
-    Enum.map(routes, fn route ->
-      route_ast = Macro.escape(route)
-
-      quote do
-        unquote(route.key) ->
-          handle_submit_signal(state, signal, unquote(route_ast))
-      end
-    end)
-  end
 end

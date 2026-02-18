@@ -34,11 +34,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
       quote do
         @impl true
         def view(state) do
-          # Use the IUR.Builder to build the tree from DSL state
-          # Pass the DSL state captured at compile time
-          dsl_state = __dsl_state__()
-
-          case UnifiedUi.IUR.Builder.build(dsl_state) do
+          case UnifiedUi.IUR.Builder.build(unquote(Macro.escape(dsl_state))) do
             nil ->
               # Fallback to empty VBox if no entities defined
               %UnifiedIUR.Layouts.VBox{
@@ -54,6 +50,6 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
         end
       end
 
-    Spark.Dsl.Transformer.eval(dsl_state, [], code)
+    {:ok, Spark.Dsl.Transformer.eval(dsl_state, [], code)}
   end
 end
