@@ -29,7 +29,7 @@ defmodule UnifiedUi.MixProject do
       {:jido, "~> 1.0"},
       {:jido_signal, "~> 1.0"},
       {:term_ui, github: "pcharbon70/term_ui", branch: "multi-renderer"},
-      {:unified_iur, path: "../../unified_iur"}
+      {:unified_iur, path: "../unified_iur"}
     ]
   end
 
