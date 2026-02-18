@@ -1,52 +1,28 @@
 defmodule UnifiedUi.Dsl.Sections.Widgets do
   @moduledoc """
-  The Widgets section for the UnifiedUi DSL.
-
-  This section defines widget entities - the basic building blocks of a UI.
-  Widgets include text labels, buttons, inputs, and other UI components.
-
-  ## Planned Widgets
-
-  The following widgets will be defined in future phases:
-  * `text` - Display text content
-  * `button` - Clickable button
-  * `label` - Label for form inputs
-  * `text_input` - Single-line text input
-  * `text_area` - Multi-line text input
-  * `checkbox` - Checkbox input
-  * `table` - Data table with sorting
-  * `gauge` - Progress indicator
-  * `sparkline` - Inline trend graph
-  And many more from the TermUi widget library.
-
-  ## Example (Future)
-
-  ```elixir
-  ui do
-    vbox do
-      text "Welcome!", style: [fg: :cyan, attrs: [:bold]]
-      button "Submit", id: :submit_btn
-    end
-  end
-  ```
+  Canonical widgets section definition used by the UnifiedUi DSL.
   """
 
   @widgets_section %Spark.Dsl.Section{
     name: :widgets,
     describe: """
-    The widgets section contains widget entity definitions.
-
-    Widgets are the basic building blocks of a user interface.
-    Each widget represents a UI element like text, buttons, or inputs.
+    Widget entity definitions.
     """,
     schema: [],
     entities: [
-      # Widget entities will be added in future phases:
-      # - text
-      # - button
-      # - text_input
-      # - label
-      # etc.
+      UnifiedUi.Dsl.Entities.Widgets.button_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.label_entity(),
+      UnifiedUi.Dsl.Entities.Widgets.text_input_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.gauge_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.sparkline_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
+      UnifiedUi.Dsl.Entities.DataViz.line_chart_entity(),
+      UnifiedUi.Dsl.Entities.Tables.table_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.context_menu_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tabs_entity(),
+      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity()
     ]
   }
 
