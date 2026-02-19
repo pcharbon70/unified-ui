@@ -1,4 +1,5 @@
 defmodule UnifiedUi.TestScreen do
+  @moduledoc false
   @behaviour UnifiedUi.ElmArchitecture
   use UnifiedUi.Dsl
 

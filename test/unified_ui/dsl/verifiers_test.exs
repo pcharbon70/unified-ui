@@ -39,10 +39,21 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
     test "passes when all IDs are unique" do
       # Create mock entities with map structure (not structs)
       entities = [
-        %{__struct__: Widgets.Button, id: :btn1, label: "Button 1", __meta__: [entity: "button 1"]},
+        %{
+          __struct__: Widgets.Button,
+          id: :btn1,
+          label: "Button 1",
+          __meta__: [entity: "button 1"]
+        },
         %{__struct__: Widgets.Text, id: :text1, content: "Text 1", __meta__: [entity: "text 1"]},
         %{__struct__: Widgets.TextInput, id: :input1, __meta__: [entity: "text_input"]},
-        %{__struct__: Widgets.Label, for: :input1, text: "Label 1", id: :label1, __meta__: [entity: "label 1"]}
+        %{
+          __struct__: Widgets.Label,
+          for: :input1,
+          text: "Label 1",
+          id: :label1,
+          __meta__: [entity: "label 1"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -63,8 +74,18 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "detects duplicate widget IDs" do
       entities = [
-        %{__struct__: Widgets.Button, id: :duplicate, label: "Button 1", __meta__: [entity: "button 1"]},
-        %{__struct__: Widgets.Text, id: :duplicate, content: "Text 1", __meta__: [entity: "text 1"]}
+        %{
+          __struct__: Widgets.Button,
+          id: :duplicate,
+          label: "Button 1",
+          __meta__: [entity: "button 1"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          id: :duplicate,
+          content: "Text 1",
+          __meta__: [entity: "text 1"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -95,7 +116,12 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
     test "passes when label for references valid input ID" do
       entities = [
         %{__struct__: Widgets.TextInput, id: :email, __meta__: [entity: "email_input"]},
-        %{__struct__: Widgets.Label, for: :email, text: "Email:", __meta__: [entity: "email_label"]}
+        %{
+          __struct__: Widgets.Label,
+          for: :email,
+          text: "Email:",
+          __meta__: [entity: "email_label"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -106,22 +132,39 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
     test "detects label for referencing non-existent input" do
       entities = [
         %{__struct__: Widgets.TextInput, id: :password, __meta__: [entity: "password_input"]},
-        %{__struct__: Widgets.Label, for: :nonexistent, text: "Email:", __meta__: [entity: "email_label"]}
+        %{
+          __struct__: Widgets.Label,
+          for: :nonexistent,
+          text: "Email:",
+          __meta__: [entity: "email_label"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
 
-      assert_raise Spark.Error.DslError, ~r/Invalid label reference.*references :nonexistent/s, fn ->
-        LayoutStructureVerifier.verify(dsl_state)
-      end
+      assert_raise Spark.Error.DslError,
+                   ~r/Invalid label reference.*references :nonexistent/s,
+                   fn ->
+                     LayoutStructureVerifier.verify(dsl_state)
+                   end
     end
 
     test "passes with multiple labels and inputs" do
       entities = [
         %{__struct__: Widgets.TextInput, id: :email, __meta__: [entity: "email_input"]},
-        %{__struct__: Widgets.Label, for: :email, text: "Email:", __meta__: [entity: "email_label"]},
+        %{
+          __struct__: Widgets.Label,
+          for: :email,
+          text: "Email:",
+          __meta__: [entity: "email_label"]
+        },
         %{__struct__: Widgets.TextInput, id: :password, __meta__: [entity: "password_input"]},
-        %{__struct__: Widgets.Label, for: :password, text: "Password:", __meta__: [entity: "password_label"]},
+        %{
+          __struct__: Widgets.Label,
+          for: :password,
+          text: "Password:",
+          __meta__: [entity: "password_label"]
+        },
         %{__struct__: Widgets.TextInput, id: :name, __meta__: [entity: "name_input"]},
         %{__struct__: Widgets.Label, for: :name, text: "Name:", __meta__: [entity: "name_label"]}
       ]
@@ -146,9 +189,24 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
   describe "SignalHandlerVerifier" do
     test "passes with atom signal handlers" do
       entities = [
-        %{__struct__: Widgets.Button, on_click: :my_signal, label: "Click", __meta__: [entity: "button"]},
-        %{__struct__: Widgets.TextInput, id: :input1, on_change: :value_changed, __meta__: [entity: "input"]},
-        %{__struct__: Widgets.TextInput, id: :input2, on_submit: :form_submit, __meta__: [entity: "input2"]}
+        %{
+          __struct__: Widgets.Button,
+          on_click: :my_signal,
+          label: "Click",
+          __meta__: [entity: "button"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :input1,
+          on_change: :value_changed,
+          __meta__: [entity: "input"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :input2,
+          on_submit: :form_submit,
+          __meta__: [entity: "input2"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -158,8 +216,18 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "passes with tuple signal handlers" do
       entities = [
-        %{__struct__: Widgets.Button, on_click: {:my_signal, %{data: "value"}}, label: "Click", __meta__: [entity: "button"]},
-        %{__struct__: Widgets.TextInput, id: :input1, on_change: {:value_changed, %{field: :input1}}, __meta__: [entity: "input"]}
+        %{
+          __struct__: Widgets.Button,
+          on_click: {:my_signal, %{data: "value"}},
+          label: "Click",
+          __meta__: [entity: "button"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :input1,
+          on_change: {:value_changed, %{field: :input1}},
+          __meta__: [entity: "input"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -169,8 +237,18 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "passes with MFA signal handlers for kernel modules" do
       entities = [
-        %{__struct__: Widgets.Button, on_click: {Kernel, :is_atom, [:true]}, label: "Click", __meta__: [entity: "button"]},
-        %{__struct__: Widgets.TextInput, id: :input1, on_change: {Enum, :map, [[]]}, __meta__: [entity: "input"]}
+        %{
+          __struct__: Widgets.Button,
+          on_click: {Kernel, :is_atom, [true]},
+          label: "Click",
+          __meta__: [entity: "button"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :input1,
+          on_change: {Enum, :map, [[]]},
+          __meta__: [entity: "input"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -180,7 +258,12 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "detects invalid signal handler format (string)" do
       entities = [
-        %{__struct__: Widgets.Button, on_click: "invalid_string_handler", label: "Click", __meta__: [entity: "button"]}
+        %{
+          __struct__: Widgets.Button,
+          on_click: "invalid_string_handler",
+          label: "Click",
+          __meta__: [entity: "button"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -192,7 +275,12 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "detects invalid signal handler format (list)" do
       entities = [
-        %{__struct__: Widgets.Button, on_click: [:invalid, :list], label: "Click", __meta__: [entity: "button"]}
+        %{
+          __struct__: Widgets.Button,
+          on_click: [:invalid, :list],
+          label: "Click",
+          __meta__: [entity: "button"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -217,9 +305,24 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
   describe "StyleReferenceVerifier" do
     test "passes with valid style attributes" do
       entities = [
-        %{__struct__: Widgets.Button, label: "Button", style: [fg: :blue, bg: :white, attrs: [:bold]], __meta__: [entity: "button"]},
-        %{__struct__: Widgets.Text, content: "Text", style: [fg: :red, padding: 2], __meta__: [entity: "text"]},
-        %{__struct__: Widgets.TextInput, id: :input, style: [margin: 1], __meta__: [entity: "input"]}
+        %{
+          __struct__: Widgets.Button,
+          label: "Button",
+          style: [fg: :blue, bg: :white, attrs: [:bold]],
+          __meta__: [entity: "button"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          content: "Text",
+          style: [fg: :red, padding: 2],
+          __meta__: [entity: "text"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :input,
+          style: [margin: 1],
+          __meta__: [entity: "input"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -249,10 +352,30 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "passes with valid text attributes" do
       entities = [
-        %{__struct__: Widgets.Text, content: "Bold", style: [attrs: [:bold]], __meta__: [entity: "text"]},
-        %{__struct__: Widgets.Text, content: "Italic", style: [attrs: [:italic]], __meta__: [entity: "text2"]},
-        %{__struct__: Widgets.Text, content: "Underline", style: [attrs: [:underline]], __meta__: [entity: "text3"]},
-        %{__struct__: Widgets.Text, content: "Multiple", style: [attrs: [:bold, :underline, :italic]], __meta__: [entity: "text4"]}
+        %{
+          __struct__: Widgets.Text,
+          content: "Bold",
+          style: [attrs: [:bold]],
+          __meta__: [entity: "text"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          content: "Italic",
+          style: [attrs: [:italic]],
+          __meta__: [entity: "text2"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          content: "Underline",
+          style: [attrs: [:underline]],
+          __meta__: [entity: "text3"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          content: "Multiple",
+          style: [attrs: [:bold, :underline, :italic]],
+          __meta__: [entity: "text4"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -262,7 +385,12 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "detects invalid text attributes" do
       entities = [
-        %{__struct__: Widgets.Text, content: "Invalid", style: [attrs: [:not_a_real_attr]], __meta__: [entity: "text"]}
+        %{
+          __struct__: Widgets.Text,
+          content: "Invalid",
+          style: [attrs: [:not_a_real_attr]],
+          __meta__: [entity: "text"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -274,7 +402,22 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
     test "passes with all valid style attributes" do
       entities = [
-        %{__struct__: Widgets.Button, label: "Test", style: [fg: :blue, bg: :white, attrs: [:bold], padding: 1, margin: 2, width: :auto, height: :fill, align: :center, spacing: 1], __meta__: [entity: "button"]}
+        %{
+          __struct__: Widgets.Button,
+          label: "Test",
+          style: [
+            fg: :blue,
+            bg: :white,
+            attrs: [:bold],
+            padding: 1,
+            margin: 2,
+            width: :auto,
+            height: :fill,
+            align: :center,
+            spacing: 1
+          ],
+          __meta__: [entity: "button"]
+        }
       ]
 
       dsl_state = create_dsl_state(entities)
@@ -383,13 +526,51 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
   describe "integration tests" do
     test "complex UI with all features passes verification" do
       widgets = [
-        %{__struct__: Widgets.Button, id: :login_btn, on_click: :login, label: "Login", __meta__: [entity: "login_button"]},
-        %{__struct__: Widgets.Button, id: :cancel_btn, on_click: {:cancel, %{reason: :user_cancellation}}, label: "Cancel", __meta__: [entity: "cancel_button"]},
-        %{__struct__: Widgets.Text, id: :title, content: "Welcome!", style: [fg: :green, attrs: [:bold]], __meta__: [entity: "title_text"]},
-        %{__struct__: Widgets.TextInput, id: :email_input, placeholder: "user@example.com", __meta__: [entity: "email_input"]},
-        %{__struct__: Widgets.TextInput, id: :password_input, type: :password, __meta__: [entity: "password_input"]},
-        %{__struct__: Widgets.Label, for: :email_input, text: "Email:", __meta__: [entity: "email_label"]},
-        %{__struct__: Widgets.Label, for: :password_input, text: "Password:", __meta__: [entity: "password_label"]}
+        %{
+          __struct__: Widgets.Button,
+          id: :login_btn,
+          on_click: :login,
+          label: "Login",
+          __meta__: [entity: "login_button"]
+        },
+        %{
+          __struct__: Widgets.Button,
+          id: :cancel_btn,
+          on_click: {:cancel, %{reason: :user_cancellation}},
+          label: "Cancel",
+          __meta__: [entity: "cancel_button"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          id: :title,
+          content: "Welcome!",
+          style: [fg: :green, attrs: [:bold]],
+          __meta__: [entity: "title_text"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :email_input,
+          placeholder: "user@example.com",
+          __meta__: [entity: "email_input"]
+        },
+        %{
+          __struct__: Widgets.TextInput,
+          id: :password_input,
+          type: :password,
+          __meta__: [entity: "password_input"]
+        },
+        %{
+          __struct__: Widgets.Label,
+          for: :email_input,
+          text: "Email:",
+          __meta__: [entity: "email_label"]
+        },
+        %{
+          __struct__: Widgets.Label,
+          for: :password_input,
+          text: "Password:",
+          __meta__: [entity: "password_label"]
+        }
       ]
 
       layouts = [
@@ -401,7 +582,11 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
 
       dsl_state = %{
         persist: %{module: TestModule},
-        ui: %{state: %{entities: [%State{attrs: [count: 0, email: "", password: "", logged_in: false]}]}},
+        ui: %{
+          state: %{
+            entities: [%State{attrs: [count: 0, email: "", password: "", logged_in: false]}]
+          }
+        },
         widgets: %{entities: widgets},
         layouts: %{entities: layouts}
       }

@@ -208,11 +208,12 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   defp convert_by_type(%Widgets.TextInput{} = input, :text_input, _state) do
     # Build display text
-    display_text = cond do
-      input.value -> input.value
-      input.placeholder -> "[#{input.placeholder}]"
-      true -> "[________________]"
-    end
+    display_text =
+      cond do
+        input.value -> input.value
+        input.placeholder -> "[#{input.placeholder}]"
+        true -> "[________________]"
+      end
 
     # Build base props
     props = []
@@ -230,16 +231,17 @@ defmodule UnifiedUi.Adapters.Desktop do
 
     # Wrap with input metadata as a tagged tuple for event handling
     # This follows the same pattern as the Terminal renderer
-    {:text_input, base_widget, %{
-      id: input.id,
-      value: input.value,
-      placeholder: input.placeholder,
-      type: input.type,
-      on_change: input.on_change,
-      on_submit: input.on_submit,
-      disabled: input.disabled,
-      form_id: input.form_id
-    }}
+    {:text_input, base_widget,
+     %{
+       id: input.id,
+       value: input.value,
+       placeholder: input.placeholder,
+       type: input.type,
+       on_change: input.on_change,
+       on_submit: input.on_submit,
+       disabled: input.disabled,
+       form_id: input.form_id
+     }}
   end
 
   # Data visualization converters
@@ -263,27 +265,29 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(display_text, props)
 
     # Wrap with metadata
-    {:gauge, base_widget, %{
-      id: gauge.id,
-      value: value,
-      min: min_val,
-      max: max_val,
-      label: gauge.label,
-      width: gauge.width,
-      height: gauge.height,
-      color_zones: gauge.color_zones
-    }}
+    {:gauge, base_widget,
+     %{
+       id: gauge.id,
+       value: value,
+       min: min_val,
+       max: max_val,
+       label: gauge.label,
+       width: gauge.width,
+       height: gauge.height,
+       color_zones: gauge.color_zones
+     }}
   end
 
   defp convert_by_type(%Widgets.Sparkline{} = sparkline, :sparkline, _state) do
     data = sparkline.data || []
 
     # Build display text for desktop sparkline
-    display_text = if length(data) > 0 do
-      "Sparkline: #{length(data)} points"
-    else
-      "No data"
-    end
+    display_text =
+      if data != [] do
+        "Sparkline: #{length(data)} points"
+      else
+        "No data"
+      end
 
     # Build base props
     props = []
@@ -295,26 +299,28 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(display_text, props)
 
     # Wrap with metadata
-    {:sparkline, base_widget, %{
-      id: sparkline.id,
-      data: data,
-      width: sparkline.width,
-      height: sparkline.height,
-      color: sparkline.color,
-      show_dots: sparkline.show_dots,
-      show_area: sparkline.show_area
-    }}
+    {:sparkline, base_widget,
+     %{
+       id: sparkline.id,
+       data: data,
+       width: sparkline.width,
+       height: sparkline.height,
+       color: sparkline.color,
+       show_dots: sparkline.show_dots,
+       show_area: sparkline.show_area
+     }}
   end
 
   defp convert_by_type(%Widgets.BarChart{} = chart, :bar_chart, _state) do
     data = chart.data || []
 
     # Build display text for desktop bar chart
-    display_text = if length(data) > 0 do
-      "Bar Chart: #{length(data)} items"
-    else
-      "No data"
-    end
+    display_text =
+      if data != [] do
+        "Bar Chart: #{length(data)} items"
+      else
+        "No data"
+      end
 
     # Build base props
     props = []
@@ -326,25 +332,27 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(display_text, props)
 
     # Wrap with metadata
-    {:bar_chart, base_widget, %{
-      id: chart.id,
-      data: data,
-      width: chart.width,
-      height: chart.height,
-      orientation: chart.orientation,
-      show_labels: chart.show_labels
-    }}
+    {:bar_chart, base_widget,
+     %{
+       id: chart.id,
+       data: data,
+       width: chart.width,
+       height: chart.height,
+       orientation: chart.orientation,
+       show_labels: chart.show_labels
+     }}
   end
 
   defp convert_by_type(%Widgets.LineChart{} = chart, :line_chart, _state) do
     data = chart.data || []
 
     # Build display text for desktop line chart
-    display_text = if length(data) > 0 do
-      "Line Chart: #{length(data)} points"
-    else
-      "No data"
-    end
+    display_text =
+      if data != [] do
+        "Line Chart: #{length(data)} points"
+      else
+        "No data"
+      end
 
     # Build base props
     props = []
@@ -356,14 +364,15 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(display_text, props)
 
     # Wrap with metadata
-    {:line_chart, base_widget, %{
-      id: chart.id,
-      data: data,
-      width: chart.width,
-      height: chart.height,
-      show_dots: chart.show_dots,
-      show_area: chart.show_area
-    }}
+    {:line_chart, base_widget,
+     %{
+       id: chart.id,
+       data: data,
+       width: chart.width,
+       height: chart.height,
+       show_dots: chart.show_dots,
+       show_area: chart.show_area
+     }}
   end
 
   defp convert_by_type(%Widgets.Table{} = table, :table, _state) do
@@ -371,28 +380,31 @@ defmodule UnifiedUi.Adapters.Desktop do
     columns = table.columns || []
 
     # Auto-generate columns from first row if not provided
-    columns = if columns == [] and length(data) > 0 do
-      first_row = hd(data)
-      first_row
-      |> extract_desktop_keys()
-      |> Enum.map(fn key ->
-        %Widgets.Column{
-          key: key,
-          header: to_string(key) |> String.capitalize(),
-          sortable: true,
-          align: :left
-        }
-      end)
-    else
-      columns
-    end
+    columns =
+      if columns == [] and data != [] do
+        first_row = hd(data)
+
+        first_row
+        |> extract_desktop_keys()
+        |> Enum.map(fn key ->
+          %Widgets.Column{
+            key: key,
+            header: to_string(key) |> String.capitalize(),
+            sortable: true,
+            align: :left
+          }
+        end)
+      else
+        columns
+      end
 
     # Build display text for desktop table
-    display_text = if length(data) > 0 do
-      "Table: #{length(data)} rows, #{length(columns)} columns"
-    else
-      "Empty Table"
-    end
+    display_text =
+      if data != [] do
+        "Table: #{length(data)} rows, #{length(columns)} columns"
+      else
+        "Empty Table"
+      end
 
     # Build base props
     props = []
@@ -404,17 +416,18 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(display_text, props)
 
     # Wrap with metadata for event handling
-    {:table, base_widget, %{
-      id: table.id,
-      data: data,
-      columns: columns,
-      selected_row: table.selected_row,
-      height: table.height,
-      on_row_select: table.on_row_select,
-      on_sort: table.on_sort,
-      sort_column: table.sort_column,
-      sort_direction: table.sort_direction
-    }}
+    {:table, base_widget,
+     %{
+       id: table.id,
+       data: data,
+       columns: columns,
+       selected_row: table.selected_row,
+       height: table.height,
+       on_row_select: table.on_row_select,
+       on_sort: table.on_sort,
+       sort_column: table.sort_column,
+       sort_direction: table.sort_direction
+     }}
   end
 
   # Navigation widget converters
@@ -433,23 +446,25 @@ defmodule UnifiedUi.Adapters.Desktop do
     base_widget = build_label(label_text, props)
 
     # Wrap with metadata
-    {:menu_item, base_widget, %{
-      id: item.id,
-      label: item.label,
-      action: item.action,
-      disabled: item.disabled,
-      icon: item.icon,
-      shortcut: item.shortcut,
-      has_submenu: item.submenu != nil,
-      submenu: item.submenu
-    }}
+    {:menu_item, base_widget,
+     %{
+       id: item.id,
+       label: item.label,
+       action: item.action,
+       disabled: item.disabled,
+       icon: item.icon,
+       shortcut: item.shortcut,
+       has_submenu: item.submenu != nil,
+       submenu: item.submenu
+     }}
   end
 
   defp convert_by_type(%Widgets.Menu{} = menu, :menu, state) do
     # Convert menu items
-    items = Enum.map(menu.items || [], fn item ->
-      convert_iur(item, state)
-    end)
+    items =
+      Enum.map(menu.items || [], fn item ->
+        convert_iur(item, state)
+      end)
 
     # Build container props
     props = []
@@ -472,18 +487,20 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:menu, base_widget, %{
-      id: menu.id,
-      title: menu.title,
-      position: menu.position
-    }}
+    {:menu, base_widget,
+     %{
+       id: menu.id,
+       title: menu.title,
+       position: menu.position
+     }}
   end
 
   defp convert_by_type(%Widgets.ContextMenu{} = menu, :context_menu, state) do
     # Convert menu items
-    items = Enum.map(menu.items || [], fn item ->
-      convert_iur(item, state)
-    end)
+    items =
+      Enum.map(menu.items || [], fn item ->
+        convert_iur(item, state)
+      end)
 
     # Build container props
     props = []
@@ -503,10 +520,11 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:context_menu, base_widget, %{
-      id: menu.id,
-      trigger_on: menu.trigger_on
-    }}
+    {:context_menu, base_widget,
+     %{
+       id: menu.id,
+       trigger_on: menu.trigger_on
+     }}
   end
 
   defp convert_by_type(%Widgets.Tab{} = tab, :tab, _state) do
@@ -534,38 +552,43 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:tab, base_widget, %{
-      id: tab.id,
-      label: tab.label,
-      icon: tab.icon,
-      disabled: tab.disabled,
-      closable: tab.closable,
-      content: tab.content
-    }}
+    {:tab, base_widget,
+     %{
+       id: tab.id,
+       label: tab.label,
+       icon: tab.icon,
+       disabled: tab.disabled,
+       closable: tab.closable,
+       content: tab.content
+     }}
   end
 
   defp convert_by_type(%Widgets.Tabs{} = tabs, :tabs, state) do
     # Convert tab headers
-    tab_headers = Enum.map(tabs.tabs || [], fn tab ->
-      convert_iur(tab, state)
-    end)
+    tab_headers =
+      Enum.map(tabs.tabs || [], fn tab ->
+        convert_iur(tab, state)
+      end)
 
     # Get active tab content
-    active_content = if tabs.active_tab do
-      Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
-      |> case do
-        nil -> nil
-        tab ->
-          # Only convert content if it exists
-          if tab.content do
-            convert_iur(tab.content, state)
-          else
+    active_content =
+      if tabs.active_tab do
+        Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
+        |> case do
+          nil ->
             nil
-          end
+
+          tab ->
+            # Only convert content if it exists
+            if tab.content do
+              convert_iur(tab.content, state)
+            else
+              nil
+            end
+        end
+      else
+        nil
       end
-    else
-      nil
-    end
 
     # Build container props
     props = []
@@ -591,13 +614,14 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:tabs, base_widget, %{
-      id: tabs.id,
-      active_tab: tabs.active_tab,
-      position: tabs.position,
-      on_change: tabs.on_change,
-      tabs: tabs.tabs
-    }}
+    {:tabs, base_widget,
+     %{
+       id: tabs.id,
+       active_tab: tabs.active_tab,
+       position: tabs.position,
+       on_change: tabs.on_change,
+       tabs: tabs.tabs
+     }}
   end
 
   defp convert_by_type(%Widgets.TreeNode{} = node, :tree_node, state) do
@@ -620,13 +644,14 @@ defmodule UnifiedUi.Adapters.Desktop do
     props = if node.icon_expanded, do: [{:icon_expanded, node.icon_expanded} | props], else: props
 
     # Convert children if any
-    children = if node.children do
-      Enum.map(node.children, fn child ->
-        convert_iur(child, state)
-      end)
-    else
-      []
-    end
+    children =
+      if node.children do
+        Enum.map(node.children, fn child ->
+          convert_iur(child, state)
+        end)
+      else
+        []
+      end
 
     # Create tree node widget
     base_widget = %{
@@ -637,23 +662,25 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:tree_node, base_widget, %{
-      id: node.id,
-      label: node.label,
-      value: node.value,
-      expanded: node.expanded,
-      icon: node.icon,
-      icon_expanded: node.icon_expanded,
-      selectable: node.selectable,
-      has_children: node.children != nil
-    }}
+    {:tree_node, base_widget,
+     %{
+       id: node.id,
+       label: node.label,
+       value: node.value,
+       expanded: node.expanded,
+       icon: node.icon,
+       icon_expanded: node.icon_expanded,
+       selectable: node.selectable,
+       has_children: node.children != nil
+     }}
   end
 
   defp convert_by_type(%Widgets.TreeView{} = tree, :tree_view, state) do
     # Convert root nodes
-    root_nodes = Enum.map(tree.root_nodes || [], fn node ->
-      convert_iur(node, state)
-    end)
+    root_nodes =
+      Enum.map(tree.root_nodes || [], fn node ->
+        convert_iur(node, state)
+      end)
 
     # Build container props
     props = []
@@ -665,7 +692,8 @@ defmodule UnifiedUi.Adapters.Desktop do
     props = if tree.selected_node, do: [{:selected_node, tree.selected_node} | props], else: props
 
     # Add expanded_nodes prop
-    props = if tree.expanded_nodes, do: [{:expanded_nodes, tree.expanded_nodes} | props], else: props
+    props =
+      if tree.expanded_nodes, do: [{:expanded_nodes, tree.expanded_nodes} | props], else: props
 
     # Add show_root prop
     props = [{:show_root, tree.show_root} | props]
@@ -679,14 +707,15 @@ defmodule UnifiedUi.Adapters.Desktop do
     }
 
     # Wrap with metadata
-    {:tree_view, base_widget, %{
-      id: tree.id,
-      selected_node: tree.selected_node,
-      expanded_nodes: tree.expanded_nodes,
-      on_select: tree.on_select,
-      on_toggle: tree.on_toggle,
-      show_root: tree.show_root
-    }}
+    {:tree_view, base_widget,
+     %{
+       id: tree.id,
+       selected_node: tree.selected_node,
+       expanded_nodes: tree.expanded_nodes,
+       on_select: tree.on_select,
+       on_toggle: tree.on_toggle,
+       show_root: tree.show_root
+     }}
   end
 
   # Layout converters
@@ -695,11 +724,12 @@ defmodule UnifiedUi.Adapters.Desktop do
     children = convert_children(vbox.children, state)
 
     # Build container props
-    props = []
-    |> maybe_add_spacing(vbox.spacing)
-    |> maybe_add_padding(vbox.padding)
-    |> maybe_add_align_items(vbox.align_items)
-    |> maybe_add_justify_content(vbox.justify_content)
+    props =
+      []
+      |> maybe_add_spacing(vbox.spacing)
+      |> maybe_add_padding(vbox.padding)
+      |> maybe_add_align_items(vbox.align_items)
+      |> maybe_add_justify_content(vbox.justify_content)
 
     # Add style props if present
     props = Style.add_props(props, vbox.style)
@@ -712,11 +742,12 @@ defmodule UnifiedUi.Adapters.Desktop do
     children = convert_children(hbox.children, state)
 
     # Build container props
-    props = []
-    |> maybe_add_spacing(hbox.spacing)
-    |> maybe_add_padding(hbox.padding)
-    |> maybe_add_align_items(hbox.align_items)
-    |> maybe_add_justify_content(hbox.justify_content)
+    props =
+      []
+      |> maybe_add_spacing(hbox.spacing)
+      |> maybe_add_padding(hbox.padding)
+      |> maybe_add_align_items(hbox.align_items)
+      |> maybe_add_justify_content(hbox.justify_content)
 
     # Add style props if present
     props = Style.add_props(props, hbox.style)
@@ -743,11 +774,13 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   # Spacing in DesktopUi is in pixels
   defp maybe_add_spacing(props, nil), do: props
+
   defp maybe_add_spacing(props, spacing) when is_integer(spacing),
     do: [{:spacing, spacing} | props]
 
   # Padding in DesktopUi is in pixels
   defp maybe_add_padding(props, nil), do: props
+
   defp maybe_add_padding(props, padding) when is_integer(padding),
     do: [{:padding, padding} | props]
 

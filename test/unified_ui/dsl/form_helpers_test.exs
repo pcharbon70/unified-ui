@@ -176,7 +176,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "builds signal with extra payload" do
       result =
         FormHelpers.build_form_submit_signal(:login, %{email: "test@example.com"}, %{
-          timestamp: 123456,
+          timestamp: 123_456,
           source: :web
         })
 
@@ -185,7 +185,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
                 %{
                   form_id: :login,
                   data: %{email: "test@example.com"},
-                  timestamp: 123456,
+                  timestamp: 123_456,
                   source: :web
                 }}
     end
@@ -193,12 +193,12 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     test "extra payload merges with base payload (can override)" do
       result =
         FormHelpers.build_form_submit_signal(:login, %{email: "test@example.com"}, %{
-          timestamp: 123456
+          timestamp: 123_456
         })
 
       assert result ==
                {:form_submit,
-                %{form_id: :login, data: %{email: "test@example.com"}, timestamp: 123456}}
+                %{form_id: :login, data: %{email: "test@example.com"}, timestamp: 123_456}}
     end
   end
 
@@ -416,7 +416,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     end
 
     test "returns :invalid_type when field is not a string" do
-      form_data = %{username: 12345}
+      form_data = %{username: 12_345}
 
       result = FormHelpers.validate_length(form_data, :username, 3, 20)
 
@@ -466,7 +466,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
     end
 
     test "returns :invalid_type when field is not a string" do
-      form_data = %{zip: 12345}
+      form_data = %{zip: 12_345}
 
       result = FormHelpers.validate_format(form_data, :zip, :us_zip)
 

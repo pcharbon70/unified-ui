@@ -75,7 +75,7 @@ defmodule UnifiedUi.Dsl.Verifiers.UniqueIdVerifier do
 
   defp format_duplicates(duplicates) do
     duplicates
-    |> Enum.map(fn {struct, entity_name} ->
+    |> Enum.map_join("\n", fn {struct, entity_name} ->
       entity_type =
         struct
         |> Module.split()
@@ -84,7 +84,6 @@ defmodule UnifiedUi.Dsl.Verifiers.UniqueIdVerifier do
 
       "  - #{entity_type} (#{entity_name})"
     end)
-    |> Enum.join("\n")
   end
 end
 
@@ -144,7 +143,7 @@ defmodule UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier do
   end
 
   defp format_available_ids([]), do: "(none)"
-  defp format_available_ids(ids), do: Enum.map(ids, &inspect/1) |> Enum.join(", ")
+  defp format_available_ids(ids), do: Enum.map_join(ids, ", ", &inspect/1)
 end
 
 defmodule UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier do
@@ -408,7 +407,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
 
         State keys must be atoms, but found:
 
-        #{Enum.map(invalid_keys, fn k -> "  - #{inspect(k)}" end) |> Enum.join("\n")}
+        #{Enum.map_join(invalid_keys, "\n", fn k -> "  - #{inspect(k)}" end)}
 
         Please use atom keys for state:
 
@@ -497,7 +496,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
 
         Invalid keys:
 
-        #{Enum.map(invalid_refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        #{Enum.map_join(invalid_refs, "\n", fn key -> "  - #{inspect(key)}" end)}
         """
     end
 
@@ -530,13 +529,13 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
         Undefined state keys referenced in UI entities.
 
         Referenced keys:
-        #{Enum.map(refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        #{Enum.map_join(refs, "\n", fn key -> "  - #{inspect(key)}" end)}
 
         Defined keys:
-        #{Enum.map(initial_state_keys, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        #{Enum.map_join(initial_state_keys, "\n", fn key -> "  - #{inspect(key)}" end)}
 
         Missing keys:
-        #{Enum.map(missing_refs, fn key -> "  - #{inspect(key)}" end) |> Enum.join("\n")}
+        #{Enum.map_join(missing_refs, "\n", fn key -> "  - #{inspect(key)}" end)}
         """
     end
   end
