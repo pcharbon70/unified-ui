@@ -52,12 +52,19 @@ defmodule UnifiedUi.Adapters.Coordinator do
   alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Adapters.Desktop
   alias UnifiedUi.Adapters.Web
+  alias UnifiedUi.Adapters.Terminal.Events, as: TerminalEvents
+  alias UnifiedUi.Adapters.Desktop.Events, as: DesktopEvents
+  alias UnifiedUi.Adapters.Web.Events, as: WebEvents
+  alias Jido.Signal
 
   @type platform :: :terminal | :desktop | :web
   @type platforms :: [platform()]
   @type renderer :: module()
+  @type event_module :: module()
+  @type target :: pid() | atom() | (Signal.t() -> term()) | {module(), atom(), [term()]}
   @type renderer_state :: map()
   @type render_result :: {:ok, renderer_state()} | {:error, term()}
+  @type event_result :: {:ok, Signal.t()} | {:error, term()}
   @type multi_render_result :: %{platform() => render_result()}
 
   # Platform module mapping
@@ -65,6 +72,13 @@ defmodule UnifiedUi.Adapters.Coordinator do
     terminal: Terminal,
     desktop: Desktop,
     web: Web
+  }
+
+  # Platform event module mapping
+  @event_modules %{
+    terminal: TerminalEvents,
+    desktop: DesktopEvents,
+    web: WebEvents
   }
 
   # Platform Detection
@@ -351,6 +365,132 @@ defmodule UnifiedUi.Adapters.Coordinator do
     available_renderers()
   end
 
+  # Event Normalization and Dispatch
+
+  @doc """
+  Selects the event module for a given platform.
+
+  ## Examples
+
+      iex> Coordinator.event_module(:terminal)
+      {:ok, UnifiedUi.Adapters.Terminal.Events}
+
+  """
+  @spec event_module(platform()) :: {:ok, event_module()} | {:error, term()}
+  def event_module(platform) when platform in [:terminal, :desktop, :web] do
+    case Map.get(@event_modules, platform) do
+      nil -> {:error, :invalid_platform}
+      module -> {:ok, module}
+    end
+  end
+
+  def event_module(_), do: {:error, :invalid_platform}
+
+  @doc """
+  Normalizes a platform event into a unified signal.
+
+  ## Parameters
+
+  * `platform` - Platform where the event originated
+  * `event_type` - Platform event type (for example, `:click`, `:change`)
+  * `data` - Event payload map
+  * `opts` - Options forwarded to the platform event adapter
+
+  ## Returns
+
+  * `{:ok, signal}` - Event normalized to `Jido.Signal`
+  * `{:error, reason}` - Normalization failed
+
+  """
+  @spec normalize_event(platform(), atom(), map(), keyword()) :: event_result()
+  def normalize_event(platform, event_type, data, opts \\ [])
+
+  def normalize_event(platform, event_type, data, opts)
+      when is_atom(event_type) and is_map(data) do
+    with {:ok, module} <- event_module(platform) do
+      module.to_signal(event_type, data, opts)
+    end
+  end
+
+  def normalize_event(_platform, _event_type, _data, _opts), do: {:error, :invalid_event}
+
+  @doc """
+  Normalizes and dispatches a platform event to a single target.
+
+  Supported targets:
+  * PID
+  * Registered process name atom
+  * 1-arity function
+  * MFA tuple `{Module, :function, args}` (signal is prepended to args)
+
+  Returns the normalized signal on success.
+  """
+  @spec dispatch_event(platform(), atom(), map(), target(), keyword()) :: event_result()
+  def dispatch_event(platform, event_type, data, target, opts \\ []) do
+    with {:ok, signal} <- normalize_event(platform, event_type, data, opts),
+         :ok <- route_signal(signal, target) do
+      {:ok, signal}
+    end
+  end
+
+  @doc """
+  Normalizes and dispatches a platform event to multiple targets.
+
+  Returns the normalized signal if all dispatches succeed.
+  """
+  @spec broadcast_event(platform(), atom(), map(), [target()], keyword()) :: event_result()
+  def broadcast_event(platform, event_type, data, targets, opts \\ [])
+
+  def broadcast_event(platform, event_type, data, targets, opts) when is_list(targets) do
+    with {:ok, signal} <- normalize_event(platform, event_type, data, opts) do
+      dispatch_errors =
+        targets
+        |> Enum.map(&route_signal(signal, &1))
+        |> Enum.filter(&match?({:error, _}, &1))
+
+      if dispatch_errors == [] do
+        {:ok, signal}
+      else
+        {:error, {:dispatch_failed, dispatch_errors}}
+      end
+    end
+  end
+
+  def broadcast_event(_platform, _event_type, _data, _targets, _opts) do
+    {:error, :invalid_targets}
+  end
+
+  @doc """
+  Routes a normalized signal to a dispatch target.
+  """
+  @spec route_signal(Signal.t(), target()) :: :ok | {:error, term()}
+  def route_signal(%Signal{} = signal, target) when is_pid(target) do
+    if Process.alive?(target) do
+      send(target, signal)
+      :ok
+    else
+      {:error, :target_not_alive}
+    end
+  end
+
+  def route_signal(%Signal{} = signal, target) when is_atom(target) do
+    case Process.whereis(target) do
+      nil -> {:error, :target_not_found}
+      pid -> route_signal(signal, pid)
+    end
+  end
+
+  def route_signal(%Signal{} = signal, target) when is_function(target, 1) do
+    run_target(fn -> target.(signal) end)
+  end
+
+  def route_signal(%Signal{} = signal, {module, function, args})
+      when is_atom(module) and is_atom(function) and is_list(args) do
+    run_target(fn -> apply(module, function, [signal | args]) end)
+  end
+
+  def route_signal(%Signal{}, _target), do: {:error, :invalid_target}
+
   # State Synchronization
 
   @doc """
@@ -563,4 +703,15 @@ defmodule UnifiedUi.Adapters.Coordinator do
   end
 
   defp deep_merge(_left, right), do: right
+
+  defp run_target(callback) when is_function(callback, 0) do
+    case callback.() do
+      {:error, _reason} = error -> error
+      _ -> :ok
+    end
+  rescue
+    error -> {:error, {:target_failure, error}}
+  catch
+    kind, reason -> {:error, {:target_failure, {kind, reason}}}
+  end
 end
