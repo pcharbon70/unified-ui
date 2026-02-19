@@ -58,6 +58,19 @@ defmodule UnifiedUi.DslTest do
         vbox do
           id :nav_root
 
+          menu :main_menu do
+            title "Main"
+            position :top
+            menu_item "Open", id: :open_item, action: :open_file
+            menu_item "Save", action: {:save_file, %{source: :menu}}
+          end
+
+          context_menu :editor_context do
+            trigger_on :right_click
+            menu_item "Copy", action: :copy
+            menu_item "Paste", action: :paste
+          end
+
           tabs :workspace_tabs do
             active_tab :home
 
@@ -77,7 +90,15 @@ defmodule UnifiedUi.DslTest do
 
       assert function_exported?(module, :view, 1)
 
-      assert %Layouts.VBox{id: :nav_root, children: [tabs, tree]} = module.view(%{})
+      assert %Layouts.VBox{id: :nav_root, children: [menu, context_menu, tabs, tree]} =
+               module.view(%{})
+
+      assert %Widgets.Menu{id: :main_menu, title: "Main", position: :top} = menu
+
+      assert %Widgets.ContextMenu{
+               id: :editor_context,
+               trigger_on: :right_click
+             } = context_menu
 
       assert %Widgets.Tabs{id: :workspace_tabs, active_tab: :home, tabs: [home_tab]} = tabs
 
@@ -88,6 +109,76 @@ defmodule UnifiedUi.DslTest do
                tree
 
       assert %Widgets.TreeNode{id: :root, label: "root", children: nil} = root_node
+    end
+
+    test "supports data visualization widgets in a compiled module" do
+      module = unique_fixture_module(:data_viz)
+
+      compile_fixture(
+        module,
+        """
+        vbox do
+          id :metrics_root
+          gauge :cpu, 72, min: 0, max: 100, label: "CPU"
+          sparkline :memory_trend, [10, 20, 15, 30], show_dots: true
+          bar_chart :sales_chart, [{"Mon", 10}, {"Tue", 12}], orientation: :vertical
+          line_chart :latency_chart, [{"P95", 40}, {"P99", 55}], show_dots: true
+        end
+        """
+      )
+
+      assert function_exported?(module, :view, 1)
+
+      assert %Layouts.VBox{id: :metrics_root, children: [gauge, sparkline, bar_chart, line_chart]} =
+               module.view(%{})
+
+      assert %Widgets.Gauge{id: :cpu, value: 72, min: 0, max: 100, label: "CPU"} = gauge
+
+      assert %Widgets.Sparkline{id: :memory_trend, data: [10, 20, 15, 30], show_dots: true} =
+               sparkline
+
+      assert %Widgets.BarChart{id: :sales_chart, orientation: :vertical} = bar_chart
+      assert %Widgets.LineChart{id: :latency_chart, show_dots: true} = line_chart
+    end
+
+    test "supports tables and nested columns in a compiled module" do
+      module = unique_fixture_module(:table)
+
+      compile_fixture(
+        module,
+        """
+        vbox do
+          id :table_root
+
+          table :users, [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}] do
+            sort_column :id
+            sort_direction :desc
+            on_sort :users_sorted
+            on_row_select :user_selected
+
+            column :id, "ID", align: :right, width: 4
+            column :name, "Name", sortable: true
+          end
+        end
+        """
+      )
+
+      assert function_exported?(module, :view, 1)
+
+      assert %Layouts.VBox{id: :table_root, children: [table]} = module.view(%{})
+
+      assert %Widgets.Table{
+               id: :users,
+               sort_column: :id,
+               sort_direction: :desc,
+               on_sort: :users_sorted,
+               on_row_select: :user_selected,
+               columns: [id_col, name_col]
+             } = table
+
+      assert [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}] = table.data
+      assert %Widgets.Column{key: :id, header: "ID", align: :right, width: 4} = id_col
+      assert %Widgets.Column{key: :name, header: "Name", sortable: true} = name_col
     end
   end
 
