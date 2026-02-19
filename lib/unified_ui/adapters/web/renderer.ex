@@ -68,17 +68,38 @@ defmodule UnifiedUi.Adapters.Web do
     # Convert IUR tree to HTML string
     root = convert_iur(iur_tree, renderer_state)
 
-    # Update state with root reference
-    renderer_state = State.put_root(renderer_state, root)
+    # Update state with root reference and metadata for diff-aware updates
+    renderer_state =
+      renderer_state
+      |> State.put_root(root)
+      |> State.put_metadata(:last_iur, iur_tree)
 
     {:ok, renderer_state}
   end
 
   @impl true
   def update(iur_tree, renderer_state, opts \\ []) do
-    # For now, just re-render the entire tree
-    # Future optimization: diff and update only changed elements
-    render(iur_tree, Keyword.merge(renderer_state.config, opts))
+    merged_config = Keyword.merge(renderer_state.config, opts)
+    previous_iur = State.get_metadata(renderer_state, :last_iur, :__missing__)
+
+    config_changed = merged_config != renderer_state.config
+    iur_changed = previous_iur != iur_tree
+
+    if iur_changed or config_changed do
+      new_root = convert_iur(iur_tree, renderer_state)
+      root_changed = new_root != renderer_state.root
+
+      updated_state =
+        renderer_state
+        |> put_config(merged_config)
+        |> State.put_metadata(:last_iur, iur_tree)
+        |> maybe_put_root(new_root, root_changed)
+        |> maybe_bump_version(root_changed or config_changed)
+
+      {:ok, updated_state}
+    else
+      {:ok, renderer_state}
+    end
   end
 
   @impl true
@@ -1079,4 +1100,24 @@ defmodule UnifiedUi.Adapters.Web do
   defp align_to_css_class(:left), do: "align-left"
   defp align_to_css_class(:right), do: "align-right"
   defp align_to_css_class(:center), do: "align-center"
+
+  defp put_config(%State{} = renderer_state, config) when is_list(config) do
+    %{renderer_state | config: config}
+  end
+
+  defp maybe_put_root(%State{} = renderer_state, _new_root, false) do
+    renderer_state
+  end
+
+  defp maybe_put_root(%State{} = renderer_state, new_root, true) do
+    State.put_root(renderer_state, new_root)
+  end
+
+  defp maybe_bump_version(%State{} = renderer_state, false) do
+    renderer_state
+  end
+
+  defp maybe_bump_version(%State{} = renderer_state, true) do
+    State.bump_version(renderer_state)
+  end
 end

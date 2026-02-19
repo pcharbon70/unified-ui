@@ -54,6 +54,38 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert {:ok, updated_state} = Web.update(updated_iur, state)
       assert {:ok, _root} = State.get_root(updated_state)
     end
+
+    test "returns the same state for unchanged iur and config" do
+      iur = %Widgets.Text{content: "Unchanged"}
+      assert {:ok, state} = Web.render(iur)
+
+      assert {:ok, updated_state} = Web.update(iur, state)
+      assert updated_state == state
+    end
+
+    test "bumps version and updates root when iur changes" do
+      iur = %Widgets.Text{content: "Original"}
+      assert {:ok, state} = Web.render(iur)
+      assert {:ok, initial_root} = State.get_root(state)
+
+      updated_iur = %Widgets.Text{content: "Updated"}
+      assert {:ok, updated_state} = Web.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      assert updated_state.version == state.version + 1
+      assert updated_root != initial_root
+      assert State.get_metadata(updated_state, :last_iur) == updated_iur
+    end
+
+    test "bumps version when config changes" do
+      iur = %Widgets.Text{content: "Config"}
+      assert {:ok, state} = Web.render(iur, window_title: "Original")
+
+      assert {:ok, updated_state} = Web.update(iur, state, window_title: "Updated")
+
+      assert updated_state.version == state.version + 1
+      assert State.get_config(updated_state, :window_title) == "Updated"
+    end
   end
 
   describe "destroy/1" do
@@ -419,7 +451,7 @@ defmodule UnifiedUi.Adapters.WebTest do
 
       assert result =~ "Deep"
       # Should have nested divs
-      assert (result |> String.split("<div") |> length()) > 3
+      assert result |> String.split("<div") |> length() > 3
     end
   end
 
