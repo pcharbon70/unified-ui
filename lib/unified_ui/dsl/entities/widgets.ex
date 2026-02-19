@@ -43,7 +43,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       on_click: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when clicked. Can be an atom (signal name),
         a tuple {signal_name, payload}, or an MFA tuple {Module, :function, args}.
@@ -184,7 +184,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         default: :text
       ],
       on_change: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when value changes. Can be an atom (signal name),
         a tuple {signal_name, payload}, or an MFA tuple {Module, :function, args}.
@@ -192,7 +192,7 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       on_submit: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit on Enter key. Can be an atom (signal name),
         a tuple {signal_name, payload}, or an MFA tuple {Module, :function, args}.

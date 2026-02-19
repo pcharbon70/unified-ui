@@ -36,11 +36,29 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   """
 
   alias UnifiedIUR.Layouts
+  alias UnifiedUi.Dsl.Entities.{DataViz, Navigation, Tables, Widgets}
+
+  @layout_children [
+    Widgets.button_entity(),
+    Widgets.text_entity(),
+    Widgets.label_entity(),
+    Widgets.text_input_entity(),
+    DataViz.gauge_entity(),
+    DataViz.sparkline_entity(),
+    DataViz.bar_chart_entity(),
+    DataViz.line_chart_entity(),
+    Tables.table_entity(),
+    Navigation.menu_entity(),
+    Navigation.context_menu_entity(),
+    Navigation.tabs_entity(),
+    Navigation.tree_view_entity()
+  ]
 
   @doc false
   @vbox_entity %Spark.Dsl.Entity{
     name: :vbox,
     target: Layouts.VBox,
+    recursive_as: :children,
     args: [],
     schema: [
       id: [
@@ -81,7 +99,9 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         default: true
       ]
     ],
-    entities: [],
+    entities: [
+      children: @layout_children
+    ],
     describe: """
     A vertical box layout that arranges children top to bottom.
 
@@ -94,6 +114,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   @hbox_entity %Spark.Dsl.Entity{
     name: :hbox,
     target: Layouts.HBox,
+    recursive_as: :children,
     args: [],
     schema: [
       id: [
@@ -134,7 +155,9 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         default: true
       ]
     ],
-    entities: [],
+    entities: [
+      children: @layout_children
+    ],
     describe: """
     A horizontal box layout that arranges children left to right.
 
