@@ -166,7 +166,7 @@ defmodule UnifiedUi.Dsl.Entities.Tables do
         required: false
       ],
       on_row_select: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when a row is selected.
         Can be an atom, a tuple with payload, or an MFA tuple.
@@ -175,7 +175,7 @@ defmodule UnifiedUi.Dsl.Entities.Tables do
         required: false
       ],
       on_sort: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when a column is sorted.
         Can be an atom, a tuple with payload, or an MFA tuple.

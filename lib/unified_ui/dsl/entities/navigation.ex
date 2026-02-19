@@ -49,6 +49,8 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
   """
 
   alias UnifiedIUR.Widgets
+  alias UnifiedUi.Dsl.Entities.{DataViz, Tables}
+  alias UnifiedUi.Dsl.Entities.Widgets, as: WidgetEntities
 
   # ============================================================================
   # Menu Item Entity (Nested)
@@ -70,7 +72,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         required: false
       ],
       action: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when the menu item is clicked.
         Can be an atom signal name, a tuple with payload, or an MFA tuple.
@@ -241,6 +243,18 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
   # Tab Entity (Nested)
   # ============================================================================
 
+  @tab_content_entities [
+    WidgetEntities.button_entity(),
+    WidgetEntities.text_entity(),
+    WidgetEntities.label_entity(),
+    WidgetEntities.text_input_entity(),
+    DataViz.gauge_entity(),
+    DataViz.sparkline_entity(),
+    DataViz.bar_chart_entity(),
+    DataViz.line_chart_entity(),
+    Tables.table_entity()
+  ]
+
   @tab_entity %Spark.Dsl.Entity{
     name: :tab,
     target: Widgets.Tab,
@@ -279,6 +293,9 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         required: false,
         default: true
       ]
+    ],
+    entities: [
+      content: @tab_content_entities
     ],
     describe: """
     A single tab in a tabs container.
@@ -324,7 +341,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         default: :top
       ],
       on_change: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when a tab is changed.
         The signal includes the new active tab ID.
@@ -490,7 +507,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         required: false
       ],
       expanded_nodes: [
-        type: {:or, [:atom, {:list, :atom}, {:custom, MapSet}]},
+        type: {:or, [:atom, {:list, :atom}, {:struct, MapSet}]},
         doc: """
         Set of expanded node IDs, or :all to expand all nodes by default.
         Can be a list of atom IDs or a MapSet.
@@ -498,7 +515,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         required: false
       ],
       on_select: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when a node is selected.
         The signal includes the selected node ID and value.
@@ -506,7 +523,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
         required: false
       ],
       on_toggle: [
-        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]},
+        type: {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]},
         doc: """
         Signal to emit when a node is expanded or collapsed.
         The signal includes the node ID and new expanded state.
