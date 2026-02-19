@@ -103,14 +103,16 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
       assert sort_direction_spec[:type] == {:one_of, [:asc, :desc]}
 
       assert Keyword.get(entity.schema, :on_sort)[:required] == false
-      assert Keyword.get(entity.schema, :on_sort)[:type] == {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]}
+      assert Keyword.get(entity.schema, :on_sort)[:type] ==
+               {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]}
 
       # Selection fields
       assert Keyword.get(entity.schema, :selected_row)[:required] == false
       assert Keyword.get(entity.schema, :selected_row)[:type] == :integer
 
       assert Keyword.get(entity.schema, :on_row_select)[:required] == false
-      assert Keyword.get(entity.schema, :on_row_select)[:type] == {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, :list]}]}
+      assert Keyword.get(entity.schema, :on_row_select)[:type] ==
+               {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]}
 
       # Display fields
       assert Keyword.get(entity.schema, :height)[:required] == false

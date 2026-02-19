@@ -40,12 +40,16 @@ defmodule UnifiedUi.Agent do
   @spec stop_component(component_id()) :: :ok | {:error, term()}
   def stop_component(component_id) when is_atom(component_id) do
     with {:ok, pid} <- whereis(component_id),
-         :ok <- GenServer.stop(pid) do
+         :ok <- DynamicSupervisor.terminate_child(@supervisor, pid) do
       :ok
     else
       {:error, _} = error -> error
       _ -> {:error, :stop_failed}
     end
+  rescue
+    _ -> {:error, :agent_runtime_not_started}
+  catch
+    :exit, _ -> {:error, :agent_runtime_not_started}
   end
 
   @doc """

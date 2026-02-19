@@ -452,9 +452,18 @@ defmodule UnifiedUi.IUR.Builder do
     attrs = get_entity_attrs(entity)
 
     items =
-      build_nested_entities(entity, dsl_state, :menu_items, &build_menu_item/2,
-        child_name: :menu_item
-      )
+      case build_nested_entities(entity, dsl_state, :items, &build_menu_item/2,
+             child_name: :menu_item
+           ) do
+        [] ->
+          # Backward compatibility for older DSL states that nested under :menu_items.
+          build_nested_entities(entity, dsl_state, :menu_items, &build_menu_item/2,
+            child_name: :menu_item
+          )
+
+        nested ->
+          nested
+      end
 
     %Widgets.Menu{
       id: Map.get(attrs, :id),

@@ -68,7 +68,24 @@ defmodule UnifiedUi.AgentTest do
       assert {:ok, _pid} = Agent.whereis(component_id)
 
       assert :ok = Agent.stop_component(component_id)
-      assert {:error, :not_found} = Agent.whereis(component_id)
+      assert_component_stopped(component_id)
+    end
+  end
+
+  defp assert_component_stopped(component_id, attempts \\ 20)
+
+  defp assert_component_stopped(_component_id, 0) do
+    flunk("component is still registered after stop_component/1")
+  end
+
+  defp assert_component_stopped(component_id, attempts) do
+    case Agent.whereis(component_id) do
+      {:error, :not_found} ->
+        :ok
+
+      {:ok, _pid} ->
+        Process.sleep(10)
+        assert_component_stopped(component_id, attempts - 1)
     end
   end
 end

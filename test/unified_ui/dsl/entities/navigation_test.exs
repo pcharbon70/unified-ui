@@ -140,12 +140,12 @@ defmodule UnifiedUi.Dsl.Entities.NavigationTest do
       assert Keyword.get(visible_schema, :default) == true
     end
 
-    test "has menu_items nested entities" do
+    test "has items nested entities" do
       entity = NavigationEntities.menu_entity()
 
       assert entity.entities != nil
-      assert Keyword.has_key?(entity.entities, :menu_items)
-      assert is_list(Keyword.get(entity.entities, :menu_items))
+      assert Keyword.has_key?(entity.entities, :items)
+      assert is_list(Keyword.get(entity.entities, :items))
     end
   end
 
