@@ -93,7 +93,10 @@ defmodule UnifiedUi.DslTest do
       assert %Layouts.VBox{id: :nav_root, children: [menu, context_menu, tabs, tree]} =
                module.view(%{})
 
-      assert %Widgets.Menu{id: :main_menu, title: "Main", position: :top} = menu
+      assert %Widgets.Menu{id: :main_menu, title: "Main", position: :top, items: menu_items} = menu
+
+      assert [%Widgets.MenuItem{id: :open_item, label: "Open"}, %Widgets.MenuItem{label: "Save"}] =
+               menu_items
 
       assert %Widgets.ContextMenu{
                id: :editor_context,

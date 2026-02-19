@@ -156,7 +156,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
       ]
     ],
     entities: [
-      menu_items: [@menu_item_entity]
+      items: [@menu_item_entity]
     ],
     describe: """
     A menu container for organizing commands hierarchically.
