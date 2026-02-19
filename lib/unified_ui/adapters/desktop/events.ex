@@ -152,14 +152,15 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
       )
 
   """
-  @spec to_signal(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec to_signal(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def to_signal(event_type, data, opts \\ [])
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :desktop})
-      Signals.create(:click, signal_data, [source: signal_source(opts)])
+      Signals.create(:click, signal_data, source: signal_source(opts))
     end
   end
 
@@ -167,7 +168,7 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   def to_signal(:change, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :desktop})
-      Signals.create(:change, signal_data, [source: signal_source(opts)])
+      Signals.create(:change, signal_data, source: signal_source(opts))
     end
   end
 
@@ -175,7 +176,7 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   def to_signal(:submit, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :desktop})
-      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+      Signals.create(:submit, signal_data, source: signal_source(opts))
     end
   end
 
@@ -183,7 +184,7 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   def to_signal(:key_press, data, opts) do
     signal_type = "unified.key.pressed"
     signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+    Signals.create(signal_type, signal_data, source: signal_source(opts))
   end
 
   # Mouse events → unified.mouse.{action}
@@ -193,20 +194,20 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
          :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.mouse.#{action}"
       signal_data = Map.merge(data, %{platform: :desktop})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
   # Focus events → unified.element.focused
   def to_signal(:focus, data, opts) do
     signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(:focus, signal_data, [source: signal_source(opts)])
+    Signals.create(:focus, signal_data, source: signal_source(opts))
   end
 
   # Blur events → unified.element.blurred
   def to_signal(:blur, data, opts) do
     signal_data = Map.merge(data, %{platform: :desktop})
-    Signals.create(:blur, signal_data, [source: signal_source(opts)])
+    Signals.create(:blur, signal_data, source: signal_source(opts))
   end
 
   # Window events → unified.window.{action}
@@ -216,7 +217,7 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
          :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.window.#{action}"
       signal_data = Map.merge(data, %{platform: :desktop})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
@@ -245,13 +246,11 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
       )
 
   """
-  @spec dispatch(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec dispatch(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def dispatch(event_type, data, opts \\ []) do
-    with {:ok, signal} <- to_signal(event_type, data, opts) do
-      # In a full implementation, this would dispatch to JidoSignal bus
-      # For now, just return the signal
-      {:ok, signal}
-    end
+    # In a full implementation, this would dispatch to a signal bus.
+    to_signal(event_type, data, opts)
   end
 
   # Widget-Specific Event Helpers
@@ -360,7 +359,9 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   @spec mouse_double_click(atom(), atom(), integer(), integer(), keyword()) ::
           {:ok, Jido.Signal.t()} | {:error, term()}
   def mouse_double_click(widget_id, button \\ :left, x \\ 0, y \\ 0, opts \\ []) do
-    to_signal(:mouse, %{widget_id: widget_id, action: :double_click, button: button, x: x, y: y},
+    to_signal(
+      :mouse,
+      %{widget_id: widget_id, action: :double_click, button: button, x: x, y: y},
       opts
     )
   end
@@ -405,7 +406,8 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
       {:ok, signal} = UnifiedUi.Adapters.Desktop.Events.window_resize(800, 600)
 
   """
-  @spec window_resize(integer(), integer(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec window_resize(integer(), integer(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def window_resize(width, height, opts \\ []) do
     to_signal(:window, %{action: :resize, width: width, height: height}, opts)
   end
@@ -556,9 +558,10 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
 
   defp extract_handlers(%{type: _type, children: children} = node, acc) when is_list(children) do
     # Process container nodes
-    acc = Enum.reduce(children, acc, fn child, inner_acc ->
-      extract_handlers(child, inner_acc)
-    end)
+    acc =
+      Enum.reduce(children, acc, fn child, inner_acc ->
+        extract_handlers(child, inner_acc)
+      end)
 
     # Check if this node has an ID and any handlers
     if Map.has_key?(node, :id) do
@@ -581,16 +584,19 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
 
   defp extract_node_handlers(%{type: :button, props: props}) do
     case props[:on_click] do
-      nil -> nil  # Skip buttons without on_click handler
+      # Skip buttons without on_click handler
+      nil -> nil
       action -> %{on_click: action}
     end
   end
 
   defp extract_node_handlers(%{type: :label, props: _props}) do
-    nil  # Labels don't have handlers
+    # Labels don't have handlers
+    nil
   end
 
-  defp extract_node_handlers(_node), do: nil  # Unknown nodes have no handlers
+  # Unknown nodes have no handlers
+  defp extract_node_handlers(_node), do: nil
 
   # Private helpers
 

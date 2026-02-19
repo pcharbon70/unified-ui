@@ -271,11 +271,11 @@ defmodule UnifiedUi.Adapters.EventTest do
     end
 
     test "extracts timestamp from time field" do
-      event = %{time: 123456}
+      event = %{time: 123_456}
 
       metadata = Event.extract_metadata(event)
 
-      assert metadata.timestamp == 123456
+      assert metadata.timestamp == 123_456
     end
 
     test "handles empty map" do
@@ -285,7 +285,7 @@ defmodule UnifiedUi.Adapters.EventTest do
     end
 
     test "extracts multiple fields" do
-      event = %{x: 10, y: 20, ctrl: true, shift: false, time: 123456}
+      event = %{x: 10, y: 20, ctrl: true, shift: false, time: 123_456}
 
       metadata = Event.extract_metadata(event)
 
@@ -293,7 +293,7 @@ defmodule UnifiedUi.Adapters.EventTest do
       assert metadata.y == 20
       assert metadata.ctrl == true
       assert metadata.shift == false
-      assert metadata.timestamp == 123456
+      assert metadata.timestamp == 123_456
     end
   end
 end

@@ -120,14 +120,15 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
       )
 
   """
-  @spec to_signal(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec to_signal(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def to_signal(event_type, data, opts \\ [])
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(:click, signal_data, [source: signal_source(opts)])
+      Signals.create(:click, signal_data, source: signal_source(opts))
     end
   end
 
@@ -135,7 +136,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
   def to_signal(:change, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(:change, signal_data, [source: signal_source(opts)])
+      Signals.create(:change, signal_data, source: signal_source(opts))
     end
   end
 
@@ -143,7 +144,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
   def to_signal(:submit, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+      Signals.create(:submit, signal_data, source: signal_source(opts))
     end
   end
 
@@ -152,7 +153,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
     with :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.key.pressed"
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
@@ -163,7 +164,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
          :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.mouse.#{action}"
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
@@ -171,7 +172,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
   def to_signal(:focus, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(:focus, signal_data, [source: signal_source(opts)])
+      Signals.create(:focus, signal_data, source: signal_source(opts))
     end
   end
 
@@ -179,7 +180,7 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
   def to_signal(:blur, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :terminal})
-      Signals.create(:blur, signal_data, [source: signal_source(opts)])
+      Signals.create(:blur, signal_data, source: signal_source(opts))
     end
   end
 
@@ -208,13 +209,11 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
       )
 
   """
-  @spec dispatch(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec dispatch(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def dispatch(event_type, data, opts \\ []) do
-    with {:ok, signal} <- to_signal(event_type, data, opts) do
-      # In a full implementation, this would dispatch to JidoSignal bus
-      # For now, just return the signal
-      {:ok, signal}
-    end
+    # In a full implementation, this would dispatch to a signal bus.
+    to_signal(event_type, data, opts)
   end
 
   # Widget-Specific Event Helpers
@@ -315,19 +314,20 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
   end
 
   defp extract_handlers({:text_input, _node, metadata}, acc) do
-    base = case metadata do
-      %{id: id, on_change: change} when not is_nil(id) and not is_nil(change) ->
-        %{on_change: change}
+    base =
+      case metadata do
+        %{id: id, on_change: change} when not is_nil(id) and not is_nil(change) ->
+          %{on_change: change}
 
-      %{id: id, on_submit: submit} when not is_nil(id) and not is_nil(submit) ->
-        %{on_submit: submit}
+        %{id: id, on_submit: submit} when not is_nil(id) and not is_nil(submit) ->
+          %{on_submit: submit}
 
-      %{id: id} when not is_nil(id) ->
-        %{}
+        %{id: id} when not is_nil(id) ->
+          %{}
 
-      _ ->
-        nil
-    end
+        _ ->
+          nil
+      end
 
     if base do
       Map.put(acc, metadata.id, base)
@@ -338,9 +338,10 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
 
   defp extract_handlers(%{type: _type, children: children} = node, acc) when is_list(children) do
     # Process container nodes
-    acc = Enum.reduce(children, acc, fn child, inner_acc ->
-      extract_handlers(child, inner_acc)
-    end)
+    acc =
+      Enum.reduce(children, acc, fn child, inner_acc ->
+        extract_handlers(child, inner_acc)
+      end)
 
     # Check if this node has an ID and any handlers
     if Map.has_key?(node, :id) do
@@ -363,16 +364,19 @@ defmodule UnifiedUi.Adapters.Terminal.Events do
 
   defp extract_node_handlers(%{type: :button, props: props}) do
     case props[:on_click] do
-      nil -> nil  # Skip buttons without on_click handler
+      # Skip buttons without on_click handler
+      nil -> nil
       action -> %{on_click: action}
     end
   end
 
   defp extract_node_handlers(%{type: :label, props: _props}) do
-    nil  # Labels don't have handlers
+    # Labels don't have handlers
+    nil
   end
 
-  defp extract_node_handlers(_node), do: nil  # Unknown nodes have no handlers
+  # Unknown nodes have no handlers
+  defp extract_node_handlers(_node), do: nil
 
   # Private helpers
 

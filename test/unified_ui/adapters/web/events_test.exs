@@ -27,7 +27,7 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "returns max reconnection delay" do
-      assert Events.max_reconnect_delay() == 32000
+      assert Events.max_reconnect_delay() == 32_000
     end
 
     test "returns max reconnection attempts" do
@@ -341,11 +341,13 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
 
   describe "extract_handlers/1" do
     test "extracts button click handlers from render tree" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        id: :submit_button,
-        disabled: false
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           id: :submit_button,
+           disabled: false
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -353,12 +355,14 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "extracts input change handlers from render tree" do
-      render_tree = {:input, nil, %{
-        id: :email,
-        type: :email,
-        placeholder: "user@example.com",
-        on_change: :update_email
-      }}
+      render_tree =
+        {:input, nil,
+         %{
+           id: :email,
+           type: :email,
+           placeholder: "user@example.com",
+           on_change: :update_email
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -366,11 +370,13 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "extracts input input handlers from render tree" do
-      render_tree = {:input, nil, %{
-        id: :search,
-        type: :text,
-        on_input: :search_input
-      }}
+      render_tree =
+        {:input, nil,
+         %{
+           id: :search,
+           type: :text,
+           on_input: :search_input
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -378,10 +384,12 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "extracts form submit handlers from render tree" do
-      render_tree = {:form, nil, %{
-        id: :login_form,
-        on_submit: :submit_login
-      }}
+      render_tree =
+        {:form, nil,
+         %{
+           id: :login_form,
+           on_submit: :submit_login
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -437,11 +445,13 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "skips button without ID" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        disabled: false
-        # No id
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           disabled: false
+           # No id
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -449,11 +459,13 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "skips button without on_click" do
-      render_tree = {:button, nil, %{
-        id: :button,
-        disabled: false
-        # No on_click
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           id: :button,
+           disabled: false
+           # No on_click
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -462,11 +474,13 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "skips input without ID" do
-      render_tree = {:input, nil, %{
-        type: :text,
-        on_change: :update
-        # No id
-      }}
+      render_tree =
+        {:input, nil,
+         %{
+           type: :text,
+           on_change: :update
+           # No id
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -474,10 +488,12 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
 
     test "skips form without ID" do
-      render_tree = {:form, nil, %{
-        on_submit: :submit
-        # No id
-      }}
+      render_tree =
+        {:form, nil,
+         %{
+           on_submit: :submit
+           # No id
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -491,17 +507,19 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
       render_tree = %{
         type: :div,
         children: [
-          {:input, nil, %{
-            id: :email_input,
-            type: :email,
-            placeholder: "user@example.com",
-            on_change: :validate_email
-          }},
-          {:button, nil, %{
-            on_click: :submit_form,
-            id: :submit_button,
-            disabled: false
-          }}
+          {:input, nil,
+           %{
+             id: :email_input,
+             type: :email,
+             placeholder: "user@example.com",
+             on_change: :validate_email
+           }},
+          {:button, nil,
+           %{
+             on_click: :submit_form,
+             id: :submit_button,
+             disabled: false
+           }}
         ]
       }
 

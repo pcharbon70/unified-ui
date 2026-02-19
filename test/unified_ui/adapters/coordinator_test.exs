@@ -34,20 +34,20 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert platform in [:terminal, :desktop, :web]
     end
 
-    test "is_terminal?/0 returns boolean" do
-      result = Coordinator.is_terminal?()
+    test "terminal?/0 returns boolean" do
+      result = Coordinator.terminal?()
 
       assert is_boolean(result)
     end
 
-    test "is_desktop?/0 returns boolean" do
-      result = Coordinator.is_desktop?()
+    test "desktop?/0 returns boolean" do
+      result = Coordinator.desktop?()
 
       assert is_boolean(result)
     end
 
-    test "is_web?/0 returns boolean" do
-      result = Coordinator.is_web?()
+    test "web?/0 returns boolean" do
+      result = Coordinator.web?()
 
       assert is_boolean(result)
     end
@@ -192,7 +192,8 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
     test "concurrent_render/2 renders on all platforms" do
       iur = simple_iur_tree()
 
-      assert {:ok, results} = Coordinator.concurrent_render(iur, Coordinator.available_renderers())
+      assert {:ok, results} =
+               Coordinator.concurrent_render(iur, Coordinator.available_renderers())
 
       assert map_size(results) == 3
     end

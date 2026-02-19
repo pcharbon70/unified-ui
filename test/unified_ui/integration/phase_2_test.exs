@@ -378,6 +378,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         label: "Test",
         on_click: {:submit, %{id: :login_form}}
       }
+
       assert button2.on_click == {:submit, %{id: :login_form}}
 
       # MFA handler
@@ -385,6 +386,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
         label: "Test",
         on_click: {MyModule, :handle_click, []}
       }
+
       assert button3.on_click == {MyModule, :handle_click, []}
     end
 
@@ -472,7 +474,12 @@ defmodule UnifiedUi.Integration.Phase2Test do
         %Widgets.TextInput{id: :login_user, form_id: :login, value: "user"},
         %Widgets.TextInput{id: :login_pass, form_id: :login, type: :password, value: "pass"},
         %Widgets.TextInput{id: :reg_user, form_id: :register, value: "new_user"},
-        %Widgets.TextInput{id: :reg_email, form_id: :register, type: :email, value: "new@test.com"}
+        %Widgets.TextInput{
+          id: :reg_email,
+          form_id: :register,
+          type: :email,
+          value: "new@test.com"
+        }
       ]
 
       login_inputs = Enum.filter(inputs, &(&1.form_id == :login))
@@ -742,7 +749,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
 
       # These should all be valid signal handler formats
       Enum.each(valid_handlers, fn handler ->
-        assert is_valid_signal_handler_format(handler)
+        assert valid_signal_handler_format?(handler)
       end)
     end
 
@@ -757,7 +764,7 @@ defmodule UnifiedUi.Integration.Phase2Test do
 
       # These should all be invalid
       Enum.each(invalid_handlers, fn handler ->
-        refute is_valid_signal_handler_format(handler)
+        refute valid_signal_handler_format?(handler)
       end)
     end
 
@@ -846,9 +853,9 @@ defmodule UnifiedUi.Integration.Phase2Test do
     end)
   end
 
-  defp is_valid_signal_handler_format(handler) when is_atom(handler), do: true
+  defp valid_signal_handler_format?(handler) when is_atom(handler), do: true
 
-  defp is_valid_signal_handler_format(handler) when is_tuple(handler) do
+  defp valid_signal_handler_format?(handler) when is_tuple(handler) do
     case tuple_size(handler) do
       2 ->
         {signal, payload} = handler
@@ -863,12 +870,13 @@ defmodule UnifiedUi.Integration.Phase2Test do
     end
   end
 
-  defp is_valid_signal_handler_format(_), do: false
+  defp valid_signal_handler_format?(_), do: false
 
   defp count_elements(element) do
-    1 + Enum.reduce(UnifiedIUR.Element.children(element), 0, fn child, acc ->
-      acc + count_elements(child)
-    end)
+    1 +
+      Enum.reduce(UnifiedIUR.Element.children(element), 0, fn child, acc ->
+        acc + count_elements(child)
+      end)
   end
 
   # Complex UI builders for testing

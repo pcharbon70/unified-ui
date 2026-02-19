@@ -79,7 +79,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
   Caps the exponential backoff to avoid excessive delays.
   """
   @spec max_reconnect_delay() :: pos_integer()
-  def max_reconnect_delay, do: 32000
+  def max_reconnect_delay, do: 32_000
 
   @doc """
   Maximum number of reconnection attempts.
@@ -152,14 +152,15 @@ defmodule UnifiedUi.Adapters.Web.Events do
       )
 
   """
-  @spec to_signal(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec to_signal(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def to_signal(event_type, data, opts \\ [])
 
   # Click events → unified.button.clicked
   def to_signal(:click, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(:click, signal_data, [source: signal_source(opts)])
+      Signals.create(:click, signal_data, source: signal_source(opts))
     end
   end
 
@@ -167,7 +168,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
   def to_signal(:change, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(:change, signal_data, [source: signal_source(opts)])
+      Signals.create(:change, signal_data, source: signal_source(opts))
     end
   end
 
@@ -175,7 +176,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
   def to_signal(:submit, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(:submit, signal_data, [source: signal_source(opts)])
+      Signals.create(:submit, signal_data, source: signal_source(opts))
     end
   end
 
@@ -184,7 +185,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
     with :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.key.pressed"
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
@@ -193,7 +194,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
     with :ok <- Security.validate_signal_payload(data) do
       signal_type = "unified.key.released"
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+      Signals.create(signal_type, signal_data, source: signal_source(opts))
     end
   end
 
@@ -201,7 +202,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
   def to_signal(:focus, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(:focus, signal_data, [source: signal_source(opts)])
+      Signals.create(:focus, signal_data, source: signal_source(opts))
     end
   end
 
@@ -209,7 +210,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
   def to_signal(:blur, data, opts) do
     with :ok <- Security.validate_signal_payload(data) do
       signal_data = Map.merge(data, %{platform: :web})
-      Signals.create(:blur, signal_data, [source: signal_source(opts)])
+      Signals.create(:blur, signal_data, source: signal_source(opts))
     end
   end
 
@@ -238,7 +239,7 @@ defmodule UnifiedUi.Adapters.Web.Events do
       with :ok <- Security.validate_signal_payload(data) do
         signal_type = "unified.web.#{hook_name}"
         signal_data = Map.merge(data, %{platform: :web})
-        Signals.create(signal_type, signal_data, [source: signal_source(opts)])
+        Signals.create(signal_type, signal_data, source: signal_source(opts))
       end
     else
       {:error, :invalid_hook}
@@ -270,13 +271,11 @@ defmodule UnifiedUi.Adapters.Web.Events do
       )
 
   """
-  @spec dispatch(event_type(), event_data(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec dispatch(event_type(), event_data(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def dispatch(event_type, data, opts \\ []) do
-    with {:ok, signal} <- to_signal(event_type, data, opts) do
-      # In a full implementation, this would dispatch to JidoSignal bus
-      # For now, just return the signal
-      {:ok, signal}
-    end
+    # In a full implementation, this would dispatch to a signal bus.
+    to_signal(event_type, data, opts)
   end
 
   # Widget-Specific Event Helpers
@@ -428,9 +427,14 @@ defmodule UnifiedUi.Adapters.Web.Events do
       {:ok, signal} = UnifiedUi.Adapters.Web.Events.ws_reconnecting(3, 2000)
 
   """
-  @spec ws_reconnecting(pos_integer(), pos_integer(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  @spec ws_reconnecting(pos_integer(), pos_integer(), keyword()) ::
+          {:ok, Jido.Signal.t()} | {:error, term()}
   def ws_reconnecting(attempt, delay_ms, opts \\ []) do
-    to_signal(:hook, %{hook_name: :reconnecting, data: %{attempt: attempt, delay_ms: delay_ms}}, opts)
+    to_signal(
+      :hook,
+      %{hook_name: :reconnecting, data: %{attempt: attempt, delay_ms: delay_ms}},
+      opts
+    )
   end
 
   # Event Extraction from Render Tree
@@ -498,9 +502,10 @@ defmodule UnifiedUi.Adapters.Web.Events do
 
   defp extract_handlers(%{type: _type, children: children} = node, acc) when is_list(children) do
     # Process container nodes
-    acc = Enum.reduce(children, acc, fn child, inner_acc ->
-      extract_handlers(child, inner_acc)
-    end)
+    acc =
+      Enum.reduce(children, acc, fn child, inner_acc ->
+        extract_handlers(child, inner_acc)
+      end)
 
     # Check if this node has an ID and any handlers
     if Map.has_key?(node, :id) do
@@ -523,7 +528,8 @@ defmodule UnifiedUi.Adapters.Web.Events do
 
   defp extract_node_handlers(%{type: :button, props: props}) do
     case props[:on_click] do
-      nil -> nil  # Skip buttons without on_click handler
+      # Skip buttons without on_click handler
+      nil -> nil
       action -> %{on_click: action}
     end
   end
@@ -538,16 +544,19 @@ defmodule UnifiedUi.Adapters.Web.Events do
 
   defp extract_node_handlers(%{type: :form, props: props}) do
     case props[:on_submit] do
-      nil -> nil  # Skip forms without on_submit handler
+      # Skip forms without on_submit handler
+      nil -> nil
       action -> %{on_submit: action}
     end
   end
 
   defp extract_node_handlers(%{type: :label, props: _props}) do
-    nil  # Labels don't have handlers
+    # Labels don't have handlers
+    nil
   end
 
-  defp extract_node_handlers(_node), do: nil  # Unknown nodes have no handlers
+  # Unknown nodes have no handlers
+  defp extract_node_handlers(_node), do: nil
 
   # Private helpers
 

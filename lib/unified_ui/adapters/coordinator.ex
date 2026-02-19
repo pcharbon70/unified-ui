@@ -98,12 +98,12 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   ## Examples
 
-      iex> Coordinator.is_terminal?()
+      iex> Coordinator.terminal?()
       true
 
   """
-  @spec is_terminal?() :: boolean()
-  def is_terminal? do
+  @spec terminal?() :: boolean()
+  def terminal? do
     detect_platform() == :terminal
   end
 
@@ -112,12 +112,12 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   ## Examples
 
-      iex> Coordinator.is_desktop?()
+      iex> Coordinator.desktop?()
       false
 
   """
-  @spec is_desktop?() :: boolean()
-  def is_desktop? do
+  @spec desktop?() :: boolean()
+  def desktop? do
     detect_platform() == :desktop
   end
 
@@ -126,12 +126,12 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   ## Examples
 
-      iex> Coordinator.is_web?()
+      iex> Coordinator.web?()
       false
 
   """
-  @spec is_web?() :: boolean()
-  def is_web? do
+  @spec web?() :: boolean()
+  def web? do
     detect_platform() == :web
   end
 

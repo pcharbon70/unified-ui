@@ -139,7 +139,9 @@ defmodule UnifiedUi.Agent.Server do
     component_id = Keyword.fetch!(opts, :component_id)
     server_opts = Keyword.get(opts, :opts, [])
 
-    GenServer.start_link(__MODULE__, {module, component_id, server_opts}, name: via_tuple(component_id))
+    GenServer.start_link(__MODULE__, {module, component_id, server_opts},
+      name: via_tuple(component_id)
+    )
   end
 
   @impl true
@@ -165,7 +167,9 @@ defmodule UnifiedUi.Agent.Server do
   @impl true
   def handle_cast({:signal, signal}, %__MODULE__{} = state) do
     model_state = update_model_state(state.module, state.model_state, signal)
-    {iur, render_results} = build_render_data(state.module, model_state, state.platforms, state.render_opts)
+
+    {iur, render_results} =
+      build_render_data(state.module, model_state, state.platforms, state.render_opts)
 
     {:noreply, %{state | model_state: model_state, iur: iur, render_results: render_results}}
   end
@@ -200,7 +204,7 @@ defmodule UnifiedUi.Agent.Server do
   defp init_model_state(module, opts) do
     if function_exported?(module, :init, 1) do
       module
-      |> apply(:init, [opts])
+      |> then(& &1.init(opts))
       |> normalize_model_state(%{})
     else
       %{}
@@ -212,7 +216,7 @@ defmodule UnifiedUi.Agent.Server do
   defp update_model_state(module, current_state, signal) do
     if function_exported?(module, :update, 2) do
       module
-      |> apply(:update, [current_state, signal])
+      |> then(& &1.update(current_state, signal))
       |> normalize_model_state(current_state)
     else
       current_state
@@ -249,7 +253,7 @@ defmodule UnifiedUi.Agent.Server do
 
   defp build_iur(module, model_state) do
     if function_exported?(module, :view, 1) do
-      apply(module, :view, [model_state])
+      module.view(model_state)
     else
       nil
     end

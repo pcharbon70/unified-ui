@@ -93,23 +93,21 @@ defmodule UnifiedUi.Dsl.Sanitization do
   def sanitize_string(value, max_length \\ @max_string_length)
 
   def sanitize_string(value, max_length) when is_binary(value) do
-    cond do
-      String.length(value) > max_length ->
-        {:error, :too_long}
+    if String.length(value) > max_length do
+      {:error, :too_long}
+    else
+      # Remove HTML tags and common dangerous characters
+      # Order matters: replace HTML entities first, then raw characters
+      sanitized =
+        value
+        |> String.replace("&lt;", "")
+        |> String.replace("&gt;", "")
+        |> String.replace("&amp;", "")
+        |> String.replace("<", "")
+        |> String.replace(">", "")
+        |> String.replace("&", "")
 
-      true ->
-        # Remove HTML tags and common dangerous characters
-        # Order matters: replace HTML entities first, then raw characters
-        sanitized =
-          value
-          |> String.replace("&lt;", "")
-          |> String.replace("&gt;", "")
-          |> String.replace("&amp;", "")
-          |> String.replace("<", "")
-          |> String.replace(">", "")
-          |> String.replace("&", "")
-
-        {:ok, sanitized}
+      {:ok, sanitized}
     end
   end
 

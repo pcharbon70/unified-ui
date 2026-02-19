@@ -15,7 +15,16 @@ defmodule UnifiedUi.Adapters.SecurityTest do
 
   describe "validate_event_action/2" do
     test "validates mouse actions from allowlist" do
-      valid_actions = [:click, :double_click, :right_click, :middle_click, :scroll, :move, :down, :up]
+      valid_actions = [
+        :click,
+        :double_click,
+        :right_click,
+        :middle_click,
+        :scroll,
+        :move,
+        :down,
+        :up
+      ]
 
       Enum.each(valid_actions, fn action ->
         assert Security.validate_event_action(:mouse, action) == :ok
@@ -31,7 +40,18 @@ defmodule UnifiedUi.Adapters.SecurityTest do
     end
 
     test "validates window actions from allowlist" do
-      valid_actions = [:move, :resize, :close, :minimize, :maximize, :restore, :focus, :blur, :show, :hide]
+      valid_actions = [
+        :move,
+        :resize,
+        :close,
+        :minimize,
+        :maximize,
+        :restore,
+        :focus,
+        :blur,
+        :show,
+        :hide
+      ]
 
       Enum.each(valid_actions, fn action ->
         assert Security.validate_event_action(:window, action) == :ok
@@ -256,7 +276,7 @@ defmodule UnifiedUi.Adapters.SecurityTest do
     end
 
     test "returns error for invalid payload" do
-      long_string = String.duplicate("a", 20000)
+      long_string = String.duplicate("a", 20_000)
       assert {:error, _} = Security.secure_event_data(%{data: long_string})
     end
 

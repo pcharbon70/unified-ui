@@ -12,6 +12,10 @@ run_mix() {
   fi
 }
 
+has_mix_task() {
+  run_mix help "$1" >/dev/null 2>&1
+}
+
 if ! command -v mix >/dev/null 2>&1 && ! command -v asdf >/dev/null 2>&1; then
   echo "pre-commit: neither 'mix' nor 'asdf' is available on PATH"
   exit 1
@@ -23,7 +27,11 @@ run_mix test
 echo "pre-commit: running Credo"
 run_mix credo --strict
 
-echo "pre-commit: running Dialyzer"
-run_mix dialyzer
+if has_mix_task dialyzer; then
+  echo "pre-commit: running Dialyzer"
+  run_mix dialyzer
+else
+  echo "pre-commit: skipping Dialyzer (task not available)"
+fi
 
 echo "pre-commit: all checks passed"

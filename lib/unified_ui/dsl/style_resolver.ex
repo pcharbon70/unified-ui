@@ -172,12 +172,22 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     end)
   end
 
-  defp resolve_with_inheritance(_dsl_state, %DslStyle{extends: nil} = style_entity, overrides, _seen) do
+  defp resolve_with_inheritance(
+         _dsl_state,
+         %DslStyle{extends: nil} = style_entity,
+         overrides,
+         _seen
+       ) do
     base_attrs = style_entity.attributes || []
     Style.merge(Style.new(base_attrs), Style.new(overrides))
   end
 
-  defp resolve_with_inheritance(dsl_state, %DslStyle{name: name, extends: parent_name} = style_entity, overrides, seen) do
+  defp resolve_with_inheritance(
+         dsl_state,
+         %DslStyle{name: name, extends: parent_name} = style_entity,
+         overrides,
+         seen
+       ) do
     # Check for circular reference
     if MapSet.member?(seen, name) do
       module = get_persisted_module(dsl_state)
@@ -223,8 +233,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   defp format_seen_chain(seen) do
     seen
     |> MapSet.to_list()
-    |> Enum.map(fn style -> "  - #{inspect(style)}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn style -> "  - #{inspect(style)}" end)
   end
 
   @doc """

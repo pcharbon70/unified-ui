@@ -216,9 +216,8 @@ defmodule UnifiedUi.Adapters.Security do
   @spec secure_event_data(map()) :: {:ok, map()} | {:error, atom()}
   def secure_event_data(data) when is_map(data) do
     with :ok <- validate_signal_payload(data),
-         {:ok, sanitized} <- sanitize_event_data(data),
-         {:ok, redacted} <- redact_sensitive_fields(sanitized) do
-      {:ok, redacted}
+         {:ok, sanitized} <- sanitize_event_data(data) do
+      redact_sensitive_fields(sanitized)
     end
   end
 

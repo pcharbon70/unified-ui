@@ -68,17 +68,38 @@ defmodule UnifiedUi.Adapters.Web do
     # Convert IUR tree to HTML string
     root = convert_iur(iur_tree, renderer_state)
 
-    # Update state with root reference
-    renderer_state = State.put_root(renderer_state, root)
+    # Update state with root reference and metadata for diff-aware updates
+    renderer_state =
+      renderer_state
+      |> State.put_root(root)
+      |> State.put_metadata(:last_iur, iur_tree)
 
     {:ok, renderer_state}
   end
 
   @impl true
   def update(iur_tree, renderer_state, opts \\ []) do
-    # For now, just re-render the entire tree
-    # Future optimization: diff and update only changed elements
-    render(iur_tree, Keyword.merge(renderer_state.config, opts))
+    merged_config = Keyword.merge(renderer_state.config, opts)
+    previous_iur = State.get_metadata(renderer_state, :last_iur, :__missing__)
+
+    config_changed = merged_config != renderer_state.config
+    iur_changed = previous_iur != iur_tree
+
+    if iur_changed or config_changed do
+      new_root = convert_iur(iur_tree, renderer_state)
+      root_changed = new_root != renderer_state.root
+
+      updated_state =
+        renderer_state
+        |> put_config(merged_config)
+        |> State.put_metadata(:last_iur, iur_tree)
+        |> maybe_put_root(new_root, root_changed)
+        |> maybe_bump_version(root_changed or config_changed)
+
+      {:ok, updated_state}
+    else
+      {:ok, renderer_state}
+    end
   end
 
   @impl true
@@ -119,9 +140,10 @@ defmodule UnifiedUi.Adapters.Web do
     content = escape_html(text.content || "")
     style = Style.to_css(text.style)
 
-    attrs = build_attributes([
-      {"style", style}
-    ])
+    attrs =
+      build_attributes([
+        {"style", style}
+      ])
 
     ~s(<span#{attrs}>#{content}</span>)
   end
@@ -136,12 +158,13 @@ defmodule UnifiedUi.Adapters.Web do
     ]
 
     # Add phx-click binding if on_click is present
-    attrs_list = if button.on_click do
-      event_name = atom_to_event_name(button.on_click)
-      [{"phx-click", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if button.on_click do
+        event_name = atom_to_event_name(button.on_click)
+        [{"phx-click", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add disabled attribute
     attrs_list = if button.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
@@ -164,11 +187,12 @@ defmodule UnifiedUi.Adapters.Web do
     ]
 
     # Add for attribute if present
-    attrs_list = if label.for do
-      [{"for", label.for} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if label.for do
+        [{"for", label.for} | attrs_list]
+      else
+        attrs_list
+      end
 
     attrs = build_attributes(attrs_list)
 
@@ -191,15 +215,19 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if input.value, do: [{"value", input.value} | attrs_list], else: attrs_list
 
     # Add placeholder if present
-    attrs_list = if input.placeholder, do: [{"placeholder", input.placeholder} | attrs_list], else: attrs_list
+    attrs_list =
+      if input.placeholder,
+        do: [{"placeholder", input.placeholder} | attrs_list],
+        else: attrs_list
 
     # Add phx-change binding if on_change is present
-    attrs_list = if input.on_change do
-      event_name = atom_to_event_name(input.on_change)
-      [{"phx-change", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if input.on_change do
+        event_name = atom_to_event_name(input.on_change)
+        [{"phx-change", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add disabled attribute
     attrs_list = if input.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
@@ -240,9 +268,9 @@ defmodule UnifiedUi.Adapters.Web do
     # Wrap with label if present
     if gauge.label do
       ~s(<div class="gauge-container">) <>
-      escape_html(gauge.label) <>
-      ~s(</div>) <>
-      svg_content
+        escape_html(gauge.label) <>
+        ~s(</div>) <>
+        svg_content
     else
       svg_content
     end
@@ -254,49 +282,53 @@ defmodule UnifiedUi.Adapters.Web do
     height = sparkline.height || 50
 
     # Generate SVG sparkline
-    svg_content = if length(data) > 1 do
-      min_val = Enum.min(data)
-      max_val = Enum.max(data)
-      range = max_val - min_val
+    svg_content =
+      if length(data) > 1 do
+        min_val = Enum.min(data)
+        max_val = Enum.max(data)
+        range = max_val - min_val
 
-      # Build points for polyline
-      points = data
-      |> Enum.with_index()
-      |> Enum.map(fn {val, idx} ->
-        x = idx * (width / max(length(data) - 1, 1))
-        y = if range > 0 do
-          height - ((val - min_val) / range * height)
-        else
-          height / 2
-        end
-        "#{x},#{y}"
-      end)
-      |> Enum.join(" ")
+        # Build points for polyline
+        points =
+          data
+          |> Enum.with_index()
+          |> Enum.map_join(" ", fn {val, idx} ->
+            x = idx * (width / max(length(data) - 1, 1))
 
-      # Build area polygon if show_area
-      area_polygon = if sparkline.show_area do
-        "<polygon points=\"0,#{height} " <> points <> " #{width},#{height}\" fill=\"rgba(76, 175, 80, 0.2)\"/>"
+            y =
+              if range > 0 do
+                height - (val - min_val) / range * height
+              else
+                height / 2
+              end
+
+            "#{x},#{y}"
+          end)
+
+        # Build area polygon if show_area
+        area_polygon =
+          if sparkline.show_area do
+            "<polygon points=\"0,#{height} " <>
+              points <> " #{width},#{height}\" fill=\"rgba(76, 175, 80, 0.2)\"/>"
+          else
+            ""
+          end
+
+        # Build color
+        color =
+          case sparkline.color do
+            :cyan -> "#00BCD4"
+            :green -> "#4CAF50"
+            :blue -> "#2196F3"
+            :red -> "#F44336"
+            :yellow -> "#FFEB3B"
+            _ -> "#4CAF50"
+          end
+
+        ~s(<svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">#{area_polygon}<polyline points="#{points}" fill="none" stroke="#{color}" stroke-width="2"/></svg>)
       else
-        ""
+        ~s(<span>No data</span>)
       end
-
-      # Build color
-      color = case sparkline.color do
-        :cyan -> "#00BCD4"
-        :green -> "#4CAF50"
-        :blue -> "#2196F3"
-        :red -> "#F44336"
-        :yellow -> "#FFEB3B"
-        _ -> "#4CAF50"
-      end
-
-      "<svg width=\"#{width}\" height=\"#{height}\" xmlns=\"http://www.w3.org/2000/svg\">" <>
-        area_polygon <>
-        "<polyline points=\"" <> points <> "\" fill=\"none\" stroke=\"" <> color <> "\" stroke-width=\"2\"/>" <>
-        "</svg>"
-    else
-      ~s(<span>No data</span>)
-    end
 
     svg_content
   end
@@ -307,56 +339,59 @@ defmodule UnifiedUi.Adapters.Web do
     height = chart.height || 200
 
     # Generate SVG bar chart
-    svg_content = if length(data) > 0 do
-      max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max(fn -> 0 end)
+    svg_content =
+      if data != [] do
+        max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max(fn -> 0 end)
 
-      bar_width = if chart.orientation == :horizontal do
-        width / max(length(data), 1) - 10
+        bar_width =
+          if chart.orientation == :horizontal do
+            width / max(length(data), 1) - 10
+          else
+            width / max(length(data), 1) - 10
+          end
+
+        bars =
+          if chart.orientation == :horizontal do
+            # Horizontal bars
+            Enum.with_index(data)
+            |> Enum.map_join("\n", fn {{label, value}, idx} ->
+              bar_width_px = if max_val > 0, do: value / max_val * (width - 80), else: 0
+              y = idx * 30 + 10
+
+              """
+                <text x="0" y="#{y + 15}" font-size="12">#{escape_html(label)}</text>
+                <rect x="70" y="#{y}" width="#{bar_width_px}" height="20" fill="#2196F3" rx="2">
+                  <animate attributeName="width" from="0" to="#{bar_width_px}" dur="0.5s" fill="freeze"/>
+                </rect>
+                <text x="#{bar_width_px + 75}" y="#{y + 15}" font-size="12">#{value}</text>
+              """
+            end)
+          else
+            # Vertical bars
+            Enum.with_index(data)
+            |> Enum.map_join("\n", fn {{label, value}, idx} ->
+              bar_height_px = if max_val > 0, do: value / max_val * (height - 40), else: 0
+              x = idx * (width / max(length(data), 1)) + 10
+              y = height - bar_height_px - 30
+
+              """
+                <rect x="#{x}" y="#{y}" width="#{bar_width}" height="#{bar_height_px}" fill="#2196F3" rx="2">
+                  <animate attributeName="height" from="0" to="#{bar_height_px}" dur="0.5s" fill="freeze"/>
+                  <animate attributeName="y" from="#{height - 30}" to="#{y}" dur="0.5s" fill="freeze"/>
+                </rect>
+                <text x="#{x + bar_width / 2}" y="#{height - 10}" text-anchor="middle" font-size="10">#{escape_html(String.slice(label, 0, 5))}</text>
+              """
+            end)
+          end
+
+        """
+        <svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">
+          #{bars}
+        </svg>
+        """
       else
-        width / max(length(data), 1) - 10
+        ~s(<span>No data</span>)
       end
-
-      bars = if chart.orientation == :horizontal do
-        # Horizontal bars
-        Enum.with_index(data)
-        |> Enum.map(fn {{label, value}, idx} ->
-          bar_width_px = if max_val > 0, do: (value / max_val * (width - 80)), else: 0
-          y = idx * 30 + 10
-          """
-            <text x="0" y="#{y + 15}" font-size="12">#{escape_html(label)}</text>
-            <rect x="70" y="#{y}" width="#{bar_width_px}" height="20" fill="#2196F3" rx="2">
-              <animate attributeName="width" from="0" to="#{bar_width_px}" dur="0.5s" fill="freeze"/>
-            </rect>
-            <text x="#{bar_width_px + 75}" y="#{y + 15}" font-size="12">#{value}</text>
-          """
-        end)
-        |> Enum.join("\n")
-      else
-        # Vertical bars
-        Enum.with_index(data)
-        |> Enum.map(fn {{label, value}, idx} ->
-          bar_height_px = if max_val > 0, do: (value / max_val * (height - 40)), else: 0
-          x = idx * (width / max(length(data), 1)) + 10
-          y = height - bar_height_px - 30
-          """
-            <rect x="#{x}" y="#{y}" width="#{bar_width}" height="#{bar_height_px}" fill="#2196F3" rx="2">
-              <animate attributeName="height" from="0" to="#{bar_height_px}" dur="0.5s" fill="freeze"/>
-              <animate attributeName="y" from="#{height - 30}" to="#{y}" dur="0.5s" fill="freeze"/>
-            </rect>
-            <text x="#{x + bar_width / 2}" y="#{height - 10}" text-anchor="middle" font-size="10">#{escape_html(String.slice(label, 0, 5))}</text>
-          """
-        end)
-        |> Enum.join("\n")
-      end
-
-      """
-      <svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">
-        #{bars}
-      </svg>
-      """
-    else
-      ~s(<span>No data</span>)
-    end
 
     svg_content
   end
@@ -367,73 +402,78 @@ defmodule UnifiedUi.Adapters.Web do
     height = chart.height || 200
 
     # Generate SVG line chart
-    svg_content = if length(data) > 1 do
-      min_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.min()
-      max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max()
-      range = max_val - min_val
+    svg_content =
+      if length(data) > 1 do
+        min_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.min()
+        max_val = data |> Enum.map(fn {_, v} -> v end) |> Enum.max()
+        range = max_val - min_val
 
-      # Build points for polyline
-      points = data
-      |> Enum.with_index()
-      |> Enum.map(fn {{_label, val}, idx} ->
-        x = idx * (width / max(length(data) - 1, 1))
-        y = if range > 0 do
-          height - 30 - ((val - min_val) / range * (height - 50))
-        else
-          height / 2
-        end
-        "#{x},#{y}"
-      end)
-      |> Enum.join(" ")
+        # Build points for polyline
+        points =
+          data
+          |> Enum.with_index()
+          |> Enum.map_join(" ", fn {{_label, val}, idx} ->
+            x = idx * (width / max(length(data) - 1, 1))
 
-      # Build area polygon if show_area
-      area_polygon = if chart.show_area do
-        "<polygon points=\"0,#{height - 30} " <> points <> " #{width},#{height - 30}\" fill=\"rgba(33, 150, 243, 0.2)\"/>"
-      else
-        ""
-      end
+            y =
+              if range > 0 do
+                height - 30 - (val - min_val) / range * (height - 50)
+              else
+                height / 2
+              end
 
-      # Build dots if show_dots
-      dots = if chart.show_dots do
-        data
-        |> Enum.with_index()
-        |> Enum.map(fn {{_label, val}, idx} ->
-          x = idx * (width / max(length(data) - 1, 1))
-          y = if range > 0 do
-            height - 30 - ((val - min_val) / range * (height - 50))
+            "#{x},#{y}"
+          end)
+
+        # Build area polygon if show_area
+        area_polygon =
+          if chart.show_area do
+            "<polygon points=\"0,#{height - 30} " <>
+              points <> " #{width},#{height - 30}\" fill=\"rgba(33, 150, 243, 0.2)\"/>"
           else
-            height / 2
+            ""
           end
-          "<circle cx=\"#{x}\" cy=\"#{y}\" r=\"4\" fill=\"#2196F3\"/>"
-        end)
-        |> Enum.join("\n")
-      else
-        ""
-      end
 
-      # Build labels
-      labels = if length(data) <= 10 do
-        data
-        |> Enum.with_index()
-        |> Enum.map(fn {{label, _val}, idx} ->
-          x = idx * (width / max(length(data) - 1, 1))
-          escaped_label = escape_html(String.slice(label, 0, 6))
-          "<text x=\"#{x}\" y=\"#{height - 5}\" text-anchor=\"middle\" font-size=\"10\">#{escaped_label}</text>"
-        end)
-        |> Enum.join("\n")
-      else
-        ""
-      end
+        # Build dots if show_dots
+        dots =
+          if chart.show_dots do
+            data
+            |> Enum.with_index()
+            |> Enum.map_join("\n", fn {{_label, val}, idx} ->
+              x = idx * (width / max(length(data) - 1, 1))
 
-      "<svg width=\"#{width}\" height=\"#{height}\" xmlns=\"http://www.w3.org/2000/svg\">" <>
-        area_polygon <>
-        "<polyline points=\"" <> points <> "\" fill=\"none\" stroke=\"#2196F3\" stroke-width=\"2\"/>" <>
-        dots <>
-        labels <>
-        "</svg>"
-    else
-      ~s(<span>No data</span>)
-    end
+              y =
+                if range > 0 do
+                  height - 30 - (val - min_val) / range * (height - 50)
+                else
+                  height / 2
+                end
+
+              "<circle cx=\"#{x}\" cy=\"#{y}\" r=\"4\" fill=\"#2196F3\"/>"
+            end)
+          else
+            ""
+          end
+
+        # Build labels
+        labels =
+          if length(data) <= 10 do
+            data
+            |> Enum.with_index()
+            |> Enum.map_join("\n", fn {{label, _val}, idx} ->
+              x = idx * (width / max(length(data) - 1, 1))
+              escaped_label = escape_html(String.slice(label, 0, 6))
+
+              "<text x=\"#{x}\" y=\"#{height - 5}\" text-anchor=\"middle\" font-size=\"10\">#{escaped_label}</text>"
+            end)
+          else
+            ""
+          end
+
+        ~s(<svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">#{area_polygon}<polyline points="#{points}" fill="none" stroke="#2196F3" stroke-width="2"/>#{dots}#{labels}</svg>)
+      else
+        ~s(<span>No data</span>)
+      end
 
     svg_content
   end
@@ -443,90 +483,100 @@ defmodule UnifiedUi.Adapters.Web do
     columns = table.columns || []
 
     # Auto-generate columns from first row if not provided
-    columns = if columns == [] and length(data) > 0 do
-      first_row = hd(data)
-      first_row
-      |> extract_web_keys()
-      |> Enum.map(fn key ->
-        %Widgets.Column{
-          key: key,
-          header: to_string(key) |> String.capitalize(),
-          sortable: true,
-          align: :left
-        }
-      end)
-    else
-      columns
-    end
+    columns =
+      if columns == [] and data != [] do
+        first_row = hd(data)
+
+        first_row
+        |> extract_web_keys()
+        |> Enum.map(fn key ->
+          %Widgets.Column{
+            key: key,
+            header: to_string(key) |> String.capitalize(),
+            sortable: true,
+            align: :left
+          }
+        end)
+      else
+        columns
+      end
 
     # Sort data if sort_column is specified
-    data = if table.sort_column do
-      UnifiedUi.Table.Sort.sort_data(data, table.sort_column, table.sort_direction)
-    else
-      data
-    end
+    data =
+      if table.sort_column do
+        UnifiedUi.Table.Sort.sort_data(data, table.sort_column, table.sort_direction)
+      else
+        data
+      end
 
     # Build CSS styles
     base_style = Style.to_css(table.style)
 
     # Build HTML table
-    table_html = if length(columns) > 0 do
-      # Build header row
-      header_cells = Enum.map(columns, fn col ->
-        sort_indicator = if table.sort_column == col.key do
-          if table.sort_direction == :asc, do: " &#9650;", else: " &#9660;"
-        else
-          ""
-        end
+    table_html =
+      if columns != [] do
+        # Build header row
+        header_cells =
+          Enum.map(columns, fn col ->
+            sort_indicator =
+              if table.sort_column == col.key do
+                if table.sort_direction == :asc, do: " &#9650;", else: " &#9660;"
+              else
+                ""
+              end
 
-        sortable_class = if col.sortable, do: " sortable", else: ""
+            sortable_class = if col.sortable, do: " sortable", else: ""
 
-        header = escape_html(col.header || "") <> sort_indicator
+            header = escape_html(col.header || "") <> sort_indicator
 
-        # Add phx-click binding if sortable and on_sort is present
-        header_attrs = if col.sortable and table.on_sort do
-          event_name = atom_to_event_name(table.on_sort)
-          ~s( phx-click=") <> event_name <> ~s(" data-column="#{col.key}")
-        else
-          ""
-        end
+            # Add phx-click binding if sortable and on_sort is present
+            header_attrs =
+              if col.sortable and table.on_sort do
+                event_name = atom_to_event_name(table.on_sort)
+                ~s( phx-click=") <> event_name <> ~s(" data-column="#{col.key}")
+              else
+                ""
+              end
 
-        ~s(<th class="#{align_to_css_class(col.align)}#{sortable_class}"#{header_attrs}>#{header}</th>)
-      end)
+            ~s(<th class="#{align_to_css_class(col.align)}#{sortable_class}"#{header_attrs}>#{header}</th>)
+          end)
 
-      header_row = ~s(<tr>#{Enum.join(header_cells, "")}</tr>)
+        header_row = ~s(<tr>#{Enum.join(header_cells, "")}</tr>)
 
-      # Build data rows
-      data_rows = Enum.with_index(data)
-      |> Enum.map(fn {row, idx} ->
-        selected_class = if table.selected_row == idx, do: " selected", else: ""
+        # Build data rows
+        data_rows =
+          Enum.with_index(data)
+          |> Enum.map(fn {row, idx} ->
+            selected_class = if table.selected_row == idx, do: " selected", else: ""
 
-        row_attrs = if table.on_row_select do
-          event_name = atom_to_event_name(table.on_row_select)
-          ~s( phx-click=") <> event_name <> ~s(" data-row-index="#{idx}")
-        else
-          ""
-        end
+            row_attrs =
+              if table.on_row_select do
+                event_name = atom_to_event_name(table.on_row_select)
+                ~s( phx-click=") <> event_name <> ~s(" data-row-index="#{idx}")
+              else
+                ""
+              end
 
-        cells = Enum.map(columns, fn col ->
-          value = UnifiedUi.Table.Sort.get_value(row, col.key)
-          formatted = apply_web_formatter(col.formatter, value)
-          escaped = escape_html(formatted)
-          ~s(<td class="#{align_to_css_class(col.align)}">#{escaped}</td>)
-        end)
+            cells =
+              Enum.map(columns, fn col ->
+                value = UnifiedUi.Table.Sort.get_value(row, col.key)
+                formatted = apply_web_formatter(col.formatter, value)
+                escaped = escape_html(formatted)
+                ~s(<td class="#{align_to_css_class(col.align)}">#{escaped}</td>)
+              end)
 
-        ~s(<tr class="#{selected_class}"#{row_attrs}>#{Enum.join(cells, "")}</tr>)
-      end)
+            ~s(<tr class="#{selected_class}"#{row_attrs}>#{Enum.join(cells, "")}</tr>)
+          end)
 
-      """
-      <table class="unified-table" style="#{escape_html(base_style)}">
-        <thead>#{header_row}</thead>
-        <tbody>#{Enum.join(data_rows, "\n")}</tbody>
-      </table>
-      """
-    else
-      ~s(<span>No columns defined</span>)
-    end
+        """
+        <table class="unified-table" style="#{escape_html(base_style)}">
+          <thead>#{header_row}</thead>
+          <tbody>#{Enum.join(data_rows, "\n")}</tbody>
+        </table>
+        """
+      else
+        ~s(<span>No columns defined</span>)
+      end
 
     table_html
   end
@@ -543,39 +593,48 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if item.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
 
     # Add phx-click binding if action is present
-    attrs_list = if item.action do
-      event_name = atom_to_event_name(item.action)
-      [{"phx-click", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if item.action do
+        event_name = atom_to_event_name(item.action)
+        [{"phx-click", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add data attributes for metadata
     attrs_list = if item.id, do: [{"data-id", item.id} | attrs_list], else: attrs_list
-    attrs_list = if item.shortcut, do: [{"data-shortcut", item.shortcut} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if item.shortcut, do: [{"data-shortcut", item.shortcut} | attrs_list], else: attrs_list
+
     attrs_list = if item.icon, do: [{"data-icon", item.icon} | attrs_list], else: attrs_list
-    attrs_list = if item.submenu != nil, do: [{"data-has-submenu", "true"} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if item.submenu != nil, do: [{"data-has-submenu", "true"} | attrs_list], else: attrs_list
 
     # Build icon HTML if present
-    icon_html = if item.icon do
-      ~s(<span class="menu-icon">[#{escape_html(to_string(item.icon))}]</span>)
-    else
-      ""
-    end
+    icon_html =
+      if item.icon do
+        ~s(<span class="menu-icon">[#{escape_html(to_string(item.icon))}]</span>)
+      else
+        ""
+      end
 
     # Build shortcut HTML if present
-    shortcut_html = if item.shortcut do
-      ~s(<span class="menu-shortcut">#{escape_html(item.shortcut)}</span>)
-    else
-      ""
-    end
+    shortcut_html =
+      if item.shortcut do
+        ~s(<span class="menu-shortcut">#{escape_html(item.shortcut)}</span>)
+      else
+        ""
+      end
 
     # Build submenu indicator
-    submenu_html = if item.submenu != nil do
-      ~s(<span class="submenu-indicator">&#9654;</span>)
-    else
-      ""
-    end
+    submenu_html =
+      if item.submenu != nil do
+        ~s(<span class="submenu-indicator">&#9654;</span>)
+      else
+        ""
+      end
 
     attrs = build_attributes(attrs_list)
 
@@ -598,17 +657,18 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
 
     # Build menu title if present
-    title_html = if menu.title do
-      ~s(<div class="menu-title">#{escape_html(menu.title)}</div>)
-    else
-      ""
-    end
+    title_html =
+      if menu.title do
+        ~s(<div class="menu-title">#{escape_html(menu.title)}</div>)
+      else
+        ""
+      end
 
     # Convert menu items
-    items_html = Enum.map(menu.items || [], fn item ->
-      convert_iur(item, state)
-    end)
-    |> Enum.join("\n")
+    items_html =
+      Enum.map_join(menu.items || [], "\n", fn item ->
+        convert_iur(item, state)
+      end)
 
     attrs = build_attributes(attrs_list)
 
@@ -630,10 +690,10 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
 
     # Convert menu items
-    items_html = Enum.map(menu.items || [], fn item ->
-      convert_iur(item, state)
-    end)
-    |> Enum.join("\n")
+    items_html =
+      Enum.map_join(menu.items || [], "\n", fn item ->
+        convert_iur(item, state)
+      end)
 
     attrs = build_attributes(attrs_list)
 
@@ -653,18 +713,20 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if tab.closable, do: [{"data-closable", "true"} | attrs_list], else: attrs_list
 
     # Build icon HTML if present
-    icon_html = if tab.icon do
-      ~s(<span class="tab-icon">[#{escape_html(to_string(tab.icon))}]</span>)
-    else
-      ""
-    end
+    icon_html =
+      if tab.icon do
+        ~s(<span class="tab-icon">[#{escape_html(to_string(tab.icon))}]</span>)
+      else
+        ""
+      end
 
     # Build close button HTML if closable
-    close_html = if tab.closable do
-      ~s(<span class="tab-close" data-close-tab="#{tab.id}">&times;</span>)
-    else
-      ""
-    end
+    close_html =
+      if tab.closable do
+        ~s(<span class="tab-close" data-close-tab="#{tab.id}">&times;</span>)
+      else
+        ""
+      end
 
     disabled_class = if tab.disabled, do: " disabled", else: ""
 
@@ -679,18 +741,23 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if tabs.id, do: [{"id", tabs.id} | attrs_list], else: attrs_list
 
     # Add data attribute for active tab
-    attrs_list = if tabs.active_tab, do: [{"data-active-tab", tabs.active_tab} | attrs_list], else: attrs_list
+    attrs_list =
+      if tabs.active_tab,
+        do: [{"data-active-tab", tabs.active_tab} | attrs_list],
+        else: attrs_list
 
     # Add data attribute for position
-    attrs_list = if tabs.position, do: [{"data-position", tabs.position} | attrs_list], else: attrs_list
+    attrs_list =
+      if tabs.position, do: [{"data-position", tabs.position} | attrs_list], else: attrs_list
 
     # Add phx-change binding if on_change is present
-    attrs_list = if tabs.on_change do
-      event_name = atom_to_event_name(tabs.on_change)
-      [{"phx-change", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if tabs.on_change do
+        event_name = atom_to_event_name(tabs.on_change)
+        [{"phx-change", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add style
     style = Style.to_css(tabs.style)
@@ -700,27 +767,30 @@ defmodule UnifiedUi.Adapters.Web do
     position_class = if tabs.position, do: " tabs-#{tabs.position}", else: ""
 
     # Convert tab headers
-    tab_headers_html = Enum.map(tabs.tabs || [], fn tab ->
-      convert_iur(tab, state)
-    end)
-    |> Enum.join("\n")
+    tab_headers_html =
+      Enum.map_join(tabs.tabs || [], "\n", fn tab ->
+        convert_iur(tab, state)
+      end)
 
     # Get active tab content
-    active_content_html = if tabs.active_tab do
-      Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
-      |> case do
-        nil -> ""
-        tab ->
-          # Only convert content if it exists
-          if tab.content do
-            convert_iur(tab.content, state)
-          else
+    active_content_html =
+      if tabs.active_tab do
+        Enum.find(tabs.tabs || [], fn tab -> tab.id == tabs.active_tab end)
+        |> case do
+          nil ->
             ""
-          end
+
+          tab ->
+            # Only convert content if it exists
+            if tab.content do
+              convert_iur(tab.content, state)
+            else
+              ""
+            end
+        end
+      else
+        ""
       end
-    else
-      ""
-    end
 
     attrs = build_attributes(attrs_list)
 
@@ -740,43 +810,48 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = [{"data-selectable", node.selectable} | attrs_list]
 
     # Build icon HTML if present
-    icon_html = if node.icon do
-      icon_to_use = if node.expanded and node.icon_expanded do
-        node.icon_expanded
+    icon_html =
+      if node.icon do
+        icon_to_use =
+          if node.expanded and node.icon_expanded do
+            node.icon_expanded
+          else
+            node.icon
+          end
+
+        ~s(<span class="tree-icon">[#{escape_html(to_string(icon_to_use))}]</span>)
       else
-        node.icon
+        ""
       end
-      ~s(<span class="tree-icon">[#{escape_html(to_string(icon_to_use))}]</span>)
-    else
-      ""
-    end
 
     # Build expand/collapse button if has children
-    toggle_html = if node.children != nil do
-      if node.expanded do
-        ~s(<span class="tree-toggle tree-toggle-expanded" data-toggle="#{node.id}">[-]</span>)
+    toggle_html =
+      if node.children != nil do
+        if node.expanded do
+          ~s(<span class="tree-toggle tree-toggle-expanded" data-toggle="#{node.id}">[-]</span>)
+        else
+          ~s(<span class="tree-toggle tree-toggle-collapsed" data-toggle="#{node.id}">[+]</span>)
+        end
       else
-        ~s(<span class="tree-toggle tree-toggle-collapsed" data-toggle="#{node.id}">[+]</span>)
+        ~s(<span class="tree-toggle-placeholder"></span>)
       end
-    else
-      ~s(<span class="tree-toggle-placeholder"></span>)
-    end
 
     # Convert children if expanded
-    children_html = if node.expanded and node.children != nil do
-      Enum.map(node.children, fn child ->
-        convert_iur(child, state)
-      end)
-      |> Enum.join("\n")
-    else
-      ""
-    end
+    children_html =
+      if node.expanded and node.children != nil do
+        Enum.map_join(node.children, "\n", fn child ->
+          convert_iur(child, state)
+        end)
+      else
+        ""
+      end
 
-    children_container = if children_html != "" do
-      ~s(<ul class="tree-children">#{children_html}</ul>)
-    else
-      ""
-    end
+    children_container =
+      if children_html != "" do
+        ~s(<ul class="tree-children">#{children_html}</ul>)
+      else
+        ""
+      end
 
     ~s(<li class="tree-node"#{build_attributes(attrs_list)}>#{toggle_html}#{icon_html}<span class="tree-label">#{label}</span>#{children_container}</li>)
   end
@@ -789,33 +864,38 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if tree.id, do: [{"id", tree.id} | attrs_list], else: attrs_list
 
     # Add data attribute for selected node
-    attrs_list = if tree.selected_node, do: [{"data-selected-node", tree.selected_node} | attrs_list], else: attrs_list
+    attrs_list =
+      if tree.selected_node,
+        do: [{"data-selected-node", tree.selected_node} | attrs_list],
+        else: attrs_list
 
     # Add phx-click binding if on_select is present
-    attrs_list = if tree.on_select do
-      event_name = atom_to_event_name(tree.on_select)
-      [{"phx-click", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if tree.on_select do
+        event_name = atom_to_event_name(tree.on_select)
+        [{"phx-click", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add phx-click binding for toggle if on_toggle is present
-    attrs_list = if tree.on_toggle do
-      event_name = atom_to_event_name(tree.on_toggle)
-      [{"data-toggle-event", event_name} | attrs_list]
-    else
-      attrs_list
-    end
+    attrs_list =
+      if tree.on_toggle do
+        event_name = atom_to_event_name(tree.on_toggle)
+        [{"data-toggle-event", event_name} | attrs_list]
+      else
+        attrs_list
+      end
 
     # Add style
     style = Style.to_css(tree.style)
     attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
 
     # Convert root nodes
-    root_nodes_html = Enum.map(tree.root_nodes || [], fn node ->
-      convert_iur(node, state)
-    end)
-    |> Enum.join("\n")
+    root_nodes_html =
+      Enum.map_join(tree.root_nodes || [], "\n", fn node ->
+        convert_iur(node, state)
+      end)
 
     attrs = build_attributes(attrs_list)
 
@@ -837,11 +917,13 @@ defmodule UnifiedUi.Adapters.Web do
 
     # Add style from IUR style
     style = Style.to_css(vbox.style)
-    css_parts = if style do
-      [style | css_parts]
-    else
-      css_parts
-    end
+
+    css_parts =
+      if style do
+        [style | css_parts]
+      else
+        css_parts
+      end
 
     css = Enum.reverse(css_parts) |> Enum.join("; ")
 
@@ -863,11 +945,13 @@ defmodule UnifiedUi.Adapters.Web do
 
     # Add style from IUR style
     style = Style.to_css(hbox.style)
-    css_parts = if style do
-      [style | css_parts]
-    else
-      css_parts
-    end
+
+    css_parts =
+      if style do
+        [style | css_parts]
+      else
+        css_parts
+      end
 
     css = Enum.reverse(css_parts) |> Enum.join("; ")
 
@@ -897,45 +981,56 @@ defmodule UnifiedUi.Adapters.Web do
   defp build_attributes(attrs_list) do
     attrs_list
     |> Enum.reject(fn {_, value} -> is_nil(value) or value == "" end)
-    |> Enum.map(fn {name, value} -> " #{name}=\"#{escape_html(value)}\"" end)
-    |> Enum.join()
+    |> Enum.map_join(fn {name, value} -> " #{name}=\"#{escape_html(value)}\"" end)
   end
 
   # Spacing in CSS (using gap property for flexbox)
   defp maybe_add_spacing_css(css_parts, nil), do: css_parts
+
   defp maybe_add_spacing_css(css_parts, spacing) when is_integer(spacing),
     do: ["gap: #{spacing}px" | css_parts]
 
   # Padding in CSS
   defp maybe_add_padding_css(css_parts, nil), do: css_parts
+
   defp maybe_add_padding_css(css_parts, padding) when is_integer(padding),
     do: ["padding: #{padding}px" | css_parts]
 
   # Alignment mapping to CSS
   # For flexbox, align-items controls cross-axis alignment
   defp maybe_add_align_items_css(css_parts, nil, _direction), do: css_parts
+
   defp maybe_add_align_items_css(css_parts, :start, :column),
     do: ["align-items: flex-start" | css_parts]
+
   defp maybe_add_align_items_css(css_parts, :center, _direction),
     do: ["align-items: center" | css_parts]
+
   defp maybe_add_align_items_css(css_parts, :end, :column),
     do: ["align-items: flex-end" | css_parts]
+
   defp maybe_add_align_items_css(css_parts, :start, :row),
     do: ["align-items: center" | css_parts]
+
   defp maybe_add_align_items_css(css_parts, :end, :row),
     do: ["align-items: stretch" | css_parts]
+
   defp maybe_add_align_items_css(css_parts, align, _direction),
     do: ["align-items: #{align}" | css_parts]
 
   # Justification mapping to CSS
   # For flexbox, justify-content controls main-axis alignment
   defp maybe_add_justify_content_css(css_parts, nil, _direction), do: css_parts
+
   defp maybe_add_justify_content_css(css_parts, :start, _direction),
     do: ["justify-content: flex-start" | css_parts]
+
   defp maybe_add_justify_content_css(css_parts, :center, _direction),
     do: ["justify-content: center" | css_parts]
+
   defp maybe_add_justify_content_css(css_parts, :end, _direction),
     do: ["justify-content: flex-end" | css_parts]
+
   defp maybe_add_justify_content_css(css_parts, justify, _direction),
     do: ["justify-content: #{justify}" | css_parts]
 
@@ -971,6 +1066,7 @@ defmodule UnifiedUi.Adapters.Web do
 
   # Basic HTML escaping
   defp escape_html(nil), do: ""
+
   defp escape_html(value) when is_binary(value) do
     value
     |> String.replace("&", "&amp;")
@@ -979,6 +1075,7 @@ defmodule UnifiedUi.Adapters.Web do
     |> String.replace("\"", "&quot;")
     |> String.replace("'", "&#39;")
   end
+
   defp escape_html(value), do: value |> to_string() |> escape_html()
 
   # Web table helpers
@@ -1003,4 +1100,24 @@ defmodule UnifiedUi.Adapters.Web do
   defp align_to_css_class(:left), do: "align-left"
   defp align_to_css_class(:right), do: "align-right"
   defp align_to_css_class(:center), do: "align-center"
+
+  defp put_config(%State{} = renderer_state, config) when is_list(config) do
+    %{renderer_state | config: config}
+  end
+
+  defp maybe_put_root(%State{} = renderer_state, _new_root, false) do
+    renderer_state
+  end
+
+  defp maybe_put_root(%State{} = renderer_state, new_root, true) do
+    State.put_root(renderer_state, new_root)
+  end
+
+  defp maybe_bump_version(%State{} = renderer_state, false) do
+    renderer_state
+  end
+
+  defp maybe_bump_version(%State{} = renderer_state, true) do
+    State.bump_version(renderer_state)
+  end
 end
