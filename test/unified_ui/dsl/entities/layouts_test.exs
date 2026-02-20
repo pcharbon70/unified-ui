@@ -178,7 +178,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert vbox.align_items == :center
       assert vbox.justify_content == :space_between
       assert vbox.padding == 1
-      assert vbox.style != nil
+      assert match?(%UnifiedIUR.Style{}, vbox.style)
       assert vbox.visible == true
     end
 
@@ -212,7 +212,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert hbox.align_items == :center
       assert hbox.justify_content == :space_around
       assert hbox.padding == 2
-      assert hbox.style != nil
+      assert match?(%UnifiedIUR.Style{}, hbox.style)
       assert hbox.visible == true
     end
 

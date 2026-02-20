@@ -58,8 +58,8 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
 
     test "has documentation" do
       entity = Tables.column_entity()
-      assert entity.describe != nil
       assert is_binary(entity.describe)
+      assert entity.describe != ""
       assert String.contains?(entity.describe, "column")
     end
   end
@@ -103,6 +103,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
       assert sort_direction_spec[:type] == {:one_of, [:asc, :desc]}
 
       assert Keyword.get(entity.schema, :on_sort)[:required] == false
+
       assert Keyword.get(entity.schema, :on_sort)[:type] ==
                {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]}
 
@@ -111,6 +112,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
       assert Keyword.get(entity.schema, :selected_row)[:type] == :integer
 
       assert Keyword.get(entity.schema, :on_row_select)[:required] == false
+
       assert Keyword.get(entity.schema, :on_row_select)[:type] ==
                {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]}
 
@@ -132,7 +134,6 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
     test "has column entities as nested entities" do
       entity = Tables.table_entity()
 
-      assert entity.entities != nil
       assert is_list(entity.entities)
 
       # Should have columns entity containing column_entity
@@ -144,8 +145,8 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
 
     test "has documentation" do
       entity = Tables.table_entity()
-      assert entity.describe != nil
       assert is_binary(entity.describe)
+      assert entity.describe != ""
       assert String.contains?(entity.describe, "table")
     end
   end
@@ -163,6 +164,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
 
     test "can be created with optional fields" do
       formatter = fn val -> to_string(val) end
+
       column = %Column{
         key: :name,
         header: "Name",
@@ -250,6 +252,7 @@ defmodule UnifiedUi.Dsl.Entities.TablesTest do
 
     test "metadata/1 returns correct map" do
       formatter = fn val -> to_string(val) end
+
       column = %Column{
         key: :id,
         header: "ID",

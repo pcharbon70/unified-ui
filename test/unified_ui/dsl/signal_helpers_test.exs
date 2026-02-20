@@ -12,7 +12,6 @@ defmodule UnifiedUi.Dsl.SignalHelpersTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Dsl.SignalHelpers
-  alias Jido.Signal
 
   describe "normalize_handler/1" do
     test "normalizes atom handler" do

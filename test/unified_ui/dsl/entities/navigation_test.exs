@@ -143,7 +143,7 @@ defmodule UnifiedUi.Dsl.Entities.NavigationTest do
     test "has items nested entities" do
       entity = NavigationEntities.menu_entity()
 
-      assert entity.entities != nil
+      assert is_list(entity.entities)
       assert Keyword.has_key?(entity.entities, :items)
       assert is_list(Keyword.get(entity.entities, :items))
     end
@@ -200,7 +200,7 @@ defmodule UnifiedUi.Dsl.Entities.NavigationTest do
     test "has items nested entities" do
       entity = NavigationEntities.context_menu_entity()
 
-      assert entity.entities != nil
+      assert is_list(entity.entities)
       assert Keyword.has_key?(entity.entities, :items)
       assert is_list(Keyword.get(entity.entities, :items))
     end
@@ -331,7 +331,7 @@ defmodule UnifiedUi.Dsl.Entities.NavigationTest do
     test "has tabs nested entities" do
       entity = NavigationEntities.tabs_entity()
 
-      assert entity.entities != nil
+      assert is_list(entity.entities)
       assert Keyword.has_key?(entity.entities, :tabs)
       assert is_list(Keyword.get(entity.entities, :tabs))
     end
@@ -489,7 +489,7 @@ defmodule UnifiedUi.Dsl.Entities.NavigationTest do
     test "has root_nodes nested entities" do
       entity = NavigationEntities.tree_view_entity()
 
-      assert entity.entities != nil
+      assert is_list(entity.entities)
       assert Keyword.has_key?(entity.entities, :root_nodes)
       assert is_list(Keyword.get(entity.entities, :root_nodes))
     end
