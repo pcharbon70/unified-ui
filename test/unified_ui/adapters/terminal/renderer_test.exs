@@ -248,6 +248,25 @@ defmodule UnifiedUi.Adapters.TerminalTest do
     end
   end
 
+  describe "convert_iur/2 - LineChart widget" do
+    test "converts line chart metadata without unsupported fields" do
+      chart = %Widgets.LineChart{
+        id: :trend,
+        data: [{"Mon", 20}, {"Tue", 22}, {"Wed", 19}],
+        show_dots: true,
+        show_area: false
+      }
+
+      result = Terminal.convert_iur(chart)
+
+      assert {:line_chart, _node, meta} = result
+      assert meta.id == :trend
+      assert meta.show_dots == true
+      assert meta.show_area == false
+      assert meta.data == [{"Mon", 20}, {"Tue", 22}, {"Wed", 19}]
+    end
+  end
+
   describe "convert_iur/2 - VBox layout" do
     test "converts vbox with children" do
       vbox = %Layouts.VBox{

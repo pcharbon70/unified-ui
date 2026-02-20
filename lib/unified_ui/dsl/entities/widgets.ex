@@ -26,7 +26,6 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
 
   alias UnifiedIUR.Widgets
 
-  @doc false
   @button_entity %Spark.Dsl.Entity{
     name: :button,
     target: Widgets.Button,
@@ -76,7 +75,6 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc false
   @text_entity %Spark.Dsl.Entity{
     name: :text,
     target: Widgets.Text,
@@ -112,7 +110,6 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc false
   @label_entity %Spark.Dsl.Entity{
     name: :label,
     target: Widgets.Label,
@@ -154,7 +151,6 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     """
   }
 
-  @doc false
   @text_input_entity %Spark.Dsl.Entity{
     name: :text_input,
     target: Widgets.TextInput,

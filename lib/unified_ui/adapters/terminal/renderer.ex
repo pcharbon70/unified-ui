@@ -455,18 +455,11 @@ defmodule UnifiedUi.Adapters.Terminal do
             Enum.join(row)
           end
 
-        # Add labels if requested
+        # Include compact X-axis labels for consistency with other adapters.
         x_labels =
-          if chart.show_labels do
-            labels =
-              Enum.map(data, fn {label, _} ->
-                String.slice(label, 0, 3) |> String.pad_trailing(4)
-              end)
-
-            Enum.join(labels)
-          else
-            ""
-          end
+          Enum.map_join(data, "", fn {label, _} ->
+            String.slice(label, 0, 3) |> String.pad_trailing(4)
+          end)
 
         Enum.join(grid, "\n") <> "\n" <> x_labels
       else
