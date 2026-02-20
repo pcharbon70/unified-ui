@@ -70,7 +70,6 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
 
   alias UnifiedUi.Dsl.Style
 
-  @doc false
   @style_entity %Spark.Dsl.Entity{
     name: :style,
     target: Style,

@@ -54,7 +54,6 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     Navigation.tree_view_entity()
   ]
 
-  @doc false
   @vbox_entity %Spark.Dsl.Entity{
     name: :vbox,
     target: Layouts.VBox,
@@ -110,7 +109,6 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     """
   }
 
-  @doc false
   @hbox_entity %Spark.Dsl.Entity{
     name: :hbox,
     target: Layouts.HBox,
