@@ -8,6 +8,16 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   alias UnifiedUi.Adapters.Coordinator
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
+  alias Jido.Signal
+
+  def mfa_target(signal, parent) do
+    send(parent, {:mfa_dispatched, signal})
+    :ok
+  end
+
+  def mfa_target_error(_signal, _parent) do
+    {:error, :rejected_by_mfa}
+  end
 
   # Helper to create a simple IUR tree for testing
   defp simple_iur_tree do
@@ -463,6 +473,122 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert {:ok, results} = Coordinator.render_on(iur, [:web])
       assert {:ok, state} = results.web
       assert state.platform == :web
+    end
+  end
+
+  describe "event normalization and dispatch" do
+    test "returns event module for platform" do
+      assert {:ok, UnifiedUi.Adapters.Terminal.Events} = Coordinator.event_module(:terminal)
+      assert {:ok, UnifiedUi.Adapters.Desktop.Events} = Coordinator.event_module(:desktop)
+      assert {:ok, UnifiedUi.Adapters.Web.Events} = Coordinator.event_module(:web)
+      assert {:error, :invalid_platform} = Coordinator.event_module(:mobile)
+    end
+
+    test "normalizes platform event to unified signal" do
+      assert {:ok, signal} =
+               Coordinator.normalize_event(:terminal, :click, %{widget_id: :save, action: :save})
+
+      assert %Signal{} = signal
+      assert signal.type == "unified.button.clicked"
+      assert signal.data.platform == :terminal
+      assert signal.data.widget_id == :save
+    end
+
+    test "dispatches normalized signal to pid target" do
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :desktop,
+                 :window,
+                 %{action: :resize, width: 1024, height: 768},
+                 self()
+               )
+
+      assert %Signal{} = signal
+      assert signal.type == "unified.window.resize"
+      assert_receive %Signal{type: "unified.window.resize", data: %{platform: :desktop}}
+    end
+
+    test "dispatches normalized signal to function target" do
+      target = fn signal ->
+        send(self(), {:fn_dispatched, signal})
+        :ok
+      end
+
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :web,
+                 :click,
+                 %{widget_id: :submit, action: :submit_form},
+                 target
+               )
+
+      assert_receive {:fn_dispatched, ^signal}
+      assert signal.type == "unified.button.clicked"
+      assert signal.data.platform == :web
+    end
+
+    test "dispatches normalized signal to mfa target" do
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :change,
+                 %{widget_id: :email, value: "user@example.com"},
+                 {__MODULE__, :mfa_target, [self()]}
+               )
+
+      assert_receive {:mfa_dispatched, ^signal}
+      assert signal.type == "unified.input.changed"
+    end
+
+    test "broadcasts normalized signal to multiple targets" do
+      target_one = fn signal ->
+        send(self(), {:target_one, signal})
+        :ok
+      end
+
+      target_two = fn signal ->
+        send(self(), {:target_two, signal})
+        :ok
+      end
+
+      assert {:ok, signal} =
+               Coordinator.broadcast_event(
+                 :web,
+                 :focus,
+                 %{widget_id: :search},
+                 [target_one, target_two]
+               )
+
+      assert_receive {:target_one, ^signal}
+      assert_receive {:target_two, ^signal}
+      assert signal.type == "unified.element.focused"
+    end
+
+    test "returns dispatch failure when target rejects signal" do
+      assert {:error, {:dispatch_failed, [error]}} =
+               Coordinator.broadcast_event(
+                 :desktop,
+                 :click,
+                 %{widget_id: :save},
+                 [{__MODULE__, :mfa_target_error, [self()]}]
+               )
+
+      assert error == {:error, :rejected_by_mfa}
+    end
+
+    test "returns error for invalid route target" do
+      assert {:error, :invalid_target} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :save},
+                 %{not: :a_target}
+               )
+    end
+
+    test "returns error for invalid event payload" do
+      assert {:error, :invalid_event} =
+               Coordinator.normalize_event(:terminal, :click, "not a payload map")
     end
   end
 end
