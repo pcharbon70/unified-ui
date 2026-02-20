@@ -10,7 +10,8 @@ defmodule UnifiedUi.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      docs: docs()
+      docs: docs(),
+      test_coverage: test_coverage()
     ]
   end
 
@@ -63,6 +64,16 @@ defmodule UnifiedUi.MixProject do
       ],
       groups_for_extras: [
         Guides: ["guides/*.md"]
+      ]
+    ]
+  end
+
+  defp test_coverage do
+    [
+      summary: [threshold: 70],
+      ignore_modules: [
+        ~r/^UnifiedUi\.Dsl\.Extension(\.|$)/,
+        ~r/^UnifiedUi\.(Update|View)TransformerFixture(\.|$)/
       ]
     ]
   end
