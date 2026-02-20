@@ -169,7 +169,8 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "converts window resize event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(:window, %{action: :resize, width: 800, height: 600})
+      assert {:ok, signal} =
+               Events.to_signal(:window, %{action: :resize, width: 800, height: 600})
 
       assert signal.type == "unified.window.resize"
       assert signal.data.width == 800
@@ -236,7 +237,8 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "creates and dispatches a window resize signal" do
-      assert {:ok, signal} = Events.dispatch(:window, %{action: :resize, width: 1024, height: 768})
+      assert {:ok, signal} =
+               Events.dispatch(:window, %{action: :resize, width: 1024, height: 768})
 
       assert signal.type == "unified.window.resize"
       assert signal.data.width == 1024
@@ -499,11 +501,13 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
 
   describe "extract_handlers/1" do
     test "extracts button click handlers from render tree" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        id: :submit_button,
-        disabled: false
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           id: :submit_button,
+           disabled: false
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -511,16 +515,18 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "extracts text input change handlers from render tree" do
-      render_tree = {:text_input, nil, %{
-        id: :email,
-        value: nil,
-        placeholder: "user@example.com",
-        type: nil,
-        on_change: :update_email,
-        on_submit: nil,
-        disabled: nil,
-        form_id: nil
-      }}
+      render_tree =
+        {:text_input, nil,
+         %{
+           id: :email,
+           value: nil,
+           placeholder: "user@example.com",
+           type: nil,
+           on_change: :update_email,
+           on_submit: nil,
+           disabled: nil,
+           form_id: nil
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -528,11 +534,13 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "extracts text input submit handlers from render tree" do
-      render_tree = {:text_input, nil, %{
-        id: :password,
-        type: :password,
-        on_submit: :submit_login
-      }}
+      render_tree =
+        {:text_input, nil,
+         %{
+           id: :password,
+           type: :password,
+           on_submit: :submit_login
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -588,11 +596,13 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "skips button without ID" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        disabled: false
-        # No id
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           disabled: false
+           # No id
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -600,11 +610,13 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
 
     test "skips button without on_click" do
-      render_tree = {:button, nil, %{
-        id: :button,
-        disabled: false
-        # No on_click
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           id: :button,
+           disabled: false
+           # No on_click
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -619,18 +631,20 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
       render_tree = %{
         type: :vbox,
         children: [
-          {:text_input, nil, %{
-            id: :email_input,
-            type: :email,
-            placeholder: "user@example.com",
-            on_change: :validate_email,
-            on_submit: nil
-          }},
-          {:button, nil, %{
-            on_click: :submit_form,
-            id: :submit_button,
-            disabled: false
-          }}
+          {:text_input, nil,
+           %{
+             id: :email_input,
+             type: :email,
+             placeholder: "user@example.com",
+             on_change: :validate_email,
+             on_submit: nil
+           }},
+          {:button, nil,
+           %{
+             on_click: :submit_form,
+             id: :submit_button,
+             disabled: false
+           }}
         ]
       }
 
@@ -721,7 +735,7 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
                Events.to_signal(:window, %{action: :format_c})
 
       assert {:error, :invalid_action} =
-               Events.to_signal(:window, %{action: :"delete_all_files"})
+               Events.to_signal(:window, %{action: :delete_all_files})
 
       assert {:error, :invalid_action} =
                Events.to_signal(:window, %{action: :"<script>alert('xss')</script>"})

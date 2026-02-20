@@ -23,7 +23,7 @@ defmodule UnifiedUi.Dsl.FormHelpersTest do
   end
 
   # Helper to create a TextInput entity
-  defp create_text_input(id, opts \\ []) do
+  defp create_text_input(id, opts) do
     defaults = [
       __struct__: TextInput,
       id: id,

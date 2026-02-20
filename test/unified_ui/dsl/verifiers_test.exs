@@ -27,7 +27,9 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
   # Spark.Dsl.Transformer.get_entities(dsl_state, path) expects
   # dsl_state[path][:entities] to be the list of entities
   # Note: Spark stores entities directly at dsl_state[path], not dsl_state[:sections][path]
-  defp create_dsl_state(widgets_entities \\ [], layouts_entities \\ []) do
+  defp create_dsl_state(widgets_entities), do: create_dsl_state(widgets_entities, [])
+
+  defp create_dsl_state(widgets_entities, layouts_entities) do
     %{
       persist: %{module: TestModule},
       widgets: %{entities: widgets_entities},

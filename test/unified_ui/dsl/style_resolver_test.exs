@@ -24,7 +24,7 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
   end
 
   # Helper to create a DslStyle entity
-  defp create_style(name, opts \\ []) do
+  defp create_style(name, opts) do
     defaults = [
       __struct__: DslStyle,
       name: name,
@@ -183,7 +183,7 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
     test "resolves inline keyword list styles" do
       dsl_state = create_dsl_state([])
 
-      result = StyleResolver.resolve_style_ref(dsl_state, [fg: :red, bg: :white])
+      result = StyleResolver.resolve_style_ref(dsl_state, fg: :red, bg: :white)
 
       assert %Style{fg: :red, bg: :white} = result
     end
@@ -276,7 +276,7 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
     test "returns :ok for inline style list" do
       dsl_state = create_dsl_state([])
 
-      result = StyleResolver.validate_style_ref(dsl_state, [fg: :red])
+      result = StyleResolver.validate_style_ref(dsl_state, fg: :red)
 
       assert result == :ok
     end
@@ -318,12 +318,12 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       result = StyleResolver.resolve(dsl_state, :large_button)
 
       assert %Style{
-        padding: 2,
-        bg: :green,
-        attrs: [:bold],
-        margin: 1,
-        fg: :white
-      } = result
+               padding: 2,
+               bg: :green,
+               attrs: [:bold],
+               margin: 1,
+               fg: :white
+             } = result
     end
 
     test "style ref with inheritance and inline override" do
@@ -341,16 +341,18 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
 
     test "all attribute types resolve correctly" do
       entities = [
-        create_style(:full, attributes: [
-          fg: :red,
-          bg: :white,
-          attrs: [:bold, :underline],
-          padding: 2,
-          margin: 3,
-          width: :fill,
-          height: :auto,
-          align: :center
-        ])
+        create_style(:full,
+          attributes: [
+            fg: :red,
+            bg: :white,
+            attrs: [:bold, :underline],
+            padding: 2,
+            margin: 3,
+            width: :fill,
+            height: :auto,
+            align: :center
+          ]
+        )
       ]
 
       dsl_state = create_dsl_state(entities)
