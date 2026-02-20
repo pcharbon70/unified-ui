@@ -1,7 +1,7 @@
 # Codex Comprehensive Plan and Codebase Audit
 
 Date: 2026-02-18
-Scope audited: `/Users/Pascal/code/unified/unified-ui/unified_ui`
+Scope audited: `/Users/Pascal/code/unified/unified-ui`
 
 ## Executive Summary
 
@@ -16,7 +16,13 @@ The main remaining work is not basic scaffolding. It is completion and hardening
 ## Verification Method
 
 - Static code audit of modules and tests.
-- Could not run runtime verification because `mix` is not installed in this execution environment.
+- Initial audit run did not include runtime verification because `mix` was unavailable in that environment.
+
+## Progress Update (2026-02-20)
+
+- Track C.1 complete: adapter `update/3` paths are now diff-aware and skip no-op updates.
+- Track C.2 complete: coordinator now supports platform event normalization and explicit target routing contracts.
+- Track C.3 in progress: planning/architecture docs are being updated to consistently use `adapters/*` naming.
 
 ## Audit Findings by Phase
 
@@ -57,8 +63,8 @@ Completed evidence:
 - Multi-platform coordinator implemented (`lib/unified_ui/adapters/coordinator.ex`).
 
 Gaps:
-- `update/3` in adapters is currently full rerender rather than diff-based update.
-- Dispatch is mostly conversion-return and not full runtime bus wiring/agent routing.
+- Update paths still perform root-level recompute; subtree-level incremental patching by element ID is not implemented yet.
+- Event routing now exists at the coordinator level, but agent/supervision integration is still pending.
 - Naming diverged from original plan (`adapters/*` vs `renderers/*`), which is fine technically but planning docs should be aligned.
 
 ### Phase 4 (Advanced Features and Styling) - Partial completion
@@ -121,14 +127,17 @@ Gaps:
 1. Move from rerender to diff-aware update.
 - Add element-ID matching and incremental update logic where possible.
 - Exit criteria: `update/3` applies structural diff, no full rerender default for unchanged subtrees.
+Status: complete for root-level diff-aware updates; subtree-level incremental patching remains.
 
 2. Strengthen event dispatch path.
 - Complete bus dispatch wiring and target routing contracts.
 - Exit criteria: platform event -> normalized signal -> target handler integration tests pass.
+Status: complete for coordinator normalization/routing contracts; bus/agent integration remains.
 
 3. Align naming and architecture docs.
 - Update planning docs from "renderers" to actual "adapters" naming or rename code consistently.
 - Exit criteria: docs and code terminology match.
+Status: in progress.
 
 ### Track D - Finish Remaining Phase 4 Features
 

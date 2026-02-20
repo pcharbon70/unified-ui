@@ -55,22 +55,22 @@ None needed - architecture is clearly defined in Phase 3 planning and builds dir
 
 ### Files to Create
 
-1. **`lib/unified_ui/renderers/protocol.ex`**
+1. **`lib/unified_ui/adapters/protocol.ex`**
    - `UnifiedUi.Renderer` behaviour
    - Callbacks: `render/2`, `update/3`, `destroy/1`
 
-2. **`lib/unified_ui/renderers/shared.ex`**
+2. **`lib/unified_ui/adapters/shared.ex`**
    - `traverse_iur/2` - Generic tree traversal with accumulator
    - `find_by_id/2` - Find element by ID in IUR tree
    - `collect_styles/1` - Gather all style definitions
    - `count_elements/1` - Count widgets and layouts
 
-3. **`lib/unified_ui/renderers/state.ex`**
+3. **`lib/unified_ui/adapters/state.ex`**
    - `RendererState` struct definition
    - State management helpers
    - Platform widget registry
 
-4. **`lib/unified_ui/renderers/event.ex`**
+4. **`lib/unified_ui/adapters/event.ex`**
    - Event-to-signal conversion helpers
    - Signal dispatching pattern
 
@@ -107,7 +107,7 @@ None - this is new code in a new directory.
 
 ### Task 3.1.1: Create Renderer Behaviour
 
-- [ ] Create `lib/unified_ui/renderers/protocol.ex`
+- [ ] Create `lib/unified_ui/adapters/protocol.ex`
 - [ ] Define `@callback render/2` - IUR → platform widgets
 - [ ] Define `@callback update/3` - Update existing widgets
 - [ ] Define `@callback destroy/1` - Cleanup resources
@@ -115,7 +115,7 @@ None - this is new code in a new directory.
 
 ### Task 3.1.2: Create Shared Utilities
 
-- [ ] Create `lib/unified_ui/renderers/shared.ex`
+- [ ] Create `lib/unified_ui/adapters/shared.ex`
 - [ ] Implement `traverse_iur/2` with pre/post order options
 - [ ] Implement `find_by_id/2` for element lookup
 - [ ] Implement `collect_styles/1` for style gathering
@@ -124,7 +124,7 @@ None - this is new code in a new directory.
 
 ### Task 3.1.3: Define Renderer State Management
 
-- [ ] Create `lib/unified_ui/renderers/state.ex`
+- [ ] Create `lib/unified_ui/adapters/state.ex`
 - [ ] Define `RendererState` struct
 - [ ] Add state initialization helpers
 - [ ] Add widget registry functions
@@ -132,7 +132,7 @@ None - this is new code in a new directory.
 
 ### Task 3.1.4: Define Event-to-Signal Conversion
 
-- [ ] Create `lib/unified_ui/renderers/event.ex`
+- [ ] Create `lib/unified_ui/adapters/event.ex`
 - [ ] Define `to_signal/3` helper
 - [ ] Define signal dispatcher pattern
 - [ ] Add event metadata helpers
@@ -172,7 +172,7 @@ All 30 tasks across 6 implementation groups are complete.
 ### How to Run Tests
 ```bash
 cd unified_ui
-mix test test/unified_ui/renderers/
+mix test test/unified_ui/adapters/
 ```
 
 ---

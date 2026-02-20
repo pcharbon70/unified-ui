@@ -14,7 +14,7 @@ This feature implemented the common architecture that all platform renderers (Te
 
 ## What Was Implemented
 
-### 1. Renderer Behaviour (`lib/unified_ui/renderers/protocol.ex`)
+### 1. Renderer Behaviour (`lib/unified_ui/adapters/protocol.ex`)
 
 **Callbacks defined:**
 - `render/2` - Convert IUR tree to platform widgets
@@ -27,7 +27,7 @@ This feature implemented the common architecture that all platform renderers (Te
 - `renderer_state/0` - Platform-specific state
 - Return types for all callbacks
 
-### 2. Shared Utilities (`lib/unified_ui/renderers/shared.ex`)
+### 2. Shared Utilities (`lib/unified_ui/adapters/shared.ex`)
 
 **Functions implemented:**
 - `traverse_iur/4` - Generic tree traversal with pre/post-order options
@@ -44,7 +44,7 @@ This feature implemented the common architecture that all platform renderers (Te
 - Required ID on TextInput widgets
 - Empty layout detection
 
-### 3. Renderer State Management (`lib/unified_ui/renderers/state.ex`)
+### 3. Renderer State Management (`lib/unified_ui/adapters/state.ex`)
 
 **RendererState struct:**
 ```elixir
@@ -65,7 +65,7 @@ This feature implemented the common architecture that all platform renderers (Te
 - Config management: `get_config/3`, `put_config/3`
 - Metadata: `get_metadata/3`, `put_metadata/3`
 
-### 4. Event-to-Signal Conversion (`lib/unified_ui/renderers/event.ex`)
+### 4. Event-to-Signal Conversion (`lib/unified_ui/adapters/event.ex`)
 
 **Functions:**
 - `to_signal/3` - Convert platform event to signal tuple
@@ -92,15 +92,15 @@ This feature implemented the common architecture that all platform renderers (Te
 ## Files Created
 
 ### Library Files
-1. `lib/unified_ui/renderers/protocol.ex` - Renderer behaviour (150 lines)
-2. `lib/unified_ui/renderers/shared.ex` - Shared utilities (390 lines)
-3. `lib/unified_ui/renderers/state.ex` - State management (290 lines)
-4. `lib/unified_ui/renderers/event.ex` - Event conversion (400 lines)
+1. `lib/unified_ui/adapters/protocol.ex` - Renderer behaviour (150 lines)
+2. `lib/unified_ui/adapters/shared.ex` - Shared utilities (390 lines)
+3. `lib/unified_ui/adapters/state.ex` - State management (290 lines)
+4. `lib/unified_ui/adapters/event.ex` - Event conversion (400 lines)
 
 ### Test Files
-1. `test/unified_ui/renderers/shared_test.exs` - Shared tests (360 lines)
-2. `test/unified_ui/renderers/state_test.exs` - State tests (280 lines)
-3. `test/unified_ui/renderers/event_test.exs` - Event tests (310 lines)
+1. `test/unified_ui/adapters/shared_test.exs` - Shared tests (360 lines)
+2. `test/unified_ui/adapters/state_test.exs` - State tests (280 lines)
+3. `test/unified_ui/adapters/event_test.exs` - Event tests (310 lines)
 
 **Total:** ~2,180 lines of code and tests
 
