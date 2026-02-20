@@ -29,7 +29,8 @@ defmodule UnifiedUi.MixProject do
       {:jido, "~> 1.0"},
       {:jido_signal, "~> 1.0"},
       {:term_ui, github: "pcharbon70/term_ui", branch: "multi-renderer"},
-      {:unified_iur, path: "../unified_iur"}
+      {:unified_iur, path: "../unified_iur"},
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false}
     ]
   end
 
@@ -55,8 +56,14 @@ defmodule UnifiedUi.MixProject do
   defp docs do
     [
       main: "readme",
-      logo: "guides/images/logo.png",
-      extras: ["guides/Getting Started.md", "guides/Widget Reference.md"]
+      extras: [
+        "README.md",
+        "guides/getting-started.md",
+        "guides/widget-reference.md"
+      ],
+      groups_for_extras: [
+        Guides: ["guides/*.md"]
+      ]
     ]
   end
 end
