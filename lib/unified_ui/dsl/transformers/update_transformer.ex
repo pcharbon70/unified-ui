@@ -8,7 +8,8 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   3. DSL-declared handlers found on widgets/entities
 
   If no DSL route matches, it falls back to default handlers that return
-  state unchanged. All default handlers are overridable.
+  state unchanged. For matched routes, default handlers apply route-driven
+  state updates. All default handlers are overridable.
   """
 
   use Spark.Dsl.Transformer
@@ -19,6 +20,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   @click_signal_type "unified.button.clicked"
   @change_signal_type "unified.input.changed"
   @submit_signal_type "unified.form.submitted"
+  @nested_entity_keys [:entities, :children, :items, :tabs, :nodes, :columns]
 
   @impl true
   def transform(dsl_state) do
@@ -65,60 +67,45 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         end
 
         defp dispatch_click_signal(state, signal) do
-          route_key = extract_click_route_key(signal)
+          route =
+            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+              unquote(click_routes),
+              signal,
+              :click
+            )
 
-          case Enum.find(unquote(click_routes), fn route -> route.key == route_key end) do
+          case route do
             nil -> handle_click_signal(state, signal)
             route -> handle_click_signal(state, signal, route)
           end
         end
 
         defp dispatch_change_signal(state, signal) do
-          route_key = extract_change_route_key(signal)
+          route =
+            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+              unquote(change_routes),
+              signal,
+              :change
+            )
 
-          case Enum.find(unquote(change_routes), fn route -> route.key == route_key end) do
+          case route do
             nil -> handle_change_signal(state, signal)
             route -> handle_change_signal(state, signal, route)
           end
         end
 
         defp dispatch_submit_signal(state, signal) do
-          route_key = extract_submit_route_key(signal)
+          route =
+            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+              unquote(submit_routes),
+              signal,
+              :submit
+            )
 
-          case Enum.find(unquote(submit_routes), fn route -> route.key == route_key end) do
+          case route do
             nil -> handle_submit_signal(state, signal)
             route -> handle_submit_signal(state, signal, route)
           end
-        end
-
-        defp extract_signal_data(%Jido.Signal{data: data}) when is_map(data), do: data
-        defp extract_signal_data(%{data: data}) when is_map(data), do: data
-        defp extract_signal_data(_), do: %{}
-
-        defp extract_click_route_key(signal) do
-          data = extract_signal_data(signal)
-
-          Map.get(data, :action) ||
-            Map.get(data, :button_id) ||
-            Map.get(data, :widget_id) ||
-            Map.get(data, :id)
-        end
-
-        defp extract_change_route_key(signal) do
-          data = extract_signal_data(signal)
-
-          Map.get(data, :input_id) ||
-            Map.get(data, :widget_id) ||
-            Map.get(data, :field) ||
-            Map.get(data, :id)
-        end
-
-        defp extract_submit_route_key(signal) do
-          data = extract_signal_data(signal)
-
-          Map.get(data, :form_id) ||
-            Map.get(data, :action) ||
-            Map.get(data, :id)
         end
 
         @doc """
@@ -131,8 +118,13 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         @doc """
         Handles click signals with a matched DSL route.
         """
-        def handle_click_signal(state, signal, _route) do
-          handle_click_signal(state, signal)
+        def handle_click_signal(state, signal, route) do
+          UnifiedUi.Dsl.Transformers.UpdateTransformer.apply_route_update(
+            :click,
+            state,
+            signal,
+            route
+          )
         end
 
         @doc """
@@ -145,8 +137,13 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         @doc """
         Handles change signals with a matched DSL route.
         """
-        def handle_change_signal(state, signal, _route) do
-          handle_change_signal(state, signal)
+        def handle_change_signal(state, signal, route) do
+          UnifiedUi.Dsl.Transformers.UpdateTransformer.apply_route_update(
+            :change,
+            state,
+            signal,
+            route
+          )
         end
 
         @doc """
@@ -159,8 +156,13 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         @doc """
         Handles submit signals with a matched DSL route.
         """
-        def handle_submit_signal(state, signal, _route) do
-          handle_submit_signal(state, signal)
+        def handle_submit_signal(state, signal, route) do
+          UnifiedUi.Dsl.Transformers.UpdateTransformer.apply_route_update(
+            :submit,
+            state,
+            signal,
+            route
+          )
         end
 
         defoverridable handle_click_signal: 2
@@ -173,6 +175,148 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
     {:ok, Transformer.eval(dsl_state, [], code)}
   end
+
+  @doc false
+  @spec find_matching_route([map()], map(), :click | :change | :submit) :: map() | nil
+  def find_matching_route(routes, signal, kind) when is_list(routes) do
+    route_key = extract_route_key(kind, signal)
+    signal_data = extract_signal_data(signal)
+    source_keys = extract_source_keys(signal_data)
+    action_keys = extract_action_keys(signal_data, route_key)
+
+    Enum.find(routes, fn route -> route.source in source_keys end) ||
+      Enum.find(routes, fn route -> route.key in action_keys end)
+  end
+
+  @doc false
+  @spec apply_route_update(:click | :change | :submit, map(), map(), map()) :: map()
+  def apply_route_update(kind, state, signal, route) when is_map(state) and is_map(route) do
+    case route.handler do
+      {:mfa, module, function, args} ->
+        invoke_mfa_route(module, function, args, state, signal, route)
+
+      _ ->
+        state
+        |> Map.merge(default_route_updates(kind, signal, route))
+    end
+  end
+
+  defp extract_signal_data(%Jido.Signal{data: data}) when is_map(data), do: data
+  defp extract_signal_data(%{data: data}) when is_map(data), do: data
+  defp extract_signal_data(_), do: %{}
+
+  defp extract_route_key(:click, signal) do
+    data = extract_signal_data(signal)
+
+    Map.get(data, :action) ||
+      Map.get(data, :button_id) ||
+      Map.get(data, :widget_id) ||
+      Map.get(data, :id)
+  end
+
+  defp extract_route_key(:change, signal) do
+    data = extract_signal_data(signal)
+
+    Map.get(data, :input_id) ||
+      Map.get(data, :widget_id) ||
+      Map.get(data, :field) ||
+      Map.get(data, :action) ||
+      Map.get(data, :id)
+  end
+
+  defp extract_route_key(:submit, signal) do
+    data = extract_signal_data(signal)
+
+    Map.get(data, :form_id) ||
+      Map.get(data, :action) ||
+      Map.get(data, :id)
+  end
+
+  defp extract_route_key(_kind, _signal), do: nil
+
+  defp extract_source_keys(data) do
+    [
+      Map.get(data, :widget_id),
+      Map.get(data, :button_id),
+      Map.get(data, :input_id),
+      Map.get(data, :form_id),
+      Map.get(data, :id)
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp extract_action_keys(data, route_key) do
+    [
+      route_key,
+      Map.get(data, :action)
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp default_route_updates(:click, _signal, route), do: route.payload
+
+  defp default_route_updates(:change, signal, route) do
+    signal_data = extract_signal_data(signal)
+    input_key = route.source
+    input_value = Map.get(signal_data, :value)
+
+    if is_atom(input_key) and not is_nil(input_value) do
+      Map.put(route.payload, input_key, input_value)
+    else
+      route.payload
+    end
+  end
+
+  defp default_route_updates(:submit, signal, route) do
+    signal_data = extract_signal_data(signal)
+    Map.merge(route.payload, extract_submit_updates(signal_data))
+  end
+
+  defp default_route_updates(_kind, _signal, _route), do: %{}
+
+  defp extract_submit_updates(signal_data) do
+    case Map.get(signal_data, :data) do
+      form_data when is_map(form_data) ->
+        form_data
+
+      _ ->
+        signal_data
+        |> Map.drop([:form_id, :action, :platform, :widget_id, :button_id, :input_id, :id])
+    end
+  end
+
+  defp invoke_mfa_route(module, function, args, state, signal, route) do
+    result =
+      cond do
+        function_exported?(module, function, length(args) + 3) ->
+          apply(module, function, [state, signal, route | args])
+
+        function_exported?(module, function, length(args) + 2) ->
+          apply(module, function, [state, signal | args])
+
+        function_exported?(module, function, length(args) + 1) ->
+          apply(module, function, [signal | args])
+
+        function_exported?(module, function, length(args)) ->
+          apply(module, function, args)
+
+        true ->
+          state
+      end
+
+    normalize_route_result(result, state)
+  rescue
+    _ -> state
+  catch
+    _, _ -> state
+  end
+
+  defp normalize_route_result(%{} = result, _fallback), do: result
+  defp normalize_route_result({:ok, %{} = result}, _fallback), do: result
+  defp normalize_route_result({:noreply, %{} = result}, _fallback), do: result
+  defp normalize_route_result(_result, fallback), do: fallback
 
   defp extract_routes(dsl_state) do
     entities = collect_entities(dsl_state)
@@ -209,7 +353,16 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     Enum.flat_map(entities, &flatten_entity/1)
   end
 
-  defp flatten_entity(%{entities: nested} = entity) when is_list(nested) do
+  defp flatten_entity(entity) when is_map(entity) do
+    nested =
+      @nested_entity_keys
+      |> Enum.flat_map(fn key ->
+        case Map.get(entity, key) do
+          values when is_list(values) -> values
+          _ -> []
+        end
+      end)
+
     [entity | flatten_entities(nested)]
   end
 
@@ -320,10 +473,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     routes
     |> Enum.reject(&is_nil/1)
     |> Enum.reduce({MapSet.new(), []}, fn route, {seen, acc} ->
-      if MapSet.member?(seen, route.key) do
+      dedupe_key = {route.key, route.source}
+
+      if MapSet.member?(seen, dedupe_key) do
         {seen, acc}
       else
-        {MapSet.put(seen, route.key), [route | acc]}
+        {MapSet.put(seen, dedupe_key), [route | acc]}
       end
     end)
     |> elem(1)

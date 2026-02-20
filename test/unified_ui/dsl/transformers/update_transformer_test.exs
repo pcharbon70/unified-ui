@@ -1,237 +1,191 @@
 defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
-  @moduledoc """
-  Tests for the UpdateTransformer.
-
-  These tests verify that the UpdateTransformer correctly:
-  - Generates update/2 functions with signal pattern matching
-  - Handles click, change, and submit signals
-  - Provides overridable handler functions
-  - Returns state unchanged for unhandled signals
-  """
-
   use ExUnit.Case, async: true
 
-  alias UnifiedUi.Dsl.Transformers.UpdateTransformer
-  alias UnifiedUi.Dsl.SignalHelpers
   alias Jido.Signal
+  alias UnifiedUi.Dsl.Transformers.UpdateTransformer
 
-  describe "UpdateTransformer module" do
-    test "module exists and is compiled" do
+  defmodule RouteMfaFixture do
+    @moduledoc false
+
+    def apply_click(state, %Signal{data: data}, route, marker) do
+      Map.put(state, marker, {route.source, Map.get(data, :widget_id)})
+    end
+  end
+
+  describe "module availability" do
+    test "transformer module is compiled" do
       assert Code.ensure_loaded?(UpdateTransformer)
     end
   end
 
-  describe "signal helpers integration" do
-    setup do
-      {:ok, click} = SignalHelpers.build_signal(:click, %{button_id: :save_btn})
-      {:ok, change} = SignalHelpers.build_signal(:change, %{input_id: :email, value: "test"})
-      {:ok, submit} = SignalHelpers.build_signal(:submit, %{form_id: :login})
+  describe "generated update/2 behavior" do
+    test "click route merges static payload for matched widget" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Save", id: :save_btn, on_click: {:save_clicked, %{mode: :saved}}
+        end
+        """)
 
-      %{click: click, change: change, submit: submit}
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.button.clicked", %{widget_id: :save_btn, action: :save_clicked})
+
+      assert %{mode: :saved} = module.update(state, signal)
     end
 
-    test "signal helpers create proper signal types", %{
-      click: click,
-      change: change,
-      submit: submit
-    } do
-      assert click.type == "unified.button.clicked"
-      assert change.type == "unified.input.changed"
-      assert submit.type == "unified.form.submitted"
+    test "route matching prefers widget source id when actions are shared" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Primary", id: :primary_btn, on_click: {:select, %{selected: :primary}}
+          button "Secondary", id: :secondary_btn, on_click: {:select, %{selected: :secondary}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.button.clicked", %{widget_id: :secondary_btn, action: :select})
+
+      assert %{selected: :secondary} = module.update(state, signal)
     end
 
-    test "signal helpers include proper data in signals", %{click: click, change: change} do
-      assert click.data.button_id == :save_btn
-      assert change.data.input_id == :email
-      assert change.data.value == "test"
-    end
-  end
+    test "change route writes signal value into state using input id as key" do
+      module =
+        compile_fixture("""
+        vbox do
+          text_input :email, on_change: :email_changed
+        end
+        """)
 
-  describe "update function with generated behavior" do
-    setup do
-      {:ok, click_signal} = SignalHelpers.build_signal(:click, %{button_id: :save_btn})
+      state = module.init([])
 
-      {:ok, change_signal} =
-        SignalHelpers.build_signal(:change, %{input_id: :email, value: "test"})
+      signal =
+        build_signal!("unified.input.changed", %{widget_id: :email, value: "test@example.com"})
 
-      {:ok, submit_signal} = SignalHelpers.build_signal(:submit, %{form_id: :login})
-
-      %{click: click_signal, change: change_signal, submit: submit_signal}
+      assert %{email: "test@example.com"} = module.update(state, signal)
     end
 
-    test "update function pattern matches on click signal type", %{click: click} do
-      # The generated update/2 should match on %{type: "unified.button.clicked"}
-      assert click.type == "unified.button.clicked"
+    test "submit route merges static payload and submitted form data" do
+      module =
+        compile_fixture("""
+        vbox do
+          text_input :email, form_id: :login_form, on_submit: {:submit_login, %{submitted: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.form.submitted", %{
+          form_id: :login_form,
+          data: %{email: "user@example.com"}
+        })
+
+      updated = module.update(state, signal)
+
+      assert updated.submitted == true
+      assert updated.email == "user@example.com"
     end
 
-    test "update function pattern matches on change signal type", %{change: change} do
-      # The generated update/2 should match on %{type: "unified.input.changed"}
-      assert change.type == "unified.input.changed"
+    test "map signals are supported in addition to Jido.Signal structs" do
+      module =
+        compile_fixture("""
+        vbox do
+          text_input :username, on_change: :username_changed
+        end
+        """)
+
+      state = module.init([])
+
+      signal = %{
+        type: "unified.input.changed",
+        data: %{widget_id: :username, value: "pascal"}
+      }
+
+      assert %{username: "pascal"} = module.update(state, signal)
     end
 
-    test "update function pattern matches on submit signal type", %{submit: submit} do
-      # The generated update/2 should match on %{type: "unified.form.submitted"}
-      assert submit.type == "unified.form.submitted"
-    end
-  end
+    test "mfa routes are invoked for matched handlers" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Run",
+            id: :run_btn,
+            on_click: {#{inspect(RouteMfaFixture)}, :apply_click, [:handled]}
+        end
+        """)
 
-  describe "signal handler function signatures" do
-    test "handle_click_signal accepts state and signal" do
-      # Test that we can create matching function signatures
-      state = %{count: 5}
-      signal = %{type: "unified.button.clicked", data: %{button_id: :btn}}
+      state = module.init([])
 
-      # The generated function signature: handle_click_signal(state, signal)
-      assert is_map(state)
-      assert is_map(signal)
-      assert Map.has_key?(signal, :type)
-      assert Map.has_key?(signal, :data)
+      signal = build_signal!("unified.button.clicked", %{widget_id: :run_btn, action: :ignored})
+
+      assert %{handled: {:run_btn, :run_btn}} = module.update(state, signal)
     end
 
-    test "handle_change_signal accepts state and signal" do
-      state = %{email: "test"}
-      signal = %{type: "unified.input.changed", data: %{input_id: :email, value: "new"}}
+    test "custom handler overrides still work for matched routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          text_input :count_input, on_change: :count_changed
+        end
 
-      # The generated function signature: handle_change_signal(state, signal)
-      assert is_map(state)
-      assert is_map(signal)
-      assert signal.type == "unified.input.changed"
+        def handle_change_signal(state, _signal, _route) do
+          Map.put(state, :total, 42)
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{widget_id: :count_input, value: "123"})
+
+      assert %{total: 42} = module.update(state, signal)
     end
 
-    test "handle_submit_signal accepts state and signal" do
-      state = %{form_data: %{}}
-      signal = %{type: "unified.form.submitted", data: %{form_id: :login}}
+    test "unmatched signals return state unchanged" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Increment", id: :inc_btn, on_click: :increment
+        end
+        """)
 
-      # The generated function signature: handle_submit_signal(state, signal)
-      assert is_map(state)
-      assert is_map(signal)
-      assert signal.type == "unified.form.submitted"
-    end
-  end
+      state = module.init([])
+      signal = build_signal!("unknown.signal", %{widget_id: :inc_btn})
 
-  describe "signal handler default behavior" do
-    test "handlers return state unchanged by default" do
-      # Default handler implementation returns state unchanged
-      state = %{count: 5, active: true}
-      signal = %{type: "test", data: %{}}
-
-      # Simulating default handler behavior
-      result = state
-
-      assert result == state
-      assert result.count == 5
-      assert result.active == true
-    end
-
-    test "handlers can be overridden" do
-      # Handlers are marked as overridable
-      # This test verifies the pattern allows overriding
-      state = %{count: 0}
-
-      # Default behavior
-      default_result = state
-
-      # Custom behavior would modify state
-      custom_result = %{state | count: 1}
-
-      assert default_result.count == 0
-      assert custom_result.count == 1
-    end
-  end
-
-  describe "unhandled signal fallback" do
-    test "unknown signal types fall through to default clause" do
-      # Signals that don't match click/change/submit should return state unchanged
-      state = %{count: 5}
-      unknown_signal = %{type: "unknown.signal.type", data: %{}}
-
-      # Fallback behavior: return state unchanged
-      result = state
-
-      assert result == state
-      assert result.count == 5
-    end
-
-    test "nil signal is handled by default clause" do
-      state = %{count: 10}
-      nil_signal = nil
-
-      # The _signal catch-all should handle this
-      _result = {state, nil_signal}
-
-      assert state.count == 10
-    end
-  end
-
-  describe "state immutability in handlers" do
-    test "state map is not modified by default handlers" do
-      original_state = %{count: 10, name: "Original", nested: %{value: 5}}
-      signal = %{type: "unified.button.clicked", data: %{}}
-
-      # Simulate handler call
-      result_state = original_state
-
-      # State should be unchanged
-      assert result_state == original_state
-      assert result_state.count == 10
-      assert result_state.name == "Original"
-      assert result_state.nested.value == 5
+      assert state == module.update(state, signal)
     end
   end
 
-  describe "integration with StateHelpers" do
-    alias UnifiedUi.Dsl.StateHelpers
+  defp compile_fixture(body) do
+    module = unique_fixture_module()
 
-    test "handlers can use StateHelpers for state updates" do
-      state = %{count: 0, active: false}
+    source = """
+    defmodule #{inspect(module)} do
+      @behaviour UnifiedUi.ElmArchitecture
+      use UnifiedUi.Dsl
 
-      # Using StateHelpers to create updates
-      count_update = StateHelpers.increment(:count, state)
-      active_update = StateHelpers.toggle(:active, state)
-
-      new_state =
-        state
-        |> Map.merge(count_update)
-        |> Map.merge(active_update)
-
-      assert new_state.count == 1
-      assert new_state.active == true
+      #{body}
     end
+    """
 
-    test "SignalHelpers can extract data for state updates" do
-      {:ok, signal} = SignalHelpers.change_signal(:email_input, "test@example.com")
-      handler = {:update_email, %{form_id: :login}}
-
-      # Build state update from handler and signal
-      state_update = SignalHelpers.build_state_update(handler, signal)
-
-      assert state_update.form_id == :login
-      assert state_update.input_id == :email_input
-      assert state_update.value == "test@example.com"
-    end
+    Code.compile_string(source)
+    module
   end
 
-  describe "defoverridable behavior" do
-    test "handler functions are marked as overridable" do
-      # This test verifies the pattern for defoverridable
-      # The three handler functions should be overridable
-
-      handler_names = [:handle_click_signal, :handle_change_signal, :handle_submit_signal]
-
-      # Each should be a function that can be overridden
-      Enum.each(handler_names, fn name ->
-        # The function name should be an atom
-        assert is_atom(name)
-      end)
-    end
+  defp unique_fixture_module do
+    Module.concat([
+      UnifiedUi,
+      UpdateTransformerFixture,
+      :"M#{System.unique_integer([:positive])}"
+    ])
   end
 
-  describe "update function signature" do
-    test "update function accepts state and signal arguments" do
-      # Verify the expected signature
-      # The generated update should be: def update(state, signal)
-      assert true
-      # Actual testing requires DSL compilation
-    end
+  defp build_signal!(type, data) do
+    {:ok, signal} = Signal.new(type: type, data: data, source: "/unified_ui/test")
+    signal
   end
 end
