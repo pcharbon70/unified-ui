@@ -86,9 +86,9 @@ Create helpful Mix tasks for working with UnifiedUi projects.
 - [ ] 5.3.5 Create `mix unified_ui.preview` task:
   - Starts preview server for web UI
   - Opens terminal for terminal UI
-- [ ] 5.3.6 Create `mix unified_ui.test` task:
+- [x] 5.3.6 Create `mix unified_ui.test` task:
   - Runs UnifiedUi-specific tests
-- [ ] 5.3.7 Create `mix unified_ui.stats` task:
+- [x] 5.3.7 Create `mix unified_ui.stats` task:
   - Shows project statistics
 - [ ] 5.3.8 Add help text for all tasks
 
