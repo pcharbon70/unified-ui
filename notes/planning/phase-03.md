@@ -2,6 +2,8 @@
 
 This phase implements all three platform renderers in parallel. Each renderer consumes the IUR produced by the DSL and translates it to calls for its target UI library (TermUi, DesktopUi, WebUi). The renderers are developed concurrently to ensure platform parity and shared patterns.
 
+Implementation naming note: runtime modules live under `UnifiedUi.Adapters.*` and source files under `lib/unified_ui/adapters/**`.
+
 ---
 
 ## 3.1 Renderer Architecture
@@ -10,12 +12,12 @@ This phase implements all three platform renderers in parallel. Each renderer co
 
 Create the common architecture that all renderers follow, including protocols and helper modules.
 
-- [ ] 3.1.1 Create `lib/unified_ui/renderers/protocol.ex` with:
+- [ ] 3.1.1 Create `lib/unified_ui/adapters/protocol.ex` with:
   - `UnifiedUi.Renderer` behaviour
   - `render/2` - IUR to platform widgets
   - `update/3` - Update existing widgets
   - `destroy/1` - Cleanup resources
-- [ ] 3.1.2 Create `lib/unified_ui/renderers/shared.ex` with:
+- [ ] 3.1.2 Create `lib/unified_ui/adapters/shared.ex` with:
   - `traverse_iur/2` - Generic tree traversal
   - `find_by_id/2` - Find IUR element by ID
   - `collect_styles/1` - Collect all styles
@@ -42,9 +44,9 @@ Create the common architecture that all renderers follow, including protocols an
 
 - [ ] **Task 3.2** Implement the Terminal renderer for basic widgets and layouts
 
-Create the UnifiedUi.Renderers.Terminal module that converts IUR to TermUi widgets.
+Create the UnifiedUi.Adapters.Terminal module that converts IUR to TermUi widgets.
 
-- [ ] 3.2.1 Create `lib/unified_ui/renderers/terminal.ex`
+- [ ] 3.2.1 Create `lib/unified_ui/adapters/terminal/renderer.ex`
 - [ ] 3.2.2 Implement `render/2` entry point
 - [ ] 3.2.3 Implement basic widget converters:
   - `convert_text/2` - IUR.Text → TermUi text
@@ -80,9 +82,9 @@ Create the UnifiedUi.Renderers.Terminal module that converts IUR to TermUi widge
 
 - [ ] **Task 3.3** Implement the Desktop renderer for basic widgets and layouts
 
-Create the UnifiedUi.Renderers.Desktop module that converts IUR to DesktopUi widgets.
+Create the UnifiedUi.Adapters.Desktop module that converts IUR to DesktopUi widgets.
 
-- [ ] 3.3.1 Create `lib/unified_ui/renderers/desktop.ex`
+- [ ] 3.3.1 Create `lib/unified_ui/adapters/desktop/renderer.ex`
 - [ ] 3.3.2 Implement `render/2` entry point
 - [ ] 3.3.3 Implement basic widget converters:
   - `convert_text/2` - IUR.Text → DesktopUi text
@@ -117,9 +119,9 @@ Create the UnifiedUi.Renderers.Desktop module that converts IUR to DesktopUi wid
 
 - [ ] **Task 3.4** Implement the Web renderer for basic widgets and layouts
 
-Create the UnifiedUi.Renderers.Web module that converts IUR to web UI (HTML/LiveView).
+Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveView).
 
-- [ ] 3.4.1 Create `lib/unified_ui/renderers/web.ex`
+- [ ] 3.4.1 Create `lib/unified_ui/adapters/web/renderer.ex`
 - [ ] 3.4.2 Implement `render/2` entry point
 - [ ] 3.4.3 Implement basic widget converters (HTML):
   - `convert_text/2` - IUR.Text → <span>
@@ -159,7 +161,7 @@ Create the UnifiedUi.Renderers.Web module that converts IUR to web UI (HTML/Live
 
 Capture TermUi events and convert them to JidoSignal messages.
 
-- [ ] 3.5.1 Create `lib/unified_ui/renderers/terminal/events.ex`
+- [ ] 3.5.1 Create `lib/unified_ui/adapters/terminal/events.ex`
 - [ ] 3.5.2 Define terminal event types
 - [ ] 3.5.3 Implement event capture from TermUi
 - [ ] 3.5.4 Implement event-to-signal converter
@@ -188,7 +190,7 @@ Capture TermUi events and convert them to JidoSignal messages.
 
 Capture DesktopUi events and convert them to JidoSignal messages.
 
-- [ ] 3.6.1 Create `lib/unified_ui/renderers/desktop/events.ex`
+- [ ] 3.6.1 Create `lib/unified_ui/adapters/desktop/events.ex`
 - [ ] 3.6.2 Define desktop event types
 - [ ] 3.6.3 Implement event capture from DesktopUi
 - [ ] 3.6.4 Implement event-to-signal converter
@@ -220,7 +222,7 @@ Capture DesktopUi events and convert them to JidoSignal messages.
 
 Capture browser events and convert them to JidoSignal messages.
 
-- [ ] 3.7.1 Create `lib/unified_ui/renderers/web/events.ex`
+- [ ] 3.7.1 Create `lib/unified_ui/adapters/web/events.ex`
 - [ ] 3.7.2 Define web event types
 - [ ] 3.7.3 Implement event capture via LiveView
 - [ ] 3.7.4 Implement event-to-signal converter
@@ -251,7 +253,7 @@ Capture browser events and convert them to JidoSignal messages.
 
 Create the system that allows a single UI definition to render on multiple platforms simultaneously.
 
-- [ ] 3.8.1 Create `lib/unified_ui/renderers/coordinator.ex`
+- [ ] 3.8.1 Create `lib/unified_ui/adapters/coordinator.ex`
 - [ ] 3.8.2 Implement multi-platform rendering
 - [ ] 3.8.3 Add platform detection
 - [ ] 3.8.4 Add renderer selection logic
@@ -320,19 +322,19 @@ Comprehensive integration tests to verify all three renderers work correctly.
 ## Critical Files
 
 **New Files:**
-- `lib/unified_ui/renderers/protocol.ex` - Renderer behaviour
-- `lib/unified_ui/renderers/shared.ex` - Shared utilities
-- `lib/unified_ui/renderers/coordinator.ex` - Multi-platform coordination
-- `lib/unified_ui/renderers/terminal.ex` - Terminal renderer
-- `lib/unified_ui/renderers/terminal/events.ex` - Terminal event handling
-- `lib/unified_ui/renderers/terminal/server.ex` - Terminal server
-- `lib/unified_ui/renderers/desktop.ex` - Desktop renderer
-- `lib/unified_ui/renderers/desktop/events.ex` - Desktop event handling
-- `lib/unified_ui/renderers/desktop/server.ex` - Desktop server
-- `lib/unified_ui/renderers/web.ex` - Web renderer
-- `lib/unified_ui/renderers/web/events.ex` - Web event handling
-- `lib/unified_ui/renderers/web/server.ex` - Web server
-- `test/unified_ui/integration/phase3_test.exs` - Integration tests
+- `lib/unified_ui/adapters/protocol.ex` - Renderer behaviour
+- `lib/unified_ui/adapters/shared.ex` - Shared utilities
+- `lib/unified_ui/adapters/coordinator.ex` - Multi-platform coordination
+- `lib/unified_ui/adapters/terminal/renderer.ex` - Terminal renderer
+- `lib/unified_ui/adapters/terminal/events.ex` - Terminal event handling
+- `lib/unified_ui/adapters/terminal/server.ex` - Terminal server
+- `lib/unified_ui/adapters/desktop/renderer.ex` - Desktop renderer
+- `lib/unified_ui/adapters/desktop/events.ex` - Desktop event handling
+- `lib/unified_ui/adapters/desktop/server.ex` - Desktop server
+- `lib/unified_ui/adapters/web/renderer.ex` - Web renderer
+- `lib/unified_ui/adapters/web/events.ex` - Web event handling
+- `lib/unified_ui/adapters/web/server.ex` - Web server
+- `test/unified_ui/integration/phase_3_test.exs` - Integration tests
 
 **Dependencies:**
 - Phase 2: Core Widgets & Layouts (widgets and layouts to render)

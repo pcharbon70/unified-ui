@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan describes the construction of **UnifiedUi**, a Spark-powered Domain-Specific Language for building multi-platform user interfaces in Elixir. The architecture provides a declarative DSL that compiles to platform-specific renderers for terminal, desktop, and web applications.
+This implementation plan describes the construction of **UnifiedUi**, a Spark-powered Domain-Specific Language for building multi-platform user interfaces in Elixir. The architecture provides a declarative DSL that compiles to platform-specific adapters for terminal, desktop, and web applications.
 
 ## Architecture Diagram
 
@@ -16,10 +16,10 @@ graph TD
         DSL --> IUR
         Xform --> DSL
 
-        subgraph Renderers["Renderers (in UnifiedUi)"]
-            TermR["UnifiedUi.Renderers.Terminal"]
-            DeskR["UnifiedUi.Renderers.Desktop"]
-            WebR["UnifiedUi.Renderers.Web"]
+        subgraph Renderers["Adapters (in UnifiedUi)"]
+            TermR["UnifiedUi.Adapters.Terminal"]
+            DeskR["UnifiedUi.Adapters.Desktop"]
+            WebR["UnifiedUi.Adapters.Web"]
         end
 
         IUR --> TermR
@@ -40,11 +40,11 @@ graph TD
 
 ## Key Principles
 
-1. **Adapters in UnifiedUi** - All renderers live in the UnifiedUi library
+1. **Adapters in UnifiedUi** - All platform adapters live in the UnifiedUi library
 2. **UI libraries are dependencies** - TermUi, DesktopUi, WebUi are consumed, not extended
 3. **Platform-agnostic DSL** - Widget definitions have no platform-specific code
-4. **IUR is the boundary** - DSL produces IUR; renderers consume IUR
-5. **Parallel development** - All three renderers developed together, not sequentially
+4. **IUR is the boundary** - DSL produces IUR; adapters consume IUR
+5. **Parallel development** - All three adapters developed together, not sequentially
 
 ## Target Frameworks
 
@@ -72,7 +72,7 @@ graph TD
 |-------|-------|-------------|
 | 1 | Foundation | Project structure, Spark DSL setup, IUR design |
 | 2 | Core Widgets & Layouts | Basic widgets, layouts, signals, Elm Architecture |
-| 3 | Renderer Implementations | All 3 renderers (Terminal, Desktop, Web) in parallel |
+| 3 | Adapter Implementations | All 3 adapters (Terminal, Desktop, Web) in parallel |
 | 4 | Advanced Features & Styling | Full widget library, theming, advanced layouts |
 | 5 | Testing, Docs & Tooling | Coverage, documentation, mix tasks, CI/CD |
 
