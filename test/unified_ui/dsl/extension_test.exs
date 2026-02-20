@@ -1,6 +1,8 @@
 defmodule UnifiedUi.Dsl.ExtensionTest do
   use ExUnit.Case
 
+  alias UnifiedUi.Dsl.Sections
+
   describe "Extension compilation" do
     test "extension module compiles without errors" do
       assert Code.ensure_loaded?(UnifiedUi.Dsl.Extension)
@@ -22,10 +24,17 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
   end
 
   describe "Section definitions via extension" do
-    test "extension defines sections correctly" do
-      # The extension should have compiled with sections
-      # If compilation succeeded, the sections are defined
-      assert Code.ensure_loaded?(UnifiedUi.Dsl.Extension)
+    test "extension uses canonical section module definitions" do
+      expected_sections = [
+        Sections.Ui.section(),
+        Sections.Widgets.section(),
+        Sections.Layouts.section(),
+        Sections.Styles.section(),
+        Sections.Signals.section()
+      ]
+
+      assert Enum.map(UnifiedUi.Dsl.Extension.sections(), &section_signature/1) ==
+               Enum.map(expected_sections, &section_signature/1)
     end
   end
 
@@ -46,5 +55,9 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
       signals = UnifiedUi.Dsl.standard_signals()
       assert length(signals) == 6
     end
+  end
+
+  defp section_signature(section) do
+    {section.name, section.top_level?, Enum.map(section.entities, & &1.name)}
   end
 end

@@ -1,9 +1,6 @@
 defmodule UnifiedUi.Dsl.Sections.Ui do
   @moduledoc """
   Canonical UI section definition used by the UnifiedUi DSL.
-
-  This module exists for section-level introspection and compatibility.
-  The extension currently composes equivalent section definitions directly.
   """
 
   @state_entity %Spark.Dsl.Entity{
