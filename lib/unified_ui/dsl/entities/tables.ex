@@ -249,7 +249,15 @@ defmodule UnifiedUi.Dsl.Entities.Tables do
     """
   }
 
+  @doc """
+  Returns the Spark DSL entity definition for `column`.
+  """
+  @spec column_entity() :: Spark.Dsl.Entity.t()
   def column_entity, do: @column_entity
 
+  @doc """
+  Returns the Spark DSL entity definition for `table`.
+  """
+  @spec table_entity() :: Spark.Dsl.Entity.t()
   def table_entity, do: @table_entity
 end

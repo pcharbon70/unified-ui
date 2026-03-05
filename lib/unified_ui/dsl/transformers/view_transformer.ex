@@ -52,4 +52,25 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
 
     {:ok, Spark.Dsl.Transformer.eval(dsl_state, [], code)}
   end
+
+  @doc """
+  Indicates whether this transformer should run before another transformer.
+  """
+  @impl true
+  @spec before?(module()) :: boolean()
+  def before?(_other), do: false
+
+  @doc """
+  Indicates whether this transformer should run after another transformer.
+  """
+  @impl true
+  @spec after?(module()) :: boolean()
+  def after?(_other), do: false
+
+  @doc """
+  Indicates whether this transformer runs in the after-compile phase.
+  """
+  @impl true
+  @spec after_compile?() :: boolean()
+  def after_compile?, do: false
 end

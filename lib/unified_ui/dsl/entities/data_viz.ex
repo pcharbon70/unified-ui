@@ -346,11 +346,27 @@ defmodule UnifiedUi.Dsl.Entities.DataViz do
     """
   }
 
+  @doc """
+  Returns the Spark DSL entity definition for `gauge`.
+  """
+  @spec gauge_entity() :: Spark.Dsl.Entity.t()
   def gauge_entity, do: @gauge_entity
 
+  @doc """
+  Returns the Spark DSL entity definition for `sparkline`.
+  """
+  @spec sparkline_entity() :: Spark.Dsl.Entity.t()
   def sparkline_entity, do: @sparkline_entity
 
+  @doc """
+  Returns the Spark DSL entity definition for `bar_chart`.
+  """
+  @spec bar_chart_entity() :: Spark.Dsl.Entity.t()
   def bar_chart_entity, do: @bar_chart_entity
 
+  @doc """
+  Returns the Spark DSL entity definition for `line_chart`.
+  """
+  @spec line_chart_entity() :: Spark.Dsl.Entity.t()
   def line_chart_entity, do: @line_chart_entity
 end
