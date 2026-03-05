@@ -75,7 +75,7 @@ Create helpful Mix tasks for working with UnifiedUi projects.
   - Scaffolds new UnifiedUi project
   - Creates directory structure
   - Generates example screen
-- [ ] 5.3.2 Create `mix unified_ui.gen.screen` task:
+- [x] 5.3.2 Create `mix unified_ui.gen.screen` task:
   - Generates new screen module
   - Adds to supervision tree
   - Creates test file
@@ -99,7 +99,7 @@ Create helpful Mix tasks for working with UnifiedUi projects.
 
 **Unit Tests for Section 5.3:**
 - [ ] Test new task creates valid project
-- [ ] Test gen.screen creates screen
+- [x] Test gen.screen creates screen
 - [ ] Test gen.widget creates widget
 - [ ] Test format task formats code
 - [ ] Test preview task starts
