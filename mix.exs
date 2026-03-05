@@ -49,8 +49,9 @@ defmodule UnifiedUi.MixProject do
       name: "unified_ui",
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/pcharbon70/unified_ui",
-        "Changelog" => "https://github.com/pcharbon70/unified_ui/blob/main/CHANGELOG.md"
+        "GitHub" => "https://github.com/pcharbon70/unified-ui",
+        "HexDocs" => "https://hexdocs.pm/unified_ui",
+        "Changelog" => "https://github.com/pcharbon70/unified-ui/blob/main/CHANGELOG.md"
       }
     ]
   end
@@ -58,6 +59,8 @@ defmodule UnifiedUi.MixProject do
   defp docs do
     [
       main: "readme",
+      source_url: "https://github.com/pcharbon70/unified-ui",
+      source_ref: "v#{Mix.Project.config()[:version]}",
       extras: [
         "README.md",
         "guides/getting-started.md",

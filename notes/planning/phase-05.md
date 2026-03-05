@@ -109,7 +109,7 @@ Create helpful Mix tasks for working with UnifiedUi projects.
 
 ## 5.4 API Documentation
 
-- [ ] **Task 5.4** Generate comprehensive API documentation with ExDoc
+- [x] **Task 5.4** Generate comprehensive API documentation with ExDoc
 
 Create complete API documentation for all public modules and functions.
 
@@ -127,7 +127,7 @@ Create complete API documentation for all public modules and functions.
   - Platform Guides
 - [x] 5.4.8 Add diagrams to documentation
 - [x] 5.4.9 Generate documentation with `mix docs`
-- [ ] 5.4.10 Host documentation on HexDocs
+- [x] 5.4.10 Host documentation on HexDocs
 
 **Implementation Notes:**
 - Examples must compile and run

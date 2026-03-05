@@ -257,6 +257,7 @@ unified-ui/
 
 ## Documentation
 
+- **[HexDocs](https://hexdocs.pm/unified_ui)** - Published API docs
 - **[Spark DSL](https://github.com/ash-project/spark)** - Framework for building DSLs
 - **[JidoSignal](https://github.com/agentjido/jido_signal)** - Signal-based communication
 - **[TermUi](https://github.com/pcharbon70/term_ui)** - Terminal UI framework
