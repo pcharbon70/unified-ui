@@ -599,11 +599,45 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
   # Entity Accessors
   # ============================================================================
 
+  @doc """
+  Returns the Spark DSL entity definition for `menu_item`.
+  """
+  @spec menu_item_entity() :: Spark.Dsl.Entity.t()
   def menu_item_entity, do: @menu_item_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `menu`.
+  """
+  @spec menu_entity() :: Spark.Dsl.Entity.t()
   def menu_entity, do: @menu_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `context_menu`.
+  """
+  @spec context_menu_entity() :: Spark.Dsl.Entity.t()
   def context_menu_entity, do: @context_menu_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `tab`.
+  """
+  @spec tab_entity() :: Spark.Dsl.Entity.t()
   def tab_entity, do: @tab_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `tabs`.
+  """
+  @spec tabs_entity() :: Spark.Dsl.Entity.t()
   def tabs_entity, do: @tabs_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `tree_node`.
+  """
+  @spec tree_node_entity() :: Spark.Dsl.Entity.t()
   def tree_node_entity, do: @tree_node_entity
+
+  @doc """
+  Returns the Spark DSL entity definition for `tree_view`.
+  """
+  @spec tree_view_entity() :: Spark.Dsl.Entity.t()
   def tree_view_entity, do: @tree_view_entity
 end
