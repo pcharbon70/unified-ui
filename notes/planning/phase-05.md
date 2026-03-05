@@ -119,13 +119,13 @@ Create complete API documentation for all public modules and functions.
 - [ ] 5.4.4 Add `@doc` to all public functions
 - [ ] 5.4.5 Add usage examples to key modules
 - [ ] 5.4.6 Add typespecs to all public functions
-- [ ] 5.4.7 Create additional documentation pages:
+- [x] 5.4.7 Create additional documentation pages:
   - Getting Started
   - Widget Reference
   - Layout System
   - Styling Guide
   - Platform Guides
-- [ ] 5.4.8 Add diagrams to documentation
+- [x] 5.4.8 Add diagrams to documentation
 - [x] 5.4.9 Generate documentation with `mix docs`
 - [ ] 5.4.10 Host documentation on HexDocs
 
@@ -146,7 +146,7 @@ Create complete API documentation for all public modules and functions.
 
 ## 5.5 User Guides
 
-- [ ] **Task 5.5** Create comprehensive user guides and tutorials
+- [x] **Task 5.5** Create comprehensive user guides and tutorials
 
 Write guides to help developers get started and be productive.
 
@@ -155,7 +155,7 @@ Write guides to help developers get started and be productive.
   - First UI project
   - Basic concepts
   - Running the UI
-- [ ] 5.5.2 Write "DSL Reference" guide:
+- [x] 5.5.2 Write "DSL Reference" guide:
   - All DSL entities documented
   - All options explained
   - Examples for each entity
@@ -163,29 +163,29 @@ Write guides to help developers get started and be productive.
   - All widgets with descriptions
   - Widget options reference
   - Usage examples
-- [ ] 5.5.4 Write "Layout System" guide:
+- [x] 5.5.4 Write "Layout System" guide:
   - How layouts work
   - Layout examples
   - Best practices
-- [ ] 5.5.5 Write "Styling and Theming" guide:
+- [x] 5.5.5 Write "Styling and Theming" guide:
   - Style syntax
   - Theme creation
   - Platform considerations
-- [ ] 5.5.6 Write "Signals and Events" guide:
+- [x] 5.5.6 Write "Signals and Events" guide:
   - Signal system
   - Event handling
   - Inter-component communication
-- [ ] 5.5.7 Write "Platform Guides":
+- [x] 5.5.7 Write "Platform Guides":
   - Terminal UI specifics
   - Desktop UI specifics
   - Web UI specifics
-- [ ] 5.5.8 Write "Tutorial: Build a Dashboard":
+- [x] 5.5.8 Write "Tutorial: Build a Dashboard":
   - Step-by-step tutorial
   - Real-world example
-- [ ] 5.5.9 Write "Troubleshooting" guide:
+- [x] 5.5.9 Write "Troubleshooting" guide:
   - Common issues
   - Solutions
-- [ ] 5.5.10 Publish guides to documentation site
+- [x] 5.5.10 Publish guides to documentation site
 
 **Implementation Notes:**
 - Guides in `guides/` directory
@@ -347,15 +347,16 @@ Final comprehensive integration tests to verify the entire framework is producti
 - `lib/mix/tasks/unified_ui.test.ex` - Test runner
 - `lib/mix/tasks/unified_ui.stats.ex` - Project statistics
 - `lib/mix/tasks/unified_ui.gen.extension.ex` - Extension generator
-- `guides/getting_started.md` - Getting started guide
-- `guides/dsl_reference.md` - DSL reference
-- `guides/widget_catalog.md` - Widget catalog
-- `guides/layouts.md` - Layout system guide
-- `guides/styling.md` - Styling guide
-- `guides/signals.md` - Signals and events
+- `guides/getting-started.md` - Getting started guide
+- `guides/dsl-reference.md` - DSL reference
+- `guides/widget-reference.md` - Widget catalog
+- `guides/layout-system.md` - Layout system guide
+- `guides/styling-and-theming.md` - Styling guide
+- `guides/signals-and-events.md` - Signals and events
+- `guides/platform-guides.md` - Platform guide index
 - `guides/platforms/` - Platform-specific guides
 - `guides/advanced.md` - Advanced topics
-- `guides/dashboard_tutorial.md` - Tutorial
+- `guides/dashboard-tutorial.md` - Tutorial
 - `guides/troubleshooting.md` - Troubleshooting
 - `guides/extensions.md` - Extension guide
 - `examples/custom_widget/` - Example extension
