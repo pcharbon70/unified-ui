@@ -67,7 +67,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 
 ## 5.3 Mix Tasks
 
-- [ ] **Task 5.3** Develop Mix tasks for developer productivity
+- [x] **Task 5.3** Develop Mix tasks for developer productivity
 
 Create helpful Mix tasks for working with UnifiedUi projects.
 
@@ -83,14 +83,14 @@ Create helpful Mix tasks for working with UnifiedUi projects.
   - Generates custom widget boilerplate
 - [x] 5.3.4 Create `mix unified_ui.format` task:
   - Formats DSL code consistently
-- [ ] 5.3.5 Create `mix unified_ui.preview` task:
+- [x] 5.3.5 Create `mix unified_ui.preview` task:
   - Starts preview server for web UI
   - Opens terminal for terminal UI
 - [x] 5.3.6 Create `mix unified_ui.test` task:
   - Runs UnifiedUi-specific tests
 - [x] 5.3.7 Create `mix unified_ui.stats` task:
   - Shows project statistics
-- [ ] 5.3.8 Add help text for all tasks
+- [x] 5.3.8 Add help text for all tasks
 
 **Implementation Notes:**
 - Tasks follow Mix task conventions
@@ -102,8 +102,8 @@ Create helpful Mix tasks for working with UnifiedUi projects.
 - [x] Test gen.screen creates screen
 - [x] Test gen.widget creates widget
 - [x] Test format task formats code
-- [ ] Test preview task starts
-- [ ] Test tasks have help
+- [x] Test preview task starts
+- [x] Test tasks have help
 
 ---
 
