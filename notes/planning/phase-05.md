@@ -71,7 +71,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 
 Create helpful Mix tasks for working with UnifiedUi projects.
 
-- [ ] 5.3.1 Create `mix unified_ui.new` task:
+- [x] 5.3.1 Create `mix unified_ui.new` task:
   - Scaffolds new UnifiedUi project
   - Creates directory structure
   - Generates example screen
@@ -98,7 +98,7 @@ Create helpful Mix tasks for working with UnifiedUi projects.
 - Preview task useful for development
 
 **Unit Tests for Section 5.3:**
-- [ ] Test new task creates valid project
+- [x] Test new task creates valid project
 - [x] Test gen.screen creates screen
 - [x] Test gen.widget creates widget
 - [x] Test format task formats code
