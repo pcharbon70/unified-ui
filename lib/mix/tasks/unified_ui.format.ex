@@ -23,11 +23,13 @@ defmodule Mix.Tasks.UnifiedUi.Format do
   @switches [check_formatted: :boolean, dry_run: :boolean, dot_formatter: :string]
 
   @impl Mix.Task
+  @spec run([String.t()]) :: :ok
   def run(args) do
     run_with(args, Runner)
   end
 
   @doc false
+  @spec run_with([String.t()], module()) :: :ok
   def run_with(args, runner_module) do
     {opts, passthrough, invalid} = OptionParser.parse(args, strict: @switches)
 

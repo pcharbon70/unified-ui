@@ -50,13 +50,13 @@ defmodule UnifiedUi.Adapters.State do
   ]
 
   @type t :: %__MODULE__{
-    platform: platform() | nil,
-    root: widget_ref() | nil,
-    widgets: widget_map(),
-    version: pos_integer(),
-    config: config(),
-    metadata: metadata()
-  }
+          platform: platform() | nil,
+          root: widget_ref() | nil,
+          widgets: widget_map(),
+          version: pos_integer(),
+          config: config(),
+          metadata: metadata()
+        }
 
   # Exception definitions
 
@@ -79,6 +79,7 @@ defmodule UnifiedUi.Adapters.State do
     defexception [:message, :reason, :id]
 
     @impl true
+    @spec exception(keyword()) :: %__MODULE__{}
     def exception(opts) do
       reason = Keyword.get(opts, :reason)
       id = Keyword.get(opts, :id)
@@ -88,6 +89,7 @@ defmodule UnifiedUi.Adapters.State do
     end
 
     @impl true
+    @spec message(%__MODULE__{}) :: String.t()
     def message(%__MODULE__{} = exception) do
       exception.message
     end

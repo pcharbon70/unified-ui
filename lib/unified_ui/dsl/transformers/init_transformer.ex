@@ -26,6 +26,7 @@ defmodule UnifiedUi.Dsl.Transformers.InitTransformer do
   use Spark.Dsl.Transformer
 
   @impl true
+  @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
   def transform(dsl_state) do
     initial_state = get_initial_state(dsl_state)
 

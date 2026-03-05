@@ -55,6 +55,8 @@ defmodule UnifiedUi.Adapters.Terminal do
   alias UnifiedIUR.Layouts
 
   @impl true
+  @spec render(UnifiedUi.Renderer.iur_tree(), keyword()) ::
+          {:ok, State.t()} | {:error, term()}
   def render(iur_tree, opts \\ []) do
     renderer_state = State.new(:terminal, config: opts)
 
@@ -71,6 +73,8 @@ defmodule UnifiedUi.Adapters.Terminal do
   end
 
   @impl true
+  @spec update(UnifiedUi.Renderer.iur_tree(), State.t(), keyword()) ::
+          {:ok, State.t()} | {:error, term()}
   def update(iur_tree, renderer_state, opts \\ []) do
     merged_config = Keyword.merge(renderer_state.config, opts)
     previous_iur = State.get_metadata(renderer_state, :last_iur, :__missing__)
@@ -96,6 +100,7 @@ defmodule UnifiedUi.Adapters.Terminal do
   end
 
   @impl true
+  @spec destroy(State.t()) :: :ok
   def destroy(_renderer_state) do
     # TermUI uses pure data structures, no cleanup needed
     :ok
@@ -114,6 +119,7 @@ defmodule UnifiedUi.Adapters.Terminal do
   A TermUI render tree (tagged tuple or RenderNode struct).
 
   """
+  @spec convert_iur(UnifiedUi.Renderer.iur_element(), State.t()) :: term() | nil
   def convert_iur(iur_element, renderer_state \\ %State{}) do
     metadata = Element.metadata(iur_element)
     type = metadata.type

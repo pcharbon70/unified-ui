@@ -29,19 +29,24 @@ defmodule UnifiedUi.Dsl.Sections.Signals do
   }
 
   @doc false
+  @spec section() :: Spark.Dsl.Section.t()
   def section, do: @signals_section
 
   @doc false
+  @spec entities() :: [Spark.Dsl.Entity.t()]
   def entities, do: @signals_section.entities
 
   @doc false
+  @spec top_level?() :: boolean()
   def top_level?, do: false
 
   @doc false
+  @spec name() :: atom()
   def name, do: @signals_section.name
 
   @doc """
   Returns the list of standard signal types.
   """
+  @spec standard_signals() :: [UnifiedUi.Signals.signal_name()]
   defdelegate standard_signals, to: UnifiedUi.Signals
 end

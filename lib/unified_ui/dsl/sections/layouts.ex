@@ -16,14 +16,18 @@ defmodule UnifiedUi.Dsl.Sections.Layouts do
   }
 
   @doc false
+  @spec section() :: Spark.Dsl.Section.t()
   def section, do: @layouts_section
 
   @doc false
+  @spec entities() :: [Spark.Dsl.Entity.t()]
   def entities, do: @layouts_section.entities
 
   @doc false
+  @spec top_level?() :: boolean()
   def top_level?, do: false
 
   @doc false
+  @spec name() :: atom()
   def name, do: @layouts_section.name
 end
