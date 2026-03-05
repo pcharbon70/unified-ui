@@ -99,13 +99,26 @@ defmodule UnifiedUi.Signals do
 
   ## Examples
 
-      {:ok, signal} = UnifiedUi.Signals.create(:click, %{button_id: :my_btn})
+      iex> {:ok, signal} = UnifiedUi.Signals.create(:click, %{button_id: :my_btn})
+      iex> signal.type
+      "unified.button.clicked"
+      iex> signal.data
+      %{button_id: :my_btn}
 
-      {:ok, signal} = UnifiedUi.Signals.create(
-        :submit,
-        %{form_id: :login_form},
-        source: "/my/app"
-      )
+      iex> {:ok, signal} = UnifiedUi.Signals.create(
+      ...>   :submit,
+      ...>   %{form_id: :login_form},
+      ...>   source: "/my/app"
+      ...> )
+      iex> signal.type
+      "unified.form.submitted"
+      iex> signal.source
+      "/my/app"
+      iex> signal.data
+      %{form_id: :login_form}
+
+      iex> UnifiedUi.Signals.create(:unknown, %{})
+      {:error, :unknown_signal}
 
   For custom signal types, use `Jido.Signal.new/1` directly:
 
@@ -135,7 +148,12 @@ defmodule UnifiedUi.Signals do
 
   ## Examples
 
-      signal = UnifiedUi.Signals.create!(:click, %{button_id: :my_btn})
+      iex> signal = UnifiedUi.Signals.create!(:click, %{button_id: :my_btn})
+      iex> signal.type
+      "unified.button.clicked"
+
+      iex> UnifiedUi.Signals.create!(:unknown, %{})
+      ** (UnifiedUi.Errors.InvalidSignalError) Invalid signal name: :unknown
 
   Will raise `UnifiedUi.Errors.InvalidSignalError` if the signal name is invalid.
   """
@@ -189,10 +207,10 @@ defmodule UnifiedUi.Signals do
 
   ## Examples
 
-      iex> UnifiedUi.Signals.valid_type?("unified.button.clicked")
+      iex> UnifiedUi.Signals.valid_type("unified.button.clicked")
       :ok
 
-      iex> UnifiedUi.Signals.valid_type?("invalid")
+      iex> UnifiedUi.Signals.valid_type("invalid")
       {:error, :invalid_type_format}
   """
   @spec valid_type(String.t() | any()) :: :ok | {:error, atom()}

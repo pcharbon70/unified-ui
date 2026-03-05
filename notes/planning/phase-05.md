@@ -117,7 +117,7 @@ Create complete API documentation for all public modules and functions.
 - [x] 5.4.2 Configure ExDoc in mix.exs
 - [x] 5.4.3 Add `@moduledoc` to all public modules
 - [x] 5.4.4 Add `@doc` to all public functions
-- [ ] 5.4.5 Add usage examples to key modules
+- [x] 5.4.5 Add usage examples to key modules
 - [ ] 5.4.6 Add typespecs to all public functions
 - [x] 5.4.7 Create additional documentation pages:
   - Getting Started
@@ -139,7 +139,7 @@ Create complete API documentation for all public modules and functions.
 - [x] Test docs build without errors
 - [x] Test all modules documented
 - [x] Test all functions documented
-- [ ] Test examples compile and run
+- [x] Test examples compile and run
 - [ ] Test typespecs valid
 
 ---

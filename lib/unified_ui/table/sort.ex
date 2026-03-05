@@ -16,10 +16,11 @@ defmodule UnifiedUi.Table.Sort do
   ## Examples
 
       iex> data = [%{id: 2, name: "Bob"}, %{id: 1, name: "Alice"}]
-      iex> Sort.sort_data(data, :id, :asc)
+      iex> UnifiedUi.Table.Sort.sort_data(data, :id, :asc)
       [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}]
 
-      iex> Sort.sort_data(data, :name, :desc)
+      iex> data = [%{id: 2, name: "Bob"}, %{id: 1, name: "Alice"}]
+      iex> UnifiedUi.Table.Sort.sort_data(data, :name, :desc)
       [%{id: 2, name: "Bob"}, %{id: 1, name: "Alice"}]
 
   ## Nil Handling
@@ -57,10 +58,11 @@ defmodule UnifiedUi.Table.Sort do
   ## Examples
 
       iex> data = [%{id: 2}, %{id: 1}, %{id: 3}]
-      iex> Sort.sort_data(data, :id, :asc)
+      iex> UnifiedUi.Table.Sort.sort_data(data, :id, :asc)
       [%{id: 1}, %{id: 2}, %{id: 3}]
 
-      iex> Sort.sort_data(data, :id, :desc)
+      iex> data = [%{id: 2}, %{id: 1}, %{id: 3}]
+      iex> UnifiedUi.Table.Sort.sort_data(data, :id, :desc)
       [%{id: 3}, %{id: 2}, %{id: 1}]
 
   ## Nil Values
@@ -70,7 +72,7 @@ defmodule UnifiedUi.Table.Sort do
   * Descending: nils come last
 
       iex> data = [%{id: 1}, %{id: nil}, %{id: 2}]
-      iex> Sort.sort_data(data, :id, :asc)
+      iex> UnifiedUi.Table.Sort.sort_data(data, :id, :asc)
       [%{id: nil}, %{id: 1}, %{id: 2}]
   """
   @spec sort_data([row()], column_key(), direction()) :: [row()]
@@ -102,13 +104,13 @@ defmodule UnifiedUi.Table.Sort do
 
   ## Examples
 
-      iex> Sort.get_value(%{id: 1, name: "Alice"}, :name)
+      iex> UnifiedUi.Table.Sort.get_value(%{id: 1, name: "Alice"}, :name)
       "Alice"
 
-      iex> Sort.get_value([id: 1, name: "Bob"], :id)
+      iex> UnifiedUi.Table.Sort.get_value([id: 1, name: "Bob"], :id)
       1
 
-      iex> Sort.get_value(%{id: 1}, :missing)
+      iex> UnifiedUi.Table.Sort.get_value(%{id: 1}, :missing)
       nil
   """
   @spec get_value(row(), atom()) :: any()
@@ -138,9 +140,12 @@ defmodule UnifiedUi.Table.Sort do
     end
   end
 
-  defp do_compare(nil, nil), do: false  # Equal, keep order
-  defp do_compare(nil, _b), do: true   # nil comes first
-  defp do_compare(_a, nil), do: false  # non-nil comes after nil
+  # Equal, keep order
+  defp do_compare(nil, nil), do: false
+  # nil comes first
+  defp do_compare(nil, _b), do: true
+  # non-nil comes after nil
+  defp do_compare(_a, nil), do: false
 
   defp do_compare(a, b) when is_number(a) and is_number(b), do: a < b
   defp do_compare(a, b) when is_binary(a) and is_binary(b), do: a < b
