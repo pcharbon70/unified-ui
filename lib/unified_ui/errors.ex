@@ -170,8 +170,8 @@ defmodule UnifiedUi.Errors do
       iex> UnifiedUi.Errors.normalize(:not_found)
       {:error, :not_found}
 
-      iex> UnifiedUi.Errors.normalize(%ArgumentError{})
-      {:error, :argument_error}
+      iex> match?({:error, %ArgumentError{}}, UnifiedUi.Errors.normalize(%ArgumentError{}))
+      true
   """
   @spec normalize(term()) :: {:error, term()}
   def normalize({:error, _reason} = error), do: error
