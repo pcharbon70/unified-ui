@@ -51,6 +51,7 @@ defmodule UnifiedUi.Errors do
     defexception [:message, :signal_name, :signal_type]
 
     @impl true
+    @spec exception(keyword()) :: %__MODULE__{}
     def exception(opts) do
       signal_name = Keyword.get(opts, :signal_name)
       signal_type = Keyword.get(opts, :signal_type)
@@ -63,6 +64,10 @@ defmodule UnifiedUi.Errors do
         signal_type: signal_type
       }
     end
+
+    @impl true
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%__MODULE__{} = exception), do: exception.message
 
     defp build_message(nil, nil), do: "Invalid signal"
 
@@ -100,6 +105,7 @@ defmodule UnifiedUi.Errors do
     defexception [:message, :style_field, :value]
 
     @impl true
+    @spec exception(keyword()) :: %__MODULE__{}
     def exception(opts) do
       style_field = Keyword.get(opts, :style_field)
       value = Keyword.get(opts, :value)
@@ -117,6 +123,10 @@ defmodule UnifiedUi.Errors do
         value: value
       }
     end
+
+    @impl true
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%__MODULE__{} = exception), do: exception.message
   end
 
   defmodule DslError do
@@ -139,6 +149,7 @@ defmodule UnifiedUi.Errors do
     defexception [:message, :dsl_entity, :reason]
 
     @impl true
+    @spec exception(keyword()) :: %__MODULE__{}
     def exception(opts) do
       dsl_entity = Keyword.get(opts, :dsl_entity)
       reason = Keyword.get(opts, :reason)
@@ -157,6 +168,10 @@ defmodule UnifiedUi.Errors do
         reason: reason
       }
     end
+
+    @impl true
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%__MODULE__{} = exception), do: exception.message
   end
 
   @doc """

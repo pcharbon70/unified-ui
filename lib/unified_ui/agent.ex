@@ -133,6 +133,11 @@ defmodule UnifiedUi.Agent.Server do
           render_results: map()
         }
 
+  @spec child_spec(keyword()) :: Supervisor.child_spec()
+  @spec code_change(term(), t(), term()) :: {:ok, t()} | {:error, term()}
+  @spec handle_info(term(), t()) :: {:noreply, t()}
+  @spec terminate(term(), t()) :: term()
+
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     module = Keyword.fetch!(opts, :module)
@@ -145,6 +150,7 @@ defmodule UnifiedUi.Agent.Server do
   end
 
   @impl true
+  @spec init({module(), atom(), keyword()}) :: {:ok, t()}
   def init({module, component_id, opts}) do
     platforms = normalize_platforms(Keyword.get(opts, :platforms, []))
     render_opts = Keyword.get(opts, :render_opts, [])
@@ -165,6 +171,7 @@ defmodule UnifiedUi.Agent.Server do
   end
 
   @impl true
+  @spec handle_cast({:signal, term()}, t()) :: {:noreply, t()}
   def handle_cast({:signal, signal}, %__MODULE__{} = state) do
     model_state = update_model_state(state.module, state.model_state, signal)
 
@@ -175,6 +182,7 @@ defmodule UnifiedUi.Agent.Server do
   end
 
   @impl true
+  @spec handle_call(atom(), GenServer.from(), t()) :: {:reply, term(), t()}
   def handle_call(:state, _from, %__MODULE__{} = state) do
     {:reply, {:ok, state.model_state}, state}
   end

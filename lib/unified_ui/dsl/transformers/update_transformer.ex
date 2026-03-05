@@ -23,6 +23,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   @nested_entity_keys [:entities, :children, :items, :tabs, :nodes, :columns]
 
   @impl true
+  @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
   def transform(dsl_state) do
     routes = extract_routes(dsl_state)
     click_routes = Macro.escape(routes.click)

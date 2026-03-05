@@ -118,7 +118,7 @@ Create complete API documentation for all public modules and functions.
 - [x] 5.4.3 Add `@moduledoc` to all public modules
 - [x] 5.4.4 Add `@doc` to all public functions
 - [x] 5.4.5 Add usage examples to key modules
-- [ ] 5.4.6 Add typespecs to all public functions
+- [x] 5.4.6 Add typespecs to all public functions
 - [x] 5.4.7 Create additional documentation pages:
   - Getting Started
   - Widget Reference
@@ -140,7 +140,7 @@ Create complete API documentation for all public modules and functions.
 - [x] Test all modules documented
 - [x] Test all functions documented
 - [x] Test examples compile and run
-- [ ] Test typespecs valid
+- [x] Test typespecs valid
 
 ---
 

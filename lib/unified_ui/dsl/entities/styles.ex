@@ -119,5 +119,6 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
   }
 
   @doc false
+  @spec style_entity() :: Spark.Dsl.Entity.t()
   def style_entity, do: @style_entity
 end

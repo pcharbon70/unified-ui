@@ -38,5 +38,6 @@ defmodule UnifiedUi do
   @doc """
   Returns the library version.
   """
+  @spec version() :: String.t()
   def version, do: "0.1.0"
 end

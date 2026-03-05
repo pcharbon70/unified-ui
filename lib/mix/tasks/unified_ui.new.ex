@@ -24,11 +24,13 @@ defmodule Mix.Tasks.UnifiedUi.New do
   @switches [path: :string, force: :boolean]
 
   @impl Mix.Task
+  @spec run([String.t()]) :: :ok
   def run(args) do
     run_with(args, fn line -> Mix.shell().info(line) end)
   end
 
   @doc false
+  @spec run_with([String.t()], (String.t() -> any())) :: :ok
   def run_with(args, output_fun) when is_function(output_fun, 1) do
     {opts, positional, invalid} = OptionParser.parse(args, strict: @switches)
 

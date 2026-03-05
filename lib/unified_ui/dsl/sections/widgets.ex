@@ -27,14 +27,18 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
   }
 
   @doc false
+  @spec section() :: Spark.Dsl.Section.t()
   def section, do: @widgets_section
 
   @doc false
+  @spec entities() :: [Spark.Dsl.Entity.t()]
   def entities, do: @widgets_section.entities
 
   @doc false
+  @spec top_level?() :: boolean()
   def top_level?, do: false
 
   @doc false
+  @spec name() :: atom()
   def name, do: @widgets_section.name
 end

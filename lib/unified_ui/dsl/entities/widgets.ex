@@ -232,14 +232,18 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
   }
 
   @doc false
+  @spec button_entity() :: Spark.Dsl.Entity.t()
   def button_entity, do: @button_entity
 
   @doc false
+  @spec text_entity() :: Spark.Dsl.Entity.t()
   def text_entity, do: @text_entity
 
   @doc false
+  @spec label_entity() :: Spark.Dsl.Entity.t()
   def label_entity, do: @label_entity
 
   @doc false
+  @spec text_input_entity() :: Spark.Dsl.Entity.t()
   def text_input_entity, do: @text_input_entity
 end

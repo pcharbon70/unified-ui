@@ -166,8 +166,10 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   }
 
   @doc false
+  @spec vbox_entity() :: Spark.Dsl.Entity.t()
   def vbox_entity, do: @vbox_entity
 
   @doc false
+  @spec hbox_entity() :: Spark.Dsl.Entity.t()
   def hbox_entity, do: @hbox_entity
 end

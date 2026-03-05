@@ -12,6 +12,7 @@ defmodule UnifiedUi.Dsl.Verifiers.UniqueIdVerifier do
   @doc """
   Verifies that all IDs across widgets and layouts are unique.
   """
+  @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 
@@ -99,6 +100,7 @@ defmodule UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier do
 
   alias Spark.Dsl.Verifier
 
+  @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 
@@ -158,6 +160,7 @@ defmodule UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier do
 
   alias Spark.Dsl.Verifier
 
+  @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 
@@ -283,6 +286,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier do
     :strikethrough
   ]
 
+  @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 
@@ -359,6 +363,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
 
   alias Spark.Dsl.Verifier
 
+  @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
 

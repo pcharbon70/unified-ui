@@ -28,6 +28,7 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
   use Spark.Dsl.Transformer
 
   @impl true
+  @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
   def transform(dsl_state) do
     # For Phase 2.5, we use the IUR.Builder to convert DSL entities to IUR
     code =
