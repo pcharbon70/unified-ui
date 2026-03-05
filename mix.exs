@@ -60,10 +60,20 @@ defmodule UnifiedUi.MixProject do
       extras: [
         "README.md",
         "guides/getting-started.md",
-        "guides/widget-reference.md"
+        "guides/widget-reference.md",
+        "guides/dsl-reference.md",
+        "guides/layout-system.md",
+        "guides/styling-and-theming.md",
+        "guides/signals-and-events.md",
+        "guides/platform-guides.md",
+        "guides/platforms/terminal.md",
+        "guides/platforms/desktop.md",
+        "guides/platforms/web.md",
+        "guides/dashboard-tutorial.md",
+        "guides/troubleshooting.md"
       ],
       groups_for_extras: [
-        Guides: ["guides/*.md"]
+        Guides: ["guides/*.md", "guides/platforms/*.md"]
       ]
     ]
   end
