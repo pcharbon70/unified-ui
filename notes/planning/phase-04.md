@@ -6,26 +6,26 @@ This phase expands the widget library to include all TermUi widgets, implements 
 
 ## 4.1 Data Visualization Widgets
 
-- [ ] **Task 4.1** Implement data visualization widgets (gauge, sparkline, charts)
+- [x] **Task 4.1** Implement data visualization widgets (gauge, sparkline, charts)
 
 Create widget entities and renderer support for data visualization components.
 
-- [ ] 4.1.1 Define `@gauge_entity` with schema:
+- [x] 4.1.1 Define `@gauge_entity` with schema:
   - args: `[:id, value]`
   - options: `min`, `max`, `label`, `width`, `height`, `color_zones`
-- [ ] 4.1.2 Define `@sparkline_entity` with schema:
+- [x] 4.1.2 Define `@sparkline_entity` with schema:
   - args: `[:id, data]`
   - options: `width`, `height`, `color`, `show_dots`, `show_area`
-- [ ] 4.1.3 Define `@bar_chart_entity` with schema:
+- [x] 4.1.3 Define `@bar_chart_entity` with schema:
   - args: `[:id, data]`
   - options: `width`, `height`, `orientation`, `show_labels`
-- [ ] 4.1.4 Define `@line_chart_entity` with schema:
+- [x] 4.1.4 Define `@line_chart_entity` with schema:
   - args: `[:id, data]`
   - options: `width`, `height`, `show_dots`, `show_area`
-- [ ] 4.1.5 Create target and IUR structs
-- [ ] 4.1.6 Implement terminal renderer converters
-- [ ] 4.1.7 Implement desktop renderer converters
-- [ ] 4.1.8 Implement web renderer converters (SVG-based)
+- [x] 4.1.5 Create target and IUR structs
+- [x] 4.1.6 Implement terminal renderer converters
+- [x] 4.1.7 Implement desktop renderer converters
+- [x] 4.1.8 Implement web renderer converters (SVG-based)
 
 **Implementation Notes:**
 - Data: list of {label, value} tuples
@@ -34,32 +34,32 @@ Create widget entities and renderer support for data visualization components.
 - Web: SVG or canvas-based charts
 
 **Unit Tests for Section 4.1:**
-- [ ] Test gauge entity and conversion
-- [ ] Test sparkline entity and conversion
-- [ ] Test bar_chart entity and conversion
-- [ ] Test line_chart entity and conversion
-- [ ] Test all platforms render charts
+- [x] Test gauge entity and conversion
+- [x] Test sparkline entity and conversion
+- [x] Test bar_chart entity and conversion
+- [x] Test line_chart entity and conversion
+- [x] Test all platforms render charts
 
 ---
 
 ## 4.2 Table Widget
 
-- [ ] **Task 4.2** Implement the table widget for tabular data display
+- [x] **Task 4.2** Implement the table widget for tabular data display
 
 Create a comprehensive table widget with sorting, selection, and scrolling.
 
-- [ ] 4.2.1 Define `@column_entity` (nested) with schema:
+- [x] 4.2.1 Define `@column_entity` (nested) with schema:
   - args: `[:key, header]`
   - options: `sortable`, `formatter`, `width`, `align`
-- [ ] 4.2.2 Define `@table_entity` with schema:
+- [x] 4.2.2 Define `@table_entity` with schema:
   - args: `[:id, data]`
   - options: `columns`, `selected_row`, `height`, `on_row_select`, `on_sort`
-- [ ] 4.2.3 Create target and IUR structs
-- [ ] 4.2.4 Implement terminal renderer converter
-- [ ] 4.2.5 Implement desktop renderer converter
-- [ ] 4.2.6 Implement web renderer converter
-- [ ] 4.2.7 Add sorting logic
-- [ ] 4.2.8 Add selection handling
+- [x] 4.2.3 Create target and IUR structs
+- [x] 4.2.4 Implement terminal renderer converter
+- [x] 4.2.5 Implement desktop renderer converter
+- [x] 4.2.6 Implement web renderer converter
+- [x] 4.2.7 Add sorting logic
+- [x] 4.2.8 Add selection handling
 
 **Implementation Notes:**
 - Data: list of maps or keyword lists
@@ -69,12 +69,12 @@ Create a comprehensive table widget with sorting, selection, and scrolling.
 - Web: HTML table with sortable headers
 
 **Unit Tests for Section 4.2:**
-- [ ] Test table entity with columns
-- [ ] Test table with map data
-- [ ] Test table with formatter function
-- [ ] Test table sorting emits signal
-- [ ] Test table selection emits signal
-- [ ] Test all platforms render tables
+- [x] Test table entity with columns
+- [x] Test table with map data
+- [x] Test table with formatter function
+- [x] Test table sorting emits signal
+- [x] Test table selection emits signal
+- [x] Test all platforms render tables
 
 ---
 
@@ -84,27 +84,27 @@ Create a comprehensive table widget with sorting, selection, and scrolling.
 
 Create widgets for navigation: menus, tabs, and tree views.
 
-- [ ] 4.3.1 Define `@menu_item_entity` (nested) with schema:
+- [x] 4.3.1 Define `@menu_item_entity` (nested) with schema:
   - args: `[:label]`
   - options: `id`, `action`, `disabled`, `submenu`
-- [ ] 4.3.2 Define `@menu_entity` with schema:
+- [x] 4.3.2 Define `@menu_entity` with schema:
   - args: `[:id, items]`
   - options: `title`, `position`
-- [ ] 4.3.3 Define `@context_menu_entity` with schema:
+- [x] 4.3.3 Define `@context_menu_entity` with schema:
   - args: `[:id, items]`
   - options: `trigger_on`
-- [ ] 4.3.4 Define `@tab_entity` (nested) with schema:
+- [x] 4.3.4 Define `@tab_entity` (nested) with schema:
   - args: `[:id, label]`
   - options: `icon`, `disabled`, `content`
-- [ ] 4.3.5 Define `@tabs_entity` with schema:
+- [x] 4.3.5 Define `@tabs_entity` with schema:
   - args: `[:id, tabs]`
   - options: `position`, `active_tab`, `on_change`
-- [ ] 4.3.6 Define `@tree_node_entity` (nested data)
-- [ ] 4.3.7 Define `@tree_view_entity` with schema:
+- [x] 4.3.6 Define `@tree_node_entity` (nested data)
+- [x] 4.3.7 Define `@tree_view_entity` with schema:
   - args: `[:id, root_nodes]`
   - options: `selected_node`, `expanded_nodes`, `on_select`
-- [ ] 4.3.8 Create target and IUR structs
-- [ ] 4.3.9 Implement renderer converters for all platforms
+- [x] 4.3.8 Create target and IUR structs
+- [x] 4.3.9 Implement renderer converters for all platforms
 
 **Implementation Notes:**
 - Items can have nested submenus
@@ -113,14 +113,14 @@ Create widgets for navigation: menus, tabs, and tree views.
 - Keyboard navigation for all
 
 **Unit Tests for Section 4.3:**
-- [ ] Test menu entity with nested items
-- [ ] Test context_menu entity
-- [ ] Test tabs entity with multiple tabs
-- [ ] Test tab switching works
-- [ ] Test tree_view entity
-- [ ] Test tree expand/collapse
+- [x] Test menu entity with nested items
+- [x] Test context_menu entity
+- [x] Test tabs entity with multiple tabs
+- [x] Test tab switching works
+- [x] Test tree_view entity
+- [x] Test tree expand/collapse
 - [ ] Test keyboard navigation
-- [ ] Test all platforms render navigation widgets
+- [x] Test all platforms render navigation widgets
 
 ---
 
@@ -346,7 +346,7 @@ Create advanced layout containers for complex UI arrangements.
 
 Create a complete theming system with named styles, themes, and platform adaptation.
 
-- [ ] 4.10.1 Expand `@style_entity` with full attribute support
+- [x] 4.10.1 Expand `@style_entity` with full attribute support
 - [ ] 4.10.2 Define `@theme_entity` with schema:
   - args: `[:name]`
   - options: `styles`, `base_theme`
@@ -355,10 +355,10 @@ Create a complete theming system with named styles, themes, and platform adaptat
   - Typography: font_family, font_size, font_weight
   - Spacing: padding, margin
   - Borders: border (width, color, style)
-- [ ] 4.10.4 Create style resolver module
-- [ ] 4.10.5 Implement style inheritance
+- [x] 4.10.4 Create style resolver module
+- [x] 4.10.5 Implement style inheritance
 - [ ] 4.10.6 Implement theme loading
-- [ ] 4.10.7 Implement platform style adaptation:
+- [x] 4.10.7 Implement platform style adaptation:
   - Terminal: ANSI codes
   - Desktop: native styles
   - Web: CSS
@@ -374,12 +374,12 @@ Create a complete theming system with named styles, themes, and platform adaptat
 
 **Unit Tests for Section 4.10:**
 - [ ] Test style with all attributes
-- [ ] Test style inheritance
+- [x] Test style inheritance
 - [ ] Test theme loads correctly
 - [ ] Test theme switching works
-- [ ] Test terminal style conversion
-- [ ] Test desktop style conversion
-- [ ] Test web style conversion (CSS)
+- [x] Test terminal style conversion
+- [x] Test desktop style conversion
+- [x] Test web style conversion (CSS)
 - [ ] Test standard themes load
 
 ---
@@ -395,7 +395,7 @@ Comprehensive integration tests to verify all advanced widgets and features work
 - [ ] 4.11.5 Test complex dashboard with all widget types
 - [ ] 4.11.6 Test data visualization with live data
 - [ ] 4.11.7 Test form validation and submission
-- [ ] 4.11.8 Test navigation widget interactions
+- [x] 4.11.8 Test navigation widget interactions
 - [ ] 4.11.9 Test monitoring widgets with live data
 - [ ] 4.11.10 Test performance with 200+ element UI
 
