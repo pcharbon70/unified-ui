@@ -505,6 +505,87 @@ Use adapter event modules to normalize platform payloads and `UnifiedUi.Signals`
   )
 ```
 
+## Extension Publishing
+
+Use this workflow when you are ready to ship an extension as a standalone Hex package.
+
+### 1. Package extension code as an independent Mix project
+
+- Keep extension code in a separate repository/project with its own `mix.exs`.
+- Include only extension modules and tests that validate extension behavior.
+- Add `{:unified_ui, "~> 0.1"}` as a dependency (or the compatible range for your extension).
+- Configure docs to include your extension guide/examples.
+
+Minimal `mix.exs` shape:
+
+```elixir
+defmodule UnifiedUiObservability.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :unified_ui_observability,
+      version: "0.1.0",
+      elixir: "~> 1.16",
+      start_permanent: Mix.env() == :prod,
+      deps: deps(),
+      description: "Observability widgets and renderer extensions for UnifiedUi",
+      package: package()
+    ]
+  end
+
+  def application, do: [extra_applications: [:logger]]
+
+  defp deps do
+    [
+      {:unified_ui, "~> 0.1"}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => "https://github.com/my-org/unified_ui_observability"}
+    ]
+  end
+end
+```
+
+### 2. Follow naming conventions
+
+- Hex package: `unified_ui_<extension_name>`
+- OTP app name: `:unified_ui_<extension_name>`
+- Root namespace: `UnifiedUi<ExtensionName>`
+- Keep names specific to the extension domain (for example `unified_ui_observability`, `unified_ui_admin`).
+
+### 3. Apply versioning guidelines (SemVer)
+
+- Start at `0.1.0` for new extensions.
+- Patch (`x.y.Z`): bug fixes and docs-only updates.
+- Minor (`x.Y.z`): backward-compatible new widgets/layouts/renderers.
+- Major (`X.y.z`): breaking API changes (renamed modules, callback changes, removed features).
+- Pin `unified_ui` dependency bounds to the versions you validate in CI.
+
+### 4. Publish to Hex
+
+Run release steps from the extension project:
+
+```bash
+mix format
+mix test
+mix hex.build
+mix hex.publish
+```
+
+Recommended pre-publish checklist:
+
+- all examples compile and run
+- renderer callbacks satisfy `UnifiedUi.Renderer`
+- `UnifiedIUR.Element` metadata includes stable `:type` values
+- changelog updated with compatibility notes
+- docs published and linked from README
+- tag release in source control (`vX.Y.Z`)
+
 ## Validation Checklist
 
 - `mix unified_ui.gen.widget ...` produces compiling modules
