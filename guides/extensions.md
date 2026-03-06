@@ -4,6 +4,14 @@ This guide covers the current extension path for **custom widgets**, **custom la
 
 As of `0.1.x`, external packages can define custom IUR widgets and custom renderers, but adding brand-new DSL entities to `use UnifiedUi.Dsl` still requires changes in UnifiedUi core (`Sections`, `IUR.Builder`, and renderers).
 
+## Generate Extension Scaffold
+
+Use the generator to create a complete extension scaffold (extension module + sample widget + sample renderer + optional test):
+
+```bash
+mix unified_ui.gen.extension MyApp.Extensions.Observability
+```
+
 ## Creating Custom Widgets
 
 ### 1. Generate a widget scaffold
