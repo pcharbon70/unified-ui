@@ -194,7 +194,7 @@ Write guides to help developers get started and be productive.
 - Cross-reference guides
 
 **Unit Tests for Section 5.5:**
-- [ ] Verify all guide examples compile
+- [x] Verify all guide examples compile
 - [ ] Test tutorial can be followed end-to-end
 - [x] Verify cross-references work
 - [ ] Get feedback on guide clarity

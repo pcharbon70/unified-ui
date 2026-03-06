@@ -21,7 +21,10 @@ graph TD
 Stacks children top-to-bottom.
 
 ```elixir
-vbox id: :root, spacing: 1, padding: 1 do
+vbox do
+  id :root
+  spacing 1
+  padding 1
   text "Settings"
   text_input :username, placeholder: "Username"
 end
@@ -32,7 +35,10 @@ end
 Stacks children left-to-right.
 
 ```elixir
-hbox id: :row, spacing: 2, align_items: :center do
+hbox do
+  id :row
+  spacing 2
+  align_items :center
   label :search, "Search"
   text_input :search, placeholder: "Type query"
 end

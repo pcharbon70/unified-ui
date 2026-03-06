@@ -12,12 +12,13 @@ text "Header", style: [fg: :cyan, attrs: [:bold], padding: 1]
 
 ```elixir
 styles do
-  style :header, fg: :cyan, attrs: [:bold], padding: 1
-  style :primary_button, bg: :blue, fg: :white, padding: [1, 2]
-end
+  style :header do
+    attributes [fg: :cyan, attrs: [:bold], padding: 1]
+  end
 
-ui do
-  text "Dashboard", style_ref: :header
+  style :primary_button do
+    attributes [bg: :blue, fg: :white, padding: 1]
+  end
 end
 ```
 

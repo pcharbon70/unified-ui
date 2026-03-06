@@ -9,22 +9,19 @@ defmodule MyApp.CounterScreen do
   @behaviour UnifiedUi.ElmArchitecture
   use UnifiedUi.Dsl
 
-  state count: 0
-
-  ui do
-    vbox spacing: 1 do
-      text "Count: #{state.count}"
-      button "Increment", on_click: :increment
-    end
+  vbox do
+    spacing 1
+    text "Count"
+    button "Increment", on_click: :increment
   end
 end
 ```
 
 ## Sections
 
-- `state`: Declares initial state keys and defaults used by `init/1` and `update/2`.
-- `ui`: Top-level visual declaration.
-- `styles`: Named style definitions (resolved via `style_ref`).
+- `init/1` and `update/2`: define and evolve component state.
+- top-level layout/widget entities (`vbox`, `hbox`, `text`, etc.) define the UI tree.
+- `styles`: Named style definitions (resolved when used via `style: :style_name`).
 - `signals`: Signal type declarations for intent/event modeling.
 
 ## Layout Entities
