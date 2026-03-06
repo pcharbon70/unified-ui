@@ -13,7 +13,7 @@ defmodule MyApp.DashboardScreen do
     id :dashboard
     spacing 1
     padding 1
-    text "System Dashboard", style: [fg: :cyan, attrs: [:bold]]
+    text "System Dashboard"
 
     hbox do
       spacing 2
