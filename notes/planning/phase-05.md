@@ -212,7 +212,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
   - Target struct creation
   - IUR implementation
   - Renderer converters
-- [ ] 5.6.2 Write "Creating Custom Layouts" guide:
+- [x] 5.6.2 Write "Creating Custom Layouts" guide:
   - Layout entity definition
   - Layout algorithm
   - Renderer support
