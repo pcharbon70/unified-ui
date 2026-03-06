@@ -220,7 +220,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
   - Renderer behavior
   - Widget conversion
   - Event handling
-- [ ] 5.6.4 Create `mix unified_ui.gen.extension` task:
+- [x] 5.6.4 Create `mix unified_ui.gen.extension` task:
   - Generates extension boilerplate
 - [ ] 5.6.5 Document extension API:
   - Public extension points
@@ -240,7 +240,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
 - Example extension as reference
 
 **Unit Tests for Section 5.6:**
-- [ ] Test extension generation works
+- [x] Test extension generation works
 - [ ] Test example extension loads
 - [ ] Test example extension functions
 - [ ] Verify extension guide complete
