@@ -1,6 +1,6 @@
 # Extensions
 
-This guide covers the current extension path for **custom widgets** and **custom layouts**.
+This guide covers the current extension path for **custom widgets**, **custom layouts**, and **custom renderers**.
 
 As of `0.1.x`, external packages can define custom IUR widgets and custom renderers, but adding brand-new DSL entities to `use UnifiedUi.Dsl` still requires changes in UnifiedUi core (`Sections`, `IUR.Builder`, and renderers).
 
@@ -301,9 +301,101 @@ defmodule MyApp.Adapters.TerminalWithFlow do
     TermUI.Component.Helpers.stack(direction, rendered_children)
   end
 
+defp convert_iur(other), do: Terminal.convert_iur(other)
+end
+```
+
+## Creating Custom Renderers
+
+### 1. Implement the renderer behavior
+
+Custom renderers implement `UnifiedUi.Renderer` (`render/2`, `update/3`, `destroy/1`) and manage a `UnifiedUi.Adapters.State` value.
+
+```elixir
+defmodule MyApp.Adapters.InstrumentedTerminal do
+  @behaviour UnifiedUi.Renderer
+
+  alias UnifiedUi.Adapters.State
+  alias UnifiedUi.Adapters.Terminal
+
+  @impl true
+  def render(iur_tree, opts \\ []) do
+    renderer_state = State.new(:terminal, config: opts)
+    root = convert_iur(iur_tree)
+
+    {:ok,
+     renderer_state
+     |> State.put_root(root)
+     |> State.put_metadata(:last_iur, iur_tree)}
+  end
+
+  @impl true
+  def update(iur_tree, renderer_state, _opts \\ []) do
+    if State.get_metadata(renderer_state, :last_iur) == iur_tree do
+      {:ok, renderer_state}
+    else
+      {:ok,
+       renderer_state
+       |> State.put_root(convert_iur(iur_tree))
+       |> State.put_metadata(:last_iur, iur_tree)
+       |> State.bump_version()}
+    end
+  end
+
+  @impl true
+  def destroy(_renderer_state), do: :ok
+
+  defp convert_iur(iur_element), do: Terminal.convert_iur(iur_element)
+end
+```
+
+### 2. Add custom widget conversion
+
+Extend your renderer with explicit conversion clauses for custom widgets, then fall back to a base renderer for built-in types.
+
+```elixir
+defmodule MyApp.Widgets.StatusBadge do
+  defstruct [:id, :label, :value, :style, visible: true]
+end
+
+defmodule MyApp.Adapters.InstrumentedTerminal do
+  alias MyApp.Widgets.StatusBadge
+  alias UnifiedIUR.Widgets
+  alias UnifiedUi.Adapters.Terminal
+
+  defp convert_iur(%StatusBadge{label: label, value: value}) do
+    %Widgets.Text{content: "#{label}: #{inspect(value)}"}
+    |> Terminal.convert_iur()
+  end
+
   defp convert_iur(other), do: Terminal.convert_iur(other)
 end
 ```
+
+### 3. Handle events and map them to update/2
+
+Renderers should normalize platform events into `Jido.Signal` and pass them to component `update/2`.
+
+```elixir
+defmodule MyApp.Adapters.TerminalEventLoop do
+  alias UnifiedUi.Adapters.Terminal.Events
+
+  @spec handle_event(module(), map(), Events.event_type(), map()) ::
+          {:ok, map()} | {:error, term()}
+  def handle_event(screen_module, state, event_type, payload) do
+    with {:ok, signal} <- Events.to_signal(event_type, payload) do
+      {:ok, screen_module.update(state, signal)}
+    end
+  end
+end
+```
+
+### 4. Keep renderer contracts testable
+
+- assert `render/2` returns `{:ok, %UnifiedUi.Adapters.State{}}`
+- assert `update/3` is stable for unchanged trees and bumps version on changes
+- assert custom-widget conversion clauses produce expected platform nodes
+- assert event payloads are normalized via `*.Events.to_signal/3`
 
 ## Validation Checklist
 
@@ -314,3 +406,5 @@ end
 - custom layout metadata includes `:type` and layout properties
 - custom layout algorithm has deterministic, unit-testable output
 - custom renderer converts custom layout nodes and nested children
+- custom renderer callbacks satisfy `UnifiedUi.Renderer` behavior
+- event ingress path (`to_signal` -> `update/2`) is covered by tests
