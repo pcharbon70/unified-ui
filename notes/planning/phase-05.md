@@ -203,7 +203,7 @@ Write guides to help developers get started and be productive.
 
 ## 5.6 Extension Framework
 
-- [ ] **Task 5.6** Document and implement extension framework
+- [x] **Task 5.6** Document and implement extension framework
 
 Create documentation and tooling for extending UnifiedUi with custom widgets and renderers.
 
@@ -228,7 +228,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
 - [x] 5.6.6 Create example extension:
   - Custom widget example
   - Demonstrate extension pattern
-- [ ] 5.6.7 Document extension publishing:
+- [x] 5.6.7 Document extension publishing:
   - Packaging as Hex package
   - Naming conventions
   - Versioning guidelines
@@ -243,7 +243,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
 - [x] Test extension generation works
 - [x] Test example extension loads
 - [x] Test example extension functions
-- [ ] Verify extension guide complete
+- [x] Verify extension guide complete
 
 ---
 
