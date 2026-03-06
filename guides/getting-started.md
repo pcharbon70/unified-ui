@@ -84,3 +84,4 @@ next_state = MyApp.CounterScreen.update(state, signal)
 - Review the full widget list in `guides/widget-reference.md`.
 - Add styles with the `styles` section and inline style keywords.
 - Use the coordinator when rendering to multiple platforms at once.
+- Build custom widgets with `guides/extensions.md`.
