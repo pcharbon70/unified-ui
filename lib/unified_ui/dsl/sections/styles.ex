@@ -10,12 +10,12 @@ defmodule UnifiedUi.Dsl.Sections.Styles do
     """,
     schema: [
       fg: [
-        type: {:or, [:atom, :tuple, :string]},
+        type: {:or, [:atom, :string, {:tuple, [:integer, :integer, :integer]}]},
         doc: "Foreground color.",
         required: false
       ],
       bg: [
-        type: {:or, [:atom, :tuple, :string]},
+        type: {:or, [:atom, :string, {:tuple, [:integer, :integer, :integer]}]},
         doc: "Background color.",
         required: false
       ],

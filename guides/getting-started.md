@@ -25,16 +25,15 @@ defmodule MyApp.CounterScreen do
   @behaviour UnifiedUi.ElmArchitecture
   use UnifiedUi.Dsl
 
-  state count: 0
+  vbox do
+    spacing 1
+    text "Counter"
+    text_input :name, placeholder: "Name"
 
-  ui do
-    vbox spacing: 1 do
-      text "Counter"
-      text_input :name, placeholder: "Name"
-      hbox spacing: 1 do
-        button "Increment", on_click: :increment
-        button "Decrement", on_click: :decrement
-      end
+    hbox do
+      spacing 1
+      button "Increment", on_click: :increment
+      button "Decrement", on_click: :decrement
     end
   end
 
@@ -43,14 +42,14 @@ defmodule MyApp.CounterScreen do
 
   @impl true
   def update(state, %Jido.Signal{data: %{action: :increment}}) do
-    {:ok, %{state | count: state.count + 1}}
+    %{state | count: state.count + 1}
   end
 
   def update(state, %Jido.Signal{data: %{action: :decrement}}) do
-    {:ok, %{state | count: state.count - 1}}
+    %{state | count: state.count - 1}
   end
 
-  def update(state, _signal), do: {:ok, state}
+  def update(state, _signal), do: state
 end
 ```
 
@@ -59,10 +58,9 @@ end
 Use one of the platform adapters to render the resulting IUR tree:
 
 ```elixir
-{:ok, state} =
-  MyApp.CounterScreen.init([])
-  |> MyApp.CounterScreen.view()
-  |> UnifiedUi.Adapters.Terminal.render()
+state = MyApp.CounterScreen.init([])
+iur = MyApp.CounterScreen.view(state)
+{:ok, _rendered} = UnifiedUi.Adapters.Terminal.render(iur)
 ```
 
 ## 4. Handle Events
@@ -70,13 +68,15 @@ Use one of the platform adapters to render the resulting IUR tree:
 Map raw adapter events into normalized signals:
 
 ```elixir
+state = MyApp.CounterScreen.init([])
+
 signal =
   UnifiedUi.Adapters.Terminal.Events.to_signal(
     :button_click,
     %{id: :increment_button, action: :increment}
   )
 
-{:ok, next_state} = MyApp.CounterScreen.update(state, signal)
+next_state = MyApp.CounterScreen.update(state, signal)
 ```
 
 ## Next Steps

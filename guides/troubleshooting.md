@@ -10,7 +10,7 @@ Compilation fails with DSL verification errors.
 
 - Ensure all `id` values are unique in a UI tree.
 - Ensure layout nesting is valid.
-- Ensure `style_ref` names exist.
+- Ensure named style references used in `style` exist.
 - Ensure state references match declared `state` keys.
 
 ## Signals Not Updating State
@@ -23,7 +23,7 @@ Events fire but `update/2` does not change state.
 
 - Confirm adapter events are mapped via `*.Events.to_signal/2`.
 - Match on the actual signal shape in `update/2` (`type` + `data.action`).
-- Keep a fallback clause: `def update(state, _), do: {:ok, state}`.
+- Keep a fallback clause: `def update(state, _), do: state`.
 
 ## Style Not Applied
 
@@ -34,7 +34,7 @@ Rendered output ignores expected style.
 ### Checks
 
 - Verify style keys are valid (`fg`, `bg`, `attrs`, spacing, dimensions).
-- If using named styles, verify `style_ref` exists.
+- If using named styles, verify the referenced style name exists.
 - Validate adapter style conversion modules for target-specific behavior.
 
 ## Test Failures In Planning Phases
