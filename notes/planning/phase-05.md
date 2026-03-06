@@ -207,7 +207,7 @@ Write guides to help developers get started and be productive.
 
 Create documentation and tooling for extending UnifiedUi with custom widgets and renderers.
 
-- [ ] 5.6.1 Write "Creating Custom Widgets" guide:
+- [x] 5.6.1 Write "Creating Custom Widgets" guide:
   - Widget entity definition
   - Target struct creation
   - IUR implementation

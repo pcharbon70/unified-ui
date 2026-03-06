@@ -74,7 +74,8 @@ defmodule UnifiedUi.MixProject do
         "guides/platforms/desktop.md",
         "guides/platforms/web.md",
         "guides/dashboard-tutorial.md",
-        "guides/troubleshooting.md"
+        "guides/troubleshooting.md",
+        "guides/extensions.md"
       ],
       groups_for_extras: [
         Guides: ["guides/*.md", "guides/platforms/*.md"]
