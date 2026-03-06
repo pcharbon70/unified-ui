@@ -222,7 +222,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
   - Event handling
 - [x] 5.6.4 Create `mix unified_ui.gen.extension` task:
   - Generates extension boilerplate
-- [ ] 5.6.5 Document extension API:
+- [x] 5.6.5 Document extension API:
   - Public extension points
   - Callbacks and protocols
 - [ ] 5.6.6 Create example extension:

@@ -405,6 +405,104 @@ end
 - assert custom-widget conversion clauses produce expected platform nodes
 - assert event payloads are normalized via `*.Events.to_signal/3`
 
+## Extension API Reference
+
+This section lists the current public extension points for libraries and apps integrating with UnifiedUi.
+
+### Public Extension Points
+
+- `UnifiedIUR.Element` protocol for custom widget/layout structs
+- `UnifiedUi.Renderer` behavior for custom renderers
+- `UnifiedUi.ElmArchitecture` behavior for screen modules
+- `UnifiedUi.Adapters.<Platform>.Events.to_signal/3` for event normalization
+- `UnifiedUi.Signals` helpers for creating `Jido.Signal` values
+- `mix unified_ui.gen.widget` and `mix unified_ui.gen.extension` for scaffolding
+
+### Protocol: `UnifiedIUR.Element`
+
+Required functions:
+
+- `children/1`: returns nested child elements (or `[]` for leaf widgets)
+- `metadata/1`: returns a metadata map including at least `:type`
+
+```elixir
+defmodule MyApp.Widgets.HealthPill do
+  defstruct [:id, :status, visible: true]
+end
+
+defimpl UnifiedIUR.Element, for: MyApp.Widgets.HealthPill do
+  def children(_widget), do: []
+
+  def metadata(widget) do
+    %{type: :health_pill, id: widget.id, status: widget.status, visible: widget.visible}
+  end
+end
+```
+
+### Behavior: `UnifiedUi.Renderer`
+
+Required callbacks:
+
+- `render(iur_tree, opts) :: {:ok, renderer_state} | {:error, reason}`
+- `update(iur_tree, renderer_state, opts) :: {:ok, renderer_state} | {:error, reason}`
+- `destroy(renderer_state) :: :ok | {:error, reason}`
+
+```elixir
+defmodule MyApp.Adapters.NoopRenderer do
+  @behaviour UnifiedUi.Renderer
+
+  @impl true
+  def render(iur_tree, _opts \\ []), do: {:ok, %{iur: iur_tree, version: 1}}
+
+  @impl true
+  def update(iur_tree, state, _opts \\ []), do: {:ok, %{state | iur: iur_tree, version: state.version + 1}}
+
+  @impl true
+  def destroy(_state), do: :ok
+end
+```
+
+### Behavior: `UnifiedUi.ElmArchitecture`
+
+Required callbacks:
+
+- `init/1`: initialize state
+- `update/2`: transform state from signal
+- `view/1`: produce IUR tree
+
+```elixir
+defmodule MyApp.Screens.Minimal do
+  @behaviour UnifiedUi.ElmArchitecture
+
+  @impl true
+  def init(_opts), do: %{count: 0}
+
+  @impl true
+  def update(state, _signal), do: state
+
+  @impl true
+  def view(_state), do: %UnifiedIUR.Widgets.Text{content: "ok"}
+end
+```
+
+### Event and Signal APIs
+
+Use adapter event modules to normalize platform payloads and `UnifiedUi.Signals` for app-level signal creation:
+
+```elixir
+{:ok, click_signal} =
+  UnifiedUi.Adapters.Terminal.Events.to_signal(
+    :click,
+    %{widget_id: :save_button, action: :save}
+  )
+
+{:ok, custom_signal} =
+  UnifiedUi.Signals.create(
+    "myapp.metrics.recorded",
+    %{name: "latency_ms", value: 42}
+  )
+```
+
 ## Validation Checklist
 
 - `mix unified_ui.gen.widget ...` produces compiling modules
