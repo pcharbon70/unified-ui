@@ -225,7 +225,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
 - [x] 5.6.5 Document extension API:
   - Public extension points
   - Callbacks and protocols
-- [ ] 5.6.6 Create example extension:
+- [x] 5.6.6 Create example extension:
   - Custom widget example
   - Demonstrate extension pattern
 - [ ] 5.6.7 Document extension publishing:
@@ -241,8 +241,8 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
 
 **Unit Tests for Section 5.6:**
 - [x] Test extension generation works
-- [ ] Test example extension loads
-- [ ] Test example extension functions
+- [x] Test example extension loads
+- [x] Test example extension functions
 - [ ] Verify extension guide complete
 
 ---
