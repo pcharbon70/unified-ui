@@ -216,7 +216,7 @@ Create documentation and tooling for extending UnifiedUi with custom widgets and
   - Layout entity definition
   - Layout algorithm
   - Renderer support
-- [ ] 5.6.3 Write "Creating Custom Renderers" guide:
+- [x] 5.6.3 Write "Creating Custom Renderers" guide:
   - Renderer behavior
   - Widget conversion
   - Event handling
