@@ -12,6 +12,8 @@ Use the generator to create a complete extension scaffold (extension module + sa
 mix unified_ui.gen.extension MyApp.Extensions.Observability
 ```
 
+See the repository example extension at `examples/custom_widget/`.
+
 ## Creating Custom Widgets
 
 ### 1. Generate a widget scaffold
