@@ -197,7 +197,7 @@ Write guides to help developers get started and be productive.
 - [x] Verify all guide examples compile
 - [x] Test tutorial can be followed end-to-end
 - [x] Verify cross-references work
-- [ ] Get feedback on guide clarity
+- [x] Get feedback on guide clarity
 
 ---
 
