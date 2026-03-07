@@ -55,13 +55,19 @@ defmodule UnifiedUi.Adapters.Coordinator do
   alias UnifiedUi.Adapters.Terminal.Events, as: TerminalEvents
   alias UnifiedUi.Adapters.Desktop.Events, as: DesktopEvents
   alias UnifiedUi.Adapters.Web.Events, as: WebEvents
+  alias UnifiedUi.SignalBus
   alias Jido.Signal
 
   @type platform :: :terminal | :desktop | :web
   @type platforms :: [platform()]
   @type renderer :: module()
   @type event_module :: module()
-  @type target :: pid() | atom() | (Signal.t() -> term()) | {module(), atom(), [term()]}
+  @type target ::
+          pid()
+          | atom()
+          | (Signal.t() -> term())
+          | {module(), atom(), [term()]}
+          | {:topic, SignalBus.topic()}
   @type renderer_state :: map()
   @type render_result :: {:ok, renderer_state()} | {:error, term()}
   @type event_result :: {:ok, Signal.t()} | {:error, term()}
@@ -387,6 +393,24 @@ defmodule UnifiedUi.Adapters.Coordinator do
   def event_module(_), do: {:error, :invalid_platform}
 
   @doc """
+  Subscribes the current process to a signal topic broadcast by the coordinator.
+
+  Messages are delivered as `{:unified_ui_signal, %Jido.Signal{...}}`.
+  """
+  @spec subscribe_signals(SignalBus.topic()) :: :ok | {:error, term()}
+  def subscribe_signals(topic \\ SignalBus.default_topic()) do
+    SignalBus.subscribe(topic)
+  end
+
+  @doc """
+  Unsubscribes the current process from a signal topic.
+  """
+  @spec unsubscribe_signals(SignalBus.topic()) :: :ok | {:error, term()}
+  def unsubscribe_signals(topic \\ SignalBus.default_topic()) do
+    SignalBus.unsubscribe(topic)
+  end
+
+  @doc """
   Normalizes a platform event into a unified signal.
 
   ## Parameters
@@ -422,6 +446,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
   * Registered process name atom
   * 1-arity function
   * MFA tuple `{Module, :function, args}` (signal is prepended to args)
+  * PubSub topic tuple `{:topic, "topic_name"}` (fanout via `UnifiedUi.SignalBus`)
 
   Returns the normalized signal on success.
   """
@@ -487,6 +512,10 @@ defmodule UnifiedUi.Adapters.Coordinator do
   def route_signal(%Signal{} = signal, {module, function, args})
       when is_atom(module) and is_atom(function) and is_list(args) do
     run_target(fn -> apply(module, function, [signal | args]) end)
+  end
+
+  def route_signal(%Signal{} = signal, {:topic, topic}) when is_binary(topic) do
+    SignalBus.broadcast(signal, topic)
   end
 
   def route_signal(%Signal{}, _target), do: {:error, :invalid_target}
