@@ -9,6 +9,7 @@ The benchmark script profiles:
 - DSL compilation time for a generated screen with 100 widgets
 - IUR generation for a large UI tree
 - Concurrent rendering across terminal, desktop, and web adapters
+- Terminal-only frame rendering latency
 - Signal dispatch roundtrip latency (dispatch + state readback)
 - Style resolution performance with deep inheritance
 
@@ -26,8 +27,9 @@ Use this file to track how benchmark throughput changes over time and to spot re
 
 Sample quick-run baseline (Apple M4, Elixir 1.19.5, Erlang 28.3.1):
 
-- DSL compile profile (100 widgets): `1476.26 ms`
-- `iur.build.large_ui`: `~0.77 K ips` (`~1301.32 us`)
-- `render.concurrent.all_platforms`: `~2.26 K ips` (`~441.80 us`)
-- `signals.dispatch.roundtrip`: `~892.83 K ips` (`~1.12 us`)
-- `style.resolve.deep_inheritance`: `~76.74 K ips` (`~13.03 us`)
+- DSL compile profile (100 widgets): `1569.42 ms`
+- `iur.build.large_ui`: `~0.75 K ips` (`~1340.64 us`)
+- `render.concurrent.all_platforms`: `~1.71 K ips` (`~583.09 us`)
+- `render.terminal.frame`: `~24.06 K ips` (`~41.57 us`)
+- `signals.dispatch.roundtrip`: `~709.93 K ips` (`~1.41 us`)
+- `style.resolve.deep_inheritance`: `~71.22 K ips` (`~14.04 us`)
