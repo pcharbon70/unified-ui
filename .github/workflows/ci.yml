@@ -24,3 +24,11 @@ jobs:
       otp_versions: '["27", "28"]'
       elixir_versions: '["1.18", "1.19"]'
       test_command: mix test --cover
+
+  benchmark:
+    name: Benchmarks
+    uses: agentjido/github-actions/.github/workflows/elixir-test.yml@main
+    with:
+      otp_versions: '["28"]'
+      elixir_versions: '["1.19"]'
+      test_command: MIX_ENV=dev mix unified_ui.bench --quick

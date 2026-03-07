@@ -32,6 +32,7 @@ defmodule UnifiedUi.MixProject do
       {:term_ui, github: "pcharbon70/term_ui", branch: "multi-renderer"},
       {:unified_iur, path: "../unified_iur"},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:benchee, "~> 1.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test}
     ]

@@ -8,7 +8,8 @@ defmodule Mix.Tasks.UnifiedUi.TasksHelpTest do
     Mix.Tasks.UnifiedUi.Format,
     Mix.Tasks.UnifiedUi.Preview,
     Mix.Tasks.UnifiedUi.Test,
-    Mix.Tasks.UnifiedUi.Stats
+    Mix.Tasks.UnifiedUi.Stats,
+    Mix.Tasks.UnifiedUi.Bench
   ]
 
   test "all UnifiedUi tasks have shortdoc and moduledoc" do
