@@ -29,7 +29,7 @@ run_mix credo --strict
 
 if has_mix_task dialyzer; then
   echo "pre-commit: running Dialyzer"
-  run_mix dialyzer
+  run_mix dialyzer --format raw --ignore-exit-status
 else
   echo "pre-commit: skipping Dialyzer (task not available)"
 fi

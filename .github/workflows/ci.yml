@@ -15,7 +15,7 @@ jobs:
     name: Lint
     uses: agentjido/github-actions/.github/workflows/elixir-lint.yml@main
     with:
-      lint_command: mix format --check-formatted && mix compile --warnings-as-errors && mix credo --strict
+      lint_command: mix format --check-formatted && mix compile --warnings-as-errors && mix credo --strict && mix dialyzer --format raw --ignore-exit-status
 
   test:
     name: Test

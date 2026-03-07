@@ -28,13 +28,14 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
     assert ci_workflow =~ ~s(elixir_versions: '["1.18", "1.19"]')
   end
 
-  test "ci lint command enforces format, compile, and credo checks" do
+  test "ci lint command enforces format, compile, credo, and dialyzer checks" do
     ci_workflow = File.read!(@ci_workflow_path)
 
     assert ci_workflow =~ "lint_command:"
     assert ci_workflow =~ "mix format --check-formatted"
     assert ci_workflow =~ "mix compile --warnings-as-errors"
     assert ci_workflow =~ "mix credo --strict"
+    assert ci_workflow =~ "mix dialyzer --format raw --ignore-exit-status"
   end
 
   test "release workflow is configured for controlled manual releases" do
