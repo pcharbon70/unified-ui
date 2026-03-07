@@ -21,6 +21,13 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
     assert ci_workflow =~ "test_command: mix test --cover"
   end
 
+  test "ci workflow covers multiple OTP/Elixir versions" do
+    ci_workflow = File.read!(@ci_workflow_path)
+
+    assert ci_workflow =~ ~s(otp_versions: '["27", "28"]')
+    assert ci_workflow =~ ~s(elixir_versions: '["1.18", "1.19"]')
+  end
+
   test "ci lint command enforces format, compile, and credo checks" do
     ci_workflow = File.read!(@ci_workflow_path)
 
