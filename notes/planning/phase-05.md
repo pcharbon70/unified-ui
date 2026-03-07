@@ -274,11 +274,11 @@ Establish automated testing and releasing for the project.
 - Templates improve issue/PR quality
 
 **Unit Tests for Section 5.7:**
-- [ ] Test CI/CD workflow passes
-- [ ] Test formatter check works
+- [x] Test CI/CD workflow passes
+- [x] Test formatter check works
 - [ ] Test Dialyzer runs
-- [ ] Verify templates usable
-- [ ] Test release workflow
+- [x] Verify templates usable
+- [x] Test release workflow
 
 ---
 
