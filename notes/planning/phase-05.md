@@ -45,12 +45,12 @@ Identify performance bottlenecks and optimize for responsive UIs.
 - [x] 5.2.3 Profile rendering performance (all platforms)
 - [x] 5.2.4 Profile signal dispatch latency
 - [x] 5.2.5 Profile style resolution performance
-- [ ] 5.2.6 Identify top 5 bottlenecks
+- [x] 5.2.6 Identify top 5 bottlenecks
 - [ ] 5.2.7 Optimize DSL compilation (caching, reduced traversals)
 - [ ] 5.2.8 Optimize rendering (dirty tracking, batch updates)
 - [ ] 5.2.9 Optimize signal dispatch (pubsub for broadcast)
 - [x] 5.2.10 Add performance benchmarks
-- [ ] 5.2.11 Set performance targets (60fps terminal, <100ms compilation)
+- [x] 5.2.11 Set performance targets (60fps terminal, <100ms compilation)
 
 **Implementation Notes:**
 - Use :eprof and :fprof for profiling
@@ -61,7 +61,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 - [ ] Test DSL compilation under 100ms for 100 widgets
 - [ ] Test terminal rendering maintains 60fps
 - [x] Test benchmarks run in CI
-- [ ] Test no performance regressions
+- [x] Test no performance regressions
 
 ---
 
@@ -347,6 +347,7 @@ Final comprehensive integration tests to verify the entire framework is producti
 - `lib/mix/tasks/unified_ui.test.ex` - Test runner
 - `lib/mix/tasks/unified_ui.stats.ex` - Project statistics
 - `lib/mix/tasks/unified_ui.bench.ex` - Benchmark runner
+- `lib/mix/tasks/unified_ui.perf.check.ex` - Performance budget check runner
 - `lib/mix/tasks/unified_ui.gen.extension.ex` - Extension generator
 - `guides/getting-started.md` - Getting started guide
 - `guides/dsl-reference.md` - DSL reference
@@ -370,7 +371,9 @@ Final comprehensive integration tests to verify the entire framework is producti
 - `SECURITY.md` - Security policy
 - `test/unified_ui/integration/phase5_test.exs` - Integration tests
 - `benchmarks/phase5_baseline.exs` - Baseline benchmark suite
+- `benchmarks/phase5_budget_check.exs` - Performance budget checks
 - `notes/performance/phase-5-baseline.md` - Profiling notes
+- `notes/performance/phase-5-bottlenecks-and-targets.md` - Bottlenecks and targets
 
 **Modified Files:**
 - `mix.exs` - Add dev dependencies, configure ExDoc

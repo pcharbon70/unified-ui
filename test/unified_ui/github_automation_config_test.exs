@@ -21,6 +21,7 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
     assert ci_workflow =~ "elixir-test.yml@main"
     assert ci_workflow =~ "test_command: mix test --cover"
     assert ci_workflow =~ "test_command: MIX_ENV=dev mix unified_ui.bench --quick"
+    assert ci_workflow =~ "MIX_ENV=dev mix unified_ui.perf.check --quick"
   end
 
   test "ci workflow covers multiple OTP/Elixir versions" do
