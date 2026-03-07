@@ -479,4 +479,144 @@ defmodule UnifiedUi.Adapters.DesktopTest do
       assert root.type == :container
     end
   end
+
+  describe "convert_iur/2 - data visualization widgets" do
+    test "converts gauge and sparkline with metadata" do
+      gauge = %Widgets.Gauge{id: :cpu, label: "CPU", value: 130, min: 0, max: 100}
+      sparkline = %Widgets.Sparkline{id: :trend, data: [1, 3, 2], show_dots: true}
+
+      assert {:gauge, gauge_widget, gauge_meta} = Desktop.convert_iur(gauge)
+      assert gauge_widget.type == :label
+      assert gauge_meta.value == 100
+      assert gauge_meta.max == 100
+      assert gauge_meta.label == "CPU"
+
+      assert {:sparkline, sparkline_widget, sparkline_meta} = Desktop.convert_iur(sparkline)
+      assert sparkline_widget.type == :label
+      assert sparkline_meta.data == [1, 3, 2]
+      assert sparkline_meta.show_dots == true
+    end
+
+    test "converts bar chart and line chart with chart metadata" do
+      bar_chart = %Widgets.BarChart{
+        id: :sales,
+        data: [{"Mon", 10}, {"Tue", 20}],
+        orientation: :horizontal
+      }
+
+      line_chart = %Widgets.LineChart{
+        id: :visits,
+        data: [{"Mon", 1}, {"Tue", 3}, {"Wed", 2}],
+        show_dots: true,
+        show_area: true
+      }
+
+      assert {:bar_chart, bar_widget, bar_meta} = Desktop.convert_iur(bar_chart)
+      assert bar_widget.type == :label
+      assert bar_meta.orientation == :horizontal
+      assert bar_meta.data == [{"Mon", 10}, {"Tue", 20}]
+
+      assert {:line_chart, line_widget, line_meta} = Desktop.convert_iur(line_chart)
+      assert line_widget.type == :label
+      assert line_meta.show_dots == true
+      assert line_meta.show_area == true
+    end
+
+    test "converts table and auto-generates columns from row keys" do
+      table = %Widgets.Table{
+        id: :users,
+        data: [%{name: "Alice", age: 31}, %{name: "Bob", age: 28}],
+        on_row_select: :select_row,
+        on_sort: :sort_by
+      }
+
+      assert {:table, table_widget, table_meta} = Desktop.convert_iur(table)
+      assert table_widget.type == :label
+      assert length(table_meta.columns) == 2
+      assert :name in Enum.map(table_meta.columns, & &1.key)
+      assert :age in Enum.map(table_meta.columns, & &1.key)
+      assert table_meta.on_row_select == :select_row
+      assert table_meta.on_sort == :sort_by
+    end
+  end
+
+  describe "convert_iur/2 - navigation widgets" do
+    test "converts menu item, menu, and context menu structures" do
+      item = %Widgets.MenuItem{
+        id: :save_item,
+        label: "Save",
+        action: :save_file,
+        icon: :save,
+        shortcut: "Ctrl+S",
+        submenu: [%Widgets.MenuItem{label: "Recent"}]
+      }
+
+      menu = %Widgets.Menu{
+        id: :file_menu,
+        title: "File",
+        position: :top,
+        items: [item]
+      }
+
+      context = %Widgets.ContextMenu{id: :ctx, trigger_on: :right_click, items: [item]}
+
+      assert {:menu_item, item_widget, item_meta} = Desktop.convert_iur(item)
+      assert item_widget.type == :label
+      assert item_meta.has_submenu == true
+      assert item_meta.shortcut == "Ctrl+S"
+
+      assert {:menu, menu_widget, menu_meta} = Desktop.convert_iur(menu)
+      assert menu_widget.type == :menu
+      assert menu_meta.title == "File"
+      assert menu_meta.position == :top
+
+      assert {:context_menu, context_widget, context_meta} = Desktop.convert_iur(context)
+      assert context_widget.type == :context_menu
+      assert context_meta.trigger_on == :right_click
+    end
+
+    test "converts tabs and tree widgets with metadata and nested content" do
+      tabs = %Widgets.Tabs{
+        id: :main_tabs,
+        active_tab: :home,
+        position: :top,
+        on_change: :tab_changed,
+        tabs: [
+          %Widgets.Tab{id: :home, label: "Home", content: %Widgets.Text{content: "Home panel"}},
+          %Widgets.Tab{id: :about, label: "About", icon: :info, disabled: true, closable: true}
+        ]
+      }
+
+      tree = %Widgets.TreeView{
+        id: :project_tree,
+        selected_node: :root,
+        expanded_nodes: [:root],
+        on_select: :select_node,
+        on_toggle: :toggle_node,
+        root_nodes: [
+          %Widgets.TreeNode{
+            id: :root,
+            label: "root",
+            expanded: true,
+            icon: :folder,
+            icon_expanded: :folder_open,
+            children: [%Widgets.TreeNode{id: :child, label: "child"}]
+          }
+        ]
+      }
+
+      assert {:tabs, tabs_widget, tabs_meta} = Desktop.convert_iur(tabs)
+      assert tabs_widget.type == :tabs
+      assert tabs_meta.active_tab == :home
+      assert tabs_meta.on_change == :tab_changed
+      assert length(tabs_widget.children) == 3
+
+      assert {:tree_view, tree_widget, tree_meta} = Desktop.convert_iur(tree)
+      assert tree_widget.type == :tree_view
+      assert tree_meta.selected_node == :root
+      assert tree_meta.on_select == :select_node
+      assert tree_meta.on_toggle == :toggle_node
+      assert length(tree_widget.children) == 1
+    end
+  end
 end

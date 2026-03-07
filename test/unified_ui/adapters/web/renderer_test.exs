@@ -500,4 +500,138 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert root =~ "phx-click=\"cancel\""
     end
   end
+
+  describe "convert_iur/2 - data visualization widgets" do
+    test "converts gauge with svg output and label" do
+      gauge = %Widgets.Gauge{id: :cpu, label: "CPU", value: 75, min: 0, max: 100}
+      result = Web.convert_iur(gauge)
+
+      assert result =~ "<svg"
+      assert result =~ "CPU"
+      assert result =~ "75/100"
+    end
+
+    test "converts sparkline with area and no-data fallback" do
+      with_data = %Widgets.Sparkline{id: :trend, data: [1, 3, 2], show_area: true, color: :blue}
+      with_single_point = %Widgets.Sparkline{id: :trend_empty, data: [1]}
+
+      assert Web.convert_iur(with_data) =~ "<polyline"
+      assert Web.convert_iur(with_data) =~ "<polygon"
+      assert Web.convert_iur(with_single_point) =~ "No data"
+    end
+
+    test "converts bar chart and line chart variants" do
+      bar_chart = %Widgets.BarChart{
+        id: :sales,
+        data: [{"Mon", 3}, {"Tue", 5}],
+        orientation: :horizontal
+      }
+
+      line_chart = %Widgets.LineChart{
+        id: :visits,
+        data: [{"Mon", 1}, {"Tue", 3}, {"Wed", 2}],
+        show_dots: true,
+        show_area: true
+      }
+
+      bar_html = Web.convert_iur(bar_chart)
+      line_html = Web.convert_iur(line_chart)
+
+      assert bar_html =~ "<svg"
+      assert bar_html =~ "<rect"
+      assert line_html =~ "<polyline"
+      assert line_html =~ "<circle"
+      assert line_html =~ "<polygon"
+    end
+
+    test "converts table with sortable headers and row-select bindings" do
+      table = %Widgets.Table{
+        id: :users,
+        data: [%{name: "Alice", score: 2}, %{name: "Bob", score: 5}],
+        on_row_select: :select_row,
+        on_sort: :sort_by,
+        sort_column: :score,
+        sort_direction: :desc
+      }
+
+      result = Web.convert_iur(table)
+
+      assert result =~ "<table"
+      assert result =~ "phx-click=\"sort-by\""
+      assert result =~ "data-row-index=\"0\""
+      assert result =~ "&#9660;"
+    end
+  end
+
+  describe "convert_iur/2 - navigation widgets" do
+    test "converts menu item and menu wrappers with metadata attributes" do
+      menu = %Widgets.Menu{
+        id: :file_menu,
+        title: "File",
+        position: :top,
+        items: [
+          %Widgets.MenuItem{
+            id: :save_item,
+            label: "Save",
+            action: :save_file,
+            shortcut: "Ctrl+S",
+            icon: :save,
+            submenu: [%Widgets.MenuItem{label: "Recent"}]
+          }
+        ]
+      }
+
+      result = Web.convert_iur(menu)
+
+      assert result =~ "<nav"
+      assert result =~ "menu-top"
+      assert result =~ "data-shortcut=\"Ctrl+S\""
+      assert result =~ "data-has-submenu=\"true\""
+      assert result =~ "phx-click=\"save-file\""
+    end
+
+    test "converts context menu, tabs, and tree view with event bindings" do
+      context_menu = %Widgets.ContextMenu{
+        id: :ctx,
+        trigger_on: :right_click,
+        items: [%Widgets.MenuItem{label: "Copy", action: :copy}]
+      }
+
+      tabs = %Widgets.Tabs{
+        id: :main_tabs,
+        active_tab: :home,
+        position: :top,
+        on_change: :tab_changed,
+        tabs: [
+          %Widgets.Tab{id: :home, label: "Home", content: %Widgets.Text{content: "Home panel"}},
+          %Widgets.Tab{id: :about, label: "About", disabled: true, closable: true}
+        ]
+      }
+
+      tree = %Widgets.TreeView{
+        id: :tree,
+        on_select: :select_node,
+        on_toggle: :toggle_node,
+        root_nodes: [
+          %Widgets.TreeNode{
+            id: :root,
+            label: "root",
+            expanded: true,
+            children: [%Widgets.TreeNode{id: :child, label: "child"}]
+          }
+        ]
+      }
+
+      context_html = Web.convert_iur(context_menu)
+      tabs_html = Web.convert_iur(tabs)
+      tree_html = Web.convert_iur(tree)
+
+      assert context_html =~ "data-trigger-on=\"right_click\""
+      assert tabs_html =~ "phx-change=\"tab-changed\""
+      assert tabs_html =~ "Home panel"
+      assert tabs_html =~ "data-closable=\"true\""
+      assert tree_html =~ "data-toggle-event=\"toggle-node\""
+      assert tree_html =~ "tree-label"
+    end
+  end
 end

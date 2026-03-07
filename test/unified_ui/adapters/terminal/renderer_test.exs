@@ -969,4 +969,64 @@ defmodule UnifiedUi.Adapters.TerminalTest do
       assert result != nil
     end
   end
+
+  describe "convert_iur/2 - additional data visualization widgets" do
+    test "converts gauge and sparkline tuples with metadata" do
+      gauge = %Widgets.Gauge{id: :cpu, label: "CPU", value: 130, min: 0, max: 100}
+      sparkline = %Widgets.Sparkline{id: :trend, data: [1, 4, 2], show_dots: true}
+
+      assert {:gauge, _node, gauge_meta} = Terminal.convert_iur(gauge)
+      assert gauge_meta.id == :cpu
+      assert gauge_meta.min == 0
+      assert gauge_meta.max == 100
+      assert gauge_meta.label == "CPU"
+
+      assert {:sparkline, _node, sparkline_meta} = Terminal.convert_iur(sparkline)
+      assert sparkline_meta.id == :trend
+      assert sparkline_meta.data == [1, 4, 2]
+      assert sparkline_meta.show_dots == true
+    end
+
+    test "converts bar charts in horizontal and vertical modes" do
+      horizontal = %Widgets.BarChart{
+        id: :hbars,
+        orientation: :horizontal,
+        data: [{"A", 5}, {"B", 8}]
+      }
+
+      vertical = %Widgets.BarChart{
+        id: :vbars,
+        orientation: :vertical,
+        data: [{"A", 2}, {"B", 1}]
+      }
+
+      assert {:bar_chart, _node, horizontal_meta} = Terminal.convert_iur(horizontal)
+      assert horizontal_meta.orientation == :horizontal
+      assert horizontal_meta.data == [{"A", 5}, {"B", 8}]
+
+      assert {:bar_chart, _node, vertical_meta} = Terminal.convert_iur(vertical)
+      assert vertical_meta.orientation == :vertical
+      assert vertical_meta.data == [{"A", 2}, {"B", 1}]
+    end
+
+    test "converts table metadata including generated columns and sort settings" do
+      table = %Widgets.Table{
+        id: :users,
+        data: [%{name: "Alice", score: 10}, %{name: "Bob", score: 5}],
+        sort_column: :score,
+        sort_direction: :desc,
+        on_row_select: :select_row,
+        on_sort: :sort_by
+      }
+
+      assert {:table, _node, meta} = Terminal.convert_iur(table)
+      assert meta.id == :users
+      assert :name in Enum.map(meta.columns, & &1.key)
+      assert :score in Enum.map(meta.columns, & &1.key)
+      assert meta.sort_column == :score
+      assert meta.sort_direction == :desc
+      assert meta.on_row_select == :select_row
+      assert meta.on_sort == :sort_by
+    end
+  end
 end

@@ -67,18 +67,20 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
     style = TermUI.Renderer.Style.new()
 
     # Map foreground color
-    style = if iur_style.fg do
-      TermUI.Renderer.Style.fg(style, iur_style.fg)
-    else
-      style
-    end
+    style =
+      if iur_style.fg do
+        TermUI.Renderer.Style.fg(style, iur_style.fg)
+      else
+        style
+      end
 
     # Map background color
-    style = if iur_style.bg do
-      TermUI.Renderer.Style.bg(style, iur_style.bg)
-    else
-      style
-    end
+    style =
+      if iur_style.bg do
+        TermUI.Renderer.Style.bg(style, iur_style.bg)
+      else
+        style
+      end
 
     # Map text attributes
     if iur_style.attrs do
@@ -97,7 +99,7 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
   defp add_attr(style, :dim), do: TermUI.Renderer.Style.dim(style)
   defp add_attr(style, :italic), do: TermUI.Renderer.Style.italic(style)
   defp add_attr(style, :strikethrough), do: TermUI.Renderer.Style.strikethrough(style)
-  defp add_attr(_style, _attr), do: nil  # Unknown attribute, ignore
+  defp add_attr(style, _attr), do: style
 
   @doc """
   Merges multiple styles into a single TermUI style.
@@ -130,6 +132,7 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
 
   defp merge_termui_styles(nil, right), do: right
   defp merge_termui_styles(left, nil), do: left
+
   defp merge_termui_styles(left, right) do
     # TermUI.Style should have a merge function or we can manually merge
     # For now, let's manually merge the known properties

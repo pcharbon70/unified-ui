@@ -88,7 +88,7 @@ defmodule UnifiedUi.MixProject do
 
   defp test_coverage do
     [
-      summary: [threshold: 70],
+      summary: [threshold: 80],
       ignore_modules: [
         ~r/^UnifiedUi\.Dsl\.Extension(\.|$)/,
         ~r/^UnifiedUi\.(Update|View)TransformerFixture(\.|$)/
