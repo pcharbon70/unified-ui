@@ -2,6 +2,7 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
   @moduledoc false
 
   alias UnifiedUi.Adapters.Coordinator
+  alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Agent
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.StyleResolver
@@ -30,6 +31,7 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
     compile_100_widgets_ms: 3_500.0,
     iur_build_avg_us: 2_500.0,
     render_concurrent_avg_us: 1_200.0,
+    terminal_frame_avg_us: 16_670.0,
     signal_roundtrip_avg_us: 20.0,
     style_resolve_avg_us: 40.0
   }
@@ -64,6 +66,7 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
           check_compile_time(),
           check_iur_build(dsl_state, iterations.iur),
           check_render_concurrent(iur_tree, iterations.render),
+          check_terminal_frame(iur_tree, iterations.render),
           check_signal_roundtrip(component_id, signal, iterations.signal),
           check_style_resolution(style_state, iterations.style)
         ]
@@ -121,6 +124,17 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
       "render.concurrent.all_platforms.avg",
       avg_us,
       @budgets.render_concurrent_avg_us,
+      "us"
+    )
+  end
+
+  defp check_terminal_frame(iur_tree, iterations) do
+    avg_us = average_us(iterations, fn -> Terminal.render(iur_tree) end)
+
+    evaluate(
+      "render.terminal.frame.avg",
+      avg_us,
+      @budgets.terminal_frame_avg_us,
       "us"
     )
   end

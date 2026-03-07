@@ -26,16 +26,23 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
   """
 
   use Spark.Dsl.Transformer
+  alias UnifiedUi.Dsl.CompileIndex
 
   @impl true
   @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
   def transform(dsl_state) do
+    CompileIndex.invalidate_runtime_view_state(
+      Spark.Dsl.Transformer.get_persisted(dsl_state, :module)
+    )
+
     # For Phase 2.5, we use the IUR.Builder to convert DSL entities to IUR
     code =
       quote do
         @impl true
-        def view(state) do
-          case UnifiedUi.IUR.Builder.build(unquote(Macro.escape(dsl_state))) do
+        def view(_state) do
+          view_state = UnifiedUi.Dsl.CompileIndex.runtime_view_state(__MODULE__)
+
+          case UnifiedUi.IUR.Builder.build(view_state) do
             nil ->
               # Fallback to empty VBox if no entities defined
               %UnifiedIUR.Layouts.VBox{

@@ -10,10 +10,10 @@ optimization and regression detection.
 
 Based on `mix unified_ui.bench --quick` baseline measurements:
 
-1. DSL compilation for 100 widgets is high (`~1476 ms`), far above the desired `<100 ms` target.
-2. Large IUR tree generation is the slowest steady-state runtime path (`~1301 us` average in quick mode).
-3. Concurrent multi-platform rendering has moderate per-call latency (`~442 us` average) and compounds with render frequency.
-4. Style resolution with deep inheritance allocates heavily (`~44.85 KB` per run in baseline), making repeated resolution expensive.
+1. DSL compilation for 100 widgets is high (`~1569 ms`), far above the desired `<100 ms` target.
+2. Large IUR tree generation is the slowest steady-state runtime path (`~1341 us` average in quick mode).
+3. Concurrent multi-platform rendering has moderate per-call latency (`~583 us` average) and compounds with render frequency.
+4. Style resolution with deep inheritance allocates heavily (`~44.84 KB` per run in baseline), making repeated resolution expensive.
 5. IUR build path has high allocation pressure (`~3289 KB` measured in baseline memory stats), limiting scalability under load.
 
 ## Targets
@@ -31,6 +31,7 @@ catch major regressions while optimization work is still in progress:
 - `dsl.compile.100_widgets`: `<=3500 ms`
 - `iur.build.large_ui.avg`: `<=2500 us`
 - `render.concurrent.all_platforms.avg`: `<=1200 us`
+- `render.terminal.frame.avg`: `<=16670 us` (`<=16.67 ms`)
 - `signals.dispatch.roundtrip.avg`: `<=20 us`
 - `style.resolve.deep_inheritance.avg`: `<=40 us`
 

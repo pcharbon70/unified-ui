@@ -59,7 +59,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 
 **Unit Tests for Section 5.2:**
 - [ ] Test DSL compilation under 100ms for 100 widgets
-- [ ] Test terminal rendering maintains 60fps
+- [x] Test terminal rendering maintains 60fps
 - [x] Test benchmarks run in CI
 - [x] Test no performance regressions
 

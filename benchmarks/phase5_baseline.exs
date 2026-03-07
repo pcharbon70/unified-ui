@@ -2,6 +2,7 @@ defmodule UnifiedUi.Benchmarks.Phase5Baseline do
   @moduledoc false
 
   alias UnifiedUi.Adapters.Coordinator
+  alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Agent
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.StyleResolver
@@ -50,6 +51,9 @@ defmodule UnifiedUi.Benchmarks.Phase5Baseline do
           end,
           "render.concurrent.all_platforms" => fn ->
             Coordinator.concurrent_render(iur_tree, @platforms)
+          end,
+          "render.terminal.frame" => fn ->
+            Terminal.render(iur_tree)
           end,
           "signals.dispatch.roundtrip" => fn ->
             dispatch_roundtrip(component_id, signal)
