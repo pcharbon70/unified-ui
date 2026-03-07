@@ -31,4 +31,4 @@ jobs:
     with:
       otp_versions: '["28"]'
       elixir_versions: '["1.19"]'
-      test_command: MIX_ENV=dev mix unified_ui.bench --quick
+      test_command: MIX_ENV=dev mix unified_ui.bench --quick && MIX_ENV=dev mix unified_ui.perf.check --quick

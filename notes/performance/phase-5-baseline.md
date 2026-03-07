@@ -16,6 +16,7 @@ The benchmark script profiles:
 
 - Full run: `mix unified_ui.bench`
 - CI quick run: `mix unified_ui.bench --quick`
+- CI budget check: `mix unified_ui.perf.check --quick`
 
 The CI workflow executes the quick run in the `benchmark` job.
 
