@@ -10,7 +10,9 @@ defmodule UnifiedUi.Integration.Phase5Test do
   - 5.8.5: error handling and recovery behavior
   - 5.8.6: performance behavior under load
   - 5.8.7: memory stability over extended runtime
+  - 5.8.8: hot code reloading behavior
   - 5.8.9: extension loading and unloading behavior
+  - 5.8.14: upgrade compatibility from previous state shape
   """
 
   use ExUnit.Case, async: false
@@ -205,6 +207,70 @@ defmodule UnifiedUi.Integration.Phase5Test do
     end)
   end
 
+  test "5.8.8 hot code reloading updates component behavior without restart" do
+    module =
+      Module.concat([
+        UnifiedUi,
+        Integration,
+        Phase5HotReloadScreen,
+        :"M#{System.unique_integer([:positive])}"
+      ])
+
+    compile_hot_reload_module(module, 1)
+
+    component_id = :phase5_hot_reload_runtime
+    assert {:ok, _pid} = Agent.start_component(module, component_id, platforms: [:terminal])
+
+    on_exit(fn ->
+      _ = Agent.stop_component(component_id)
+      _ = :code.purge(module)
+      _ = :code.delete(module)
+    end)
+
+    assert {:ok, pid} = Agent.whereis(component_id)
+    signal = Signals.create!(:click, %{widget_id: :increment_button, action: :increment})
+
+    assert :ok = Agent.signal_component(component_id, signal)
+    assert :ok = wait_for_count(component_id, 1, 100, 15)
+    assert {:ok, %{count: 1}} = Agent.current_state(component_id)
+
+    compile_hot_reload_module(module, 10)
+
+    assert :ok = Agent.signal_component(component_id, signal)
+    assert :ok = wait_for_count(component_id, 11, 100, 15)
+    assert {:ok, %{count: 11}} = Agent.current_state(component_id)
+    assert Process.alive?(pid)
+  end
+
+  test "5.8.14 persisted legacy state upgrades to current runtime format" do
+    module = compile_upgrade_compatible_module()
+    component_id = :phase5_upgrade_compatibility
+    legacy_state = %{counter: 7}
+
+    assert {:ok, _pid} =
+             Agent.start_component(module, component_id,
+               persisted_state: legacy_state,
+               platforms: [:terminal]
+             )
+
+    on_exit(fn ->
+      _ = Agent.stop_component(component_id)
+      _ = :code.purge(module)
+      _ = :code.delete(module)
+    end)
+
+    assert {:ok, %{count: 7, upgraded_from: :v0}} = Agent.current_state(component_id)
+
+    assert :ok =
+             Agent.signal_component(
+               component_id,
+               Signals.create!(:click, %{widget_id: :increment_button, action: :increment})
+             )
+
+    assert :ok = wait_for_count(component_id, 8, 100, 15)
+    assert {:ok, %{count: 8, upgraded_from: :v0}} = Agent.current_state(component_id)
+  end
+
   defp compile_counter_screen_module do
     module =
       Module.concat([
@@ -242,6 +308,78 @@ defmodule UnifiedUi.Integration.Phase5Test do
 
       def update(_state, %{type: "unified.button.clicked", data: %{action: :reset}}) do
         %{count: 0}
+      end
+
+      def update(state, _signal), do: state
+    end
+    """
+
+    Code.compile_string(source)
+    module
+  end
+
+  defp compile_hot_reload_module(module, increment_step) when is_integer(increment_step) do
+    source = """
+    defmodule #{inspect(module)} do
+      @behaviour UnifiedUi.ElmArchitecture
+      use UnifiedUi.Dsl
+
+      vbox do
+        id :root
+        spacing 1
+        text "Hot Reload Counter", id: :title
+        button "Increment", id: :increment_button, on_click: :increment
+      end
+
+      def init(_opts), do: %{count: 0}
+
+      def update(state, %{type: "unified.button.clicked", data: %{action: :increment}}) do
+        %{state | count: state.count + #{increment_step}}
+      end
+
+      def update(state, _signal), do: state
+    end
+    """
+
+    Code.compile_string(source)
+    module
+  end
+
+  defp compile_upgrade_compatible_module do
+    module =
+      Module.concat([
+        UnifiedUi,
+        Integration,
+        Phase5UpgradeScreen,
+        :"M#{System.unique_integer([:positive])}"
+      ])
+
+    source = """
+    defmodule #{inspect(module)} do
+      @behaviour UnifiedUi.ElmArchitecture
+      use UnifiedUi.Dsl
+
+      vbox do
+        id :root
+        text "Upgrade Compatibility", id: :title
+        button "Increment", id: :increment_button, on_click: :increment
+      end
+
+      def init(opts) do
+        case Keyword.get(opts, :persisted_state) do
+          %{count: count} when is_integer(count) ->
+            %{count: count, upgraded_from: :current}
+
+          %{counter: count} when is_integer(count) ->
+            %{count: count, upgraded_from: :v0}
+
+          _ ->
+            %{count: 0, upgraded_from: :fresh}
+        end
+      end
+
+      def update(state, %{type: "unified.button.clicked", data: %{action: :increment}}) do
+        %{state | count: state.count + 1}
       end
 
       def update(state, _signal), do: state
