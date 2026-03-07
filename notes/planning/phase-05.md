@@ -276,7 +276,7 @@ Establish automated testing and releasing for the project.
 **Unit Tests for Section 5.7:**
 - [x] Test CI/CD workflow passes
 - [x] Test formatter check works
-- [ ] Test Dialyzer runs
+- [x] Test Dialyzer runs
 - [x] Verify templates usable
 - [x] Test release workflow
 
