@@ -32,8 +32,8 @@ defmodule MyApp.CounterScreen do
 
     hbox do
       spacing 1
-      button "Increment", on_click: :increment
-      button "Decrement", on_click: :decrement
+      button "Increment", id: :increment_button, on_click: :increment
+      button "Decrement", id: :decrement_button, on_click: :decrement
     end
   end
 
@@ -70,10 +70,10 @@ Map raw adapter events into normalized signals:
 ```elixir
 state = MyApp.CounterScreen.init([])
 
-signal =
+{:ok, signal} =
   UnifiedUi.Adapters.Terminal.Events.to_signal(
-    :button_click,
-    %{id: :increment_button, action: :increment}
+    :click,
+    %{widget_id: :increment_button, action: :increment}
   )
 
 next_state = MyApp.CounterScreen.update(state, signal)

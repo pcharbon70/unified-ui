@@ -60,3 +60,15 @@ Phase integration tests fail after DSL or adapter changes.
 - Ensure guide file is listed in `mix.exs` `docs.extras`.
 - Check markdown links are valid.
 - Re-run `mix docs` and inspect `doc/index.html`.
+
+## Guide Clarity Feedback
+
+### Symptom
+
+A guide works eventually, but one or more sections are hard to follow.
+
+### Checks
+
+- Open a `Guide feedback` issue using `.github/ISSUE_TEMPLATE/guide_feedback.yml`.
+- Include the exact guide path and section heading.
+- Include what you expected to happen and what blocked you.

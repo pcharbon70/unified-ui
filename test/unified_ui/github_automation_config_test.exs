@@ -5,6 +5,7 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
   @release_workflow_path ".github/workflows/release.yml"
   @bug_template_path ".github/ISSUE_TEMPLATE/bug_report.yml"
   @feature_template_path ".github/ISSUE_TEMPLATE/feature_request.yml"
+  @guide_feedback_template_path ".github/ISSUE_TEMPLATE/guide_feedback.yml"
   @issue_config_path ".github/ISSUE_TEMPLATE/config.yml"
   @pr_template_path "PULL_REQUEST_TEMPLATE.md"
 
@@ -55,6 +56,7 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
   test "issue and pr templates provide required authoring structure" do
     bug_template = File.read!(@bug_template_path)
     feature_template = File.read!(@feature_template_path)
+    guide_feedback_template = File.read!(@guide_feedback_template_path)
     issue_config = File.read!(@issue_config_path)
     pr_template = File.read!(@pr_template_path)
 
@@ -65,6 +67,10 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
     assert feature_template =~ "Problem statement"
     assert feature_template =~ "Proposed solution"
     assert feature_template =~ "Impact and use cases"
+
+    assert guide_feedback_template =~ "Guide or tutorial"
+    assert guide_feedback_template =~ "What was unclear?"
+    assert guide_feedback_template =~ "Impact on progress"
 
     assert issue_config =~ "blank_issues_enabled: false"
     assert issue_config =~ "mailto:"
