@@ -540,6 +540,23 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert signal.type == "unified.input.changed"
     end
 
+    test "dispatches normalized signal to pubsub topic target" do
+      topic = "unified_ui:coordinator:#{System.unique_integer([:positive])}"
+      assert :ok = Coordinator.subscribe_signals(topic)
+      on_exit(fn -> _ = Coordinator.unsubscribe_signals(topic) end)
+
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :web,
+                 :focus,
+                 %{widget_id: :search},
+                 {:topic, topic}
+               )
+
+      assert_receive {:unified_ui_signal, ^signal}
+      assert signal.type == "unified.element.focused"
+    end
+
     test "broadcasts normalized signal to multiple targets" do
       target_one = fn signal ->
         send(self(), {:target_one, signal})
@@ -562,6 +579,29 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert_receive {:target_one, ^signal}
       assert_receive {:target_two, ^signal}
       assert signal.type == "unified.element.focused"
+    end
+
+    test "broadcasts normalized signal to mixed direct and pubsub targets" do
+      topic = "unified_ui:coordinator:#{System.unique_integer([:positive])}"
+      assert :ok = Coordinator.subscribe_signals(topic)
+      on_exit(fn -> _ = Coordinator.unsubscribe_signals(topic) end)
+
+      target = fn signal ->
+        send(self(), {:direct_target, signal})
+        :ok
+      end
+
+      assert {:ok, signal} =
+               Coordinator.broadcast_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :save, action: :save},
+                 [target, {:topic, topic}]
+               )
+
+      assert_receive {:direct_target, ^signal}
+      assert_receive {:unified_ui_signal, ^signal}
+      assert signal.type == "unified.button.clicked"
     end
 
     test "returns dispatch failure when target rejects signal" do

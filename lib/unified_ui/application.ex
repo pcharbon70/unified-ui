@@ -9,7 +9,10 @@ defmodule UnifiedUi.Application do
   @spec start(:normal | {:takeover, node()} | {:failover, node()}, term()) ::
           {:ok, pid()} | {:ok, pid(), term()} | {:error, term()}
   def start(_type, _args) do
+    pubsub_name = Application.get_env(:unified_ui, :signal_pubsub_name, UnifiedUi.PubSub)
+
     children = [
+      {Phoenix.PubSub, name: pubsub_name},
       {Registry, keys: :unique, name: UnifiedUi.AgentRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: UnifiedUi.AgentSupervisor}
     ]

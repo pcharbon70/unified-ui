@@ -29,6 +29,7 @@ defmodule UnifiedUi.MixProject do
       {:spark, "~> 1.0"},
       {:jido, "~> 1.0"},
       {:jido_signal, "~> 1.0"},
+      {:phoenix_pubsub, "~> 2.1"},
       {:term_ui, github: "pcharbon70/term_ui", branch: "multi-renderer"},
       {:unified_iur, path: "../unified_iur"},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
