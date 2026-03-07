@@ -291,10 +291,10 @@ Final comprehensive integration tests to verify the entire framework is producti
 - [x] 5.8.3 Test signal communication across components
 - [x] 5.8.4 Test state persistence and recovery
 - [x] 5.8.5 Test error handling and recovery
-- [ ] 5.8.6 Test performance under load
-- [ ] 5.8.7 Test memory usage over extended runtime
+- [x] 5.8.6 Test performance under load
+- [x] 5.8.7 Test memory usage over extended runtime
 - [ ] 5.8.8 Test hot code reloading
-- [ ] 5.8.9 Test extension loading and unloading
+- [x] 5.8.9 Test extension loading and unloading
 - [x] 5.8.10 Test documentation examples run correctly
 - [x] 5.8.11 Test tutorial can be completed
 - [x] 5.8.12 Test CI/CD pipeline
@@ -313,8 +313,8 @@ Final comprehensive integration tests to verify the entire framework is producti
 - [x] Test end-to-end workflow
 - [x] Test multi-platform works
 - [x] Test error handling
-- [ ] Test performance acceptable
-- [ ] Test no memory leaks
+- [x] Test performance acceptable
+- [x] Test no memory leaks
 - [ ] Test hot reload works
 - [x] Test extensions work
 - [x] Test CI/CD passes
