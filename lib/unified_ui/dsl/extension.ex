@@ -85,7 +85,7 @@ defmodule UnifiedUi.Dsl.Extension do
   ]
 
   @verifiers [
-    Spark.Dsl.Verifiers.VerifyEntityUniqueness,
+    UnifiedUi.Dsl.Verifiers.EntityUniquenessVerifier,
     UnifiedUi.Dsl.Verifiers.UniqueIdVerifier,
     UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier,
     UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier,
