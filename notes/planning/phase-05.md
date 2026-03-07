@@ -40,16 +40,16 @@ Analyze current test coverage and enhance tests to achieve 80%+ coverage.
 
 Identify performance bottlenecks and optimize for responsive UIs.
 
-- [ ] 5.2.1 Profile DSL compilation time
-- [ ] 5.2.2 Profile IUR generation for large UIs
-- [ ] 5.2.3 Profile rendering performance (all platforms)
-- [ ] 5.2.4 Profile signal dispatch latency
-- [ ] 5.2.5 Profile style resolution performance
+- [x] 5.2.1 Profile DSL compilation time
+- [x] 5.2.2 Profile IUR generation for large UIs
+- [x] 5.2.3 Profile rendering performance (all platforms)
+- [x] 5.2.4 Profile signal dispatch latency
+- [x] 5.2.5 Profile style resolution performance
 - [ ] 5.2.6 Identify top 5 bottlenecks
 - [ ] 5.2.7 Optimize DSL compilation (caching, reduced traversals)
 - [ ] 5.2.8 Optimize rendering (dirty tracking, batch updates)
 - [ ] 5.2.9 Optimize signal dispatch (pubsub for broadcast)
-- [ ] 5.2.10 Add performance benchmarks
+- [x] 5.2.10 Add performance benchmarks
 - [ ] 5.2.11 Set performance targets (60fps terminal, <100ms compilation)
 
 **Implementation Notes:**
@@ -60,7 +60,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 **Unit Tests for Section 5.2:**
 - [ ] Test DSL compilation under 100ms for 100 widgets
 - [ ] Test terminal rendering maintains 60fps
-- [ ] Test benchmarks run in CI
+- [x] Test benchmarks run in CI
 - [ ] Test no performance regressions
 
 ---
@@ -346,6 +346,7 @@ Final comprehensive integration tests to verify the entire framework is producti
 - `lib/mix/tasks/unified_ui.preview.ex` - Preview server
 - `lib/mix/tasks/unified_ui.test.ex` - Test runner
 - `lib/mix/tasks/unified_ui.stats.ex` - Project statistics
+- `lib/mix/tasks/unified_ui.bench.ex` - Benchmark runner
 - `lib/mix/tasks/unified_ui.gen.extension.ex` - Extension generator
 - `guides/getting-started.md` - Getting started guide
 - `guides/dsl-reference.md` - DSL reference
@@ -368,6 +369,8 @@ Final comprehensive integration tests to verify the entire framework is producti
 - `CODEOWNERS` - Code owners
 - `SECURITY.md` - Security policy
 - `test/unified_ui/integration/phase5_test.exs` - Integration tests
+- `benchmarks/phase5_baseline.exs` - Baseline benchmark suite
+- `notes/performance/phase-5-baseline.md` - Profiling notes
 
 **Modified Files:**
 - `mix.exs` - Add dev dependencies, configure ExDoc

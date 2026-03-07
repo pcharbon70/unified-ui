@@ -8,7 +8,7 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
   @issue_config_path ".github/ISSUE_TEMPLATE/config.yml"
   @pr_template_path "PULL_REQUEST_TEMPLATE.md"
 
-  test "ci workflow defines lint and test checks for pull requests and main pushes" do
+  test "ci workflow defines lint, test, and benchmark checks for pull requests and main pushes" do
     ci_workflow = File.read!(@ci_workflow_path)
 
     assert ci_workflow =~ "pull_request:"
@@ -16,9 +16,11 @@ defmodule UnifiedUi.GitHubAutomationConfigTest do
     assert ci_workflow =~ "- main"
     assert ci_workflow =~ "\n  lint:"
     assert ci_workflow =~ "\n  test:"
+    assert ci_workflow =~ "\n  benchmark:"
     assert ci_workflow =~ "elixir-lint.yml@main"
     assert ci_workflow =~ "elixir-test.yml@main"
     assert ci_workflow =~ "test_command: mix test --cover"
+    assert ci_workflow =~ "test_command: MIX_ENV=dev mix unified_ui.bench --quick"
   end
 
   test "ci workflow covers multiple OTP/Elixir versions" do
