@@ -38,6 +38,23 @@ catch major regressions while optimization work is still in progress:
 The regression budgets are intentionally looser than product targets; they
 protect baseline stability while we iterate on optimization tasks 5.2.7-5.2.9.
 
+## Recent Optimization Progress
+
+### March 7, 2026: DSL extension pipeline overhead reduction
+
+We switched `UnifiedUi.Dsl.Extension` from `use Spark.Dsl.Extension` to a
+manual `Spark.Dsl.Extension` implementation with the same sections,
+transformers, and verifiers. This avoids repeated docs decoration work in the
+generated `sections/0` path during verification.
+
+Interleaved compile micro-benchmark for a 100-widget module (12 paired runs):
+
+- Current approach median: `~874.97 ms` (avg `~884.01 ms`)
+- Old `use Spark.Dsl.Extension` approach median: `~941.44 ms` (avg `~947.35 ms`)
+
+This is an approximately `6-7%` median compile-time improvement in the
+targeted micro-benchmark, while still far from the `<100 ms` product goal.
+
 ## CI Enforcement
 
 - `mix unified_ui.bench --quick` records comparative benchmark metrics.

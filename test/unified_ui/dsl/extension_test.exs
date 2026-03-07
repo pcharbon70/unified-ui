@@ -38,6 +38,26 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
     end
   end
 
+  describe "Extension pipeline configuration" do
+    test "exposes expected transformers and verifiers" do
+      assert UnifiedUi.Dsl.Extension.transformers() == [
+               UnifiedUi.Dsl.Transformers.PrecomputeTransformer,
+               UnifiedUi.Dsl.Transformers.InitTransformer,
+               UnifiedUi.Dsl.Transformers.UpdateTransformer,
+               UnifiedUi.Dsl.Transformers.ViewTransformer
+             ]
+
+      assert UnifiedUi.Dsl.Extension.verifiers() == [
+               Spark.Dsl.Verifiers.VerifyEntityUniqueness,
+               UnifiedUi.Dsl.Verifiers.UniqueIdVerifier,
+               UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier,
+               UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier,
+               UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier,
+               UnifiedUi.Dsl.Verifiers.StateReferenceVerifier
+             ]
+    end
+  end
+
   describe "Standard signals" do
     test "returns list of standard signal types" do
       signals = UnifiedUi.Dsl.standard_signals()
