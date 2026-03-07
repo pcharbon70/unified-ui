@@ -55,6 +55,21 @@ Interleaved compile micro-benchmark for a 100-widget module (12 paired runs):
 This is an approximately `6-7%` median compile-time improvement in the
 targeted micro-benchmark, while still far from the `<100 ms` product goal.
 
+### March 7, 2026: Replace Spark default uniqueness verifier
+
+We replaced `Spark.Dsl.Verifiers.VerifyEntityUniqueness` with
+`UnifiedUi.Dsl.Verifiers.EntityUniquenessVerifier` to preserve uniqueness
+checks while avoiding the deprecated `extension.sections` invocation path that
+emits compile-time warnings.
+
+Interleaved compile micro-benchmark for a 100-widget module (12 paired runs):
+
+- Current verifier stack median: `~876.69 ms` (avg `~881.18 ms`)
+- Previous stack with Spark default verifier median: `~937.68 ms` (avg `~951.37 ms`)
+
+This removed warning noise from normal DSL compilation and showed an additional
+`~6%` median compile-time improvement in the paired benchmark.
+
 ## CI Enforcement
 
 - `mix unified_ui.bench --quick` records comparative benchmark metrics.
