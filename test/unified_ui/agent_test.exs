@@ -29,6 +29,34 @@ defmodule UnifiedUi.AgentTest do
     end
   end
 
+  defmodule ObservedCounterComponent do
+    @behaviour UnifiedUi.ElmArchitecture
+
+    @impl true
+    def init(opts) do
+      %{count: 0, observer: Keyword.get(opts, :observer)}
+    end
+
+    @impl true
+    def update(state, %{type: "inc"}) do
+      %{state | count: state.count + 1}
+    end
+
+    def update(state, _signal), do: state
+
+    @impl true
+    def view(state) do
+      if is_pid(state.observer) do
+        send(state.observer, {:view_called, state.count})
+      end
+
+      %UnifiedIUR.Widgets.Text{
+        id: :observed_counter_text,
+        content: Integer.to_string(state.count)
+      }
+    end
+  end
+
   describe "component lifecycle" do
     test "start_component/3 starts a supervised process addressable by id" do
       component_id = :counter_component_lifecycle
@@ -110,6 +138,61 @@ defmodule UnifiedUi.AgentTest do
     end
   end
 
+  describe "render optimization" do
+    test "does not rebuild render output when updates do not change state" do
+      component_id = :counter_component_dirty_tracking
+
+      assert {:ok, _pid} =
+               Agent.start_component(ObservedCounterComponent, component_id,
+                 observer: self(),
+                 platforms: [:terminal]
+               )
+
+      on_exit(fn ->
+        Agent.stop_component(component_id)
+      end)
+
+      assert_receive {:view_called, 0}
+      drain_view_calls()
+
+      assert :ok = Agent.signal_component(component_id, %{type: "noop"})
+      assert {:ok, %{count: 0}} = Agent.current_state(component_id)
+
+      refute_receive {:view_called, _count}, 30
+    end
+
+    test "batches burst signals and applies updates in order" do
+      component_id = :counter_component_batching
+      burst_count = 25
+
+      assert {:ok, _pid} =
+               Agent.start_component(ObservedCounterComponent, component_id,
+                 observer: self(),
+                 platforms: [:terminal]
+               )
+
+      on_exit(fn ->
+        Agent.stop_component(component_id)
+      end)
+
+      assert_receive {:view_called, 0}
+      drain_view_calls()
+
+      Enum.each(1..burst_count, fn _ ->
+        assert :ok = Agent.signal_component(component_id, %{type: "inc"})
+      end)
+
+      assert {:ok, %{count: ^burst_count}} = Agent.current_state(component_id)
+
+      Process.sleep(20)
+      view_counts = collect_view_calls()
+
+      assert view_counts != []
+      assert List.last(view_counts) == burst_count
+      assert length(view_counts) < burst_count
+    end
+  end
+
   defp assert_component_stopped(component_id, attempts \\ 20)
 
   defp assert_component_stopped(_component_id, 0) do
@@ -134,6 +217,26 @@ defmodule UnifiedUi.AgentTest do
       fun.()
     after
       assert {:ok, _pid} = Supervisor.restart_child(UnifiedUi.Supervisor, child_id)
+    end
+  end
+
+  defp drain_view_calls do
+    receive do
+      {:view_called, _count} ->
+        drain_view_calls()
+    after
+      0 ->
+        :ok
+    end
+  end
+
+  defp collect_view_calls(acc \\ []) do
+    receive do
+      {:view_called, count} ->
+        collect_view_calls([count | acc])
+    after
+      0 ->
+        Enum.reverse(acc)
     end
   end
 end

@@ -112,12 +112,15 @@ defmodule UnifiedUi.Agent.Server do
   alias UnifiedUi.Adapters.Coordinator
 
   @registry UnifiedUi.AgentRegistry
+  @flush_delay_ms 5
 
   defstruct [
     :module,
     :component_id,
     :model_state,
     :iur,
+    pending_signals: [],
+    flush_timer_ref: nil,
     platforms: [],
     render_opts: [],
     render_results: %{}
@@ -128,6 +131,8 @@ defmodule UnifiedUi.Agent.Server do
           component_id: atom(),
           model_state: map(),
           iur: term(),
+          pending_signals: [term()],
+          flush_timer_ref: reference() | nil,
           platforms: [atom()],
           render_opts: keyword(),
           render_results: map()
@@ -173,28 +178,36 @@ defmodule UnifiedUi.Agent.Server do
   @impl true
   @spec handle_cast({:signal, term()}, t()) :: {:noreply, t()}
   def handle_cast({:signal, signal}, %__MODULE__{} = state) do
-    model_state = update_model_state(state.module, state.model_state, signal)
-
-    {iur, render_results} =
-      build_render_data(state.module, model_state, state.platforms, state.render_opts)
-
-    {:noreply, %{state | model_state: model_state, iur: iur, render_results: render_results}}
+    {:noreply, enqueue_signal(state, signal)}
   end
 
   @impl true
   @spec handle_call(atom(), GenServer.from(), t()) :: {:reply, term(), t()}
   def handle_call(:state, _from, %__MODULE__{} = state) do
+    state = flush_pending_signals(state)
     {:reply, {:ok, state.model_state}, state}
   end
 
   @impl true
   def handle_call(:iur, _from, %__MODULE__{} = state) do
+    state = flush_pending_signals(state)
     {:reply, {:ok, state.iur}, state}
   end
 
   @impl true
   def handle_call(:render_results, _from, %__MODULE__{} = state) do
+    state = flush_pending_signals(state)
     {:reply, {:ok, state.render_results}, state}
+  end
+
+  @impl true
+  def handle_info(:flush_signals, %__MODULE__{} = state) do
+    {:noreply, flush_pending_signals(%{state | flush_timer_ref: nil})}
+  end
+
+  @impl true
+  def handle_info(_message, %__MODULE__{} = state) do
+    {:noreply, state}
   end
 
   defp via_tuple(component_id) do
@@ -237,6 +250,58 @@ defmodule UnifiedUi.Agent.Server do
   defp normalize_model_state({:ok, %{} = model_state}, _fallback), do: model_state
   defp normalize_model_state({:noreply, %{} = model_state}, _fallback), do: model_state
   defp normalize_model_state(_other, fallback), do: fallback
+
+  defp enqueue_signal(%__MODULE__{} = state, signal) do
+    state = %{state | pending_signals: [signal | state.pending_signals]}
+
+    case state.flush_timer_ref do
+      nil ->
+        timer_ref = Process.send_after(self(), :flush_signals, @flush_delay_ms)
+        %{state | flush_timer_ref: timer_ref}
+
+      _ref ->
+        state
+    end
+  end
+
+  defp flush_pending_signals(%__MODULE__{} = state) do
+    state = cancel_flush_timer(state)
+
+    case state.pending_signals do
+      [] ->
+        state
+
+      pending_signals ->
+        model_state =
+          pending_signals
+          |> Enum.reverse()
+          |> Enum.reduce(state.model_state, fn signal, current_state ->
+            update_model_state(state.module, current_state, signal)
+          end)
+
+        state
+        |> Map.put(:pending_signals, [])
+        |> maybe_update_render(model_state)
+    end
+  end
+
+  defp maybe_update_render(%__MODULE__{} = state, model_state) do
+    if model_state == state.model_state do
+      state
+    else
+      {iur, render_results} =
+        build_render_data(state.module, model_state, state.platforms, state.render_opts)
+
+      %{state | model_state: model_state, iur: iur, render_results: render_results}
+    end
+  end
+
+  defp cancel_flush_timer(%__MODULE__{flush_timer_ref: nil} = state), do: state
+
+  defp cancel_flush_timer(%__MODULE__{flush_timer_ref: timer_ref} = state) do
+    _ = Process.cancel_timer(timer_ref)
+    %{state | flush_timer_ref: nil}
+  end
 
   defp build_render_data(module, model_state, platforms, render_opts) do
     iur = build_iur(module, model_state)
