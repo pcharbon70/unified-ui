@@ -8,6 +8,7 @@ defmodule UnifiedUi.Dsl.Verifiers.UniqueIdVerifier do
   use Spark.Dsl.Verifier
 
   alias Spark.Dsl.Verifier
+  alias UnifiedUi.Dsl.CompileIndex
 
   @doc """
   Verifies that all IDs across widgets and layouts are unique.
@@ -15,17 +16,16 @@ defmodule UnifiedUi.Dsl.Verifiers.UniqueIdVerifier do
   @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
+    index = CompileIndex.get(dsl_state)
 
     # Collect all IDs from widgets section
     widget_ids =
-      dsl_state
-      |> Verifier.get_entities(:widgets)
+      index.widgets
       |> collect_ids()
 
     # Collect all IDs from layouts section
     layout_ids =
-      dsl_state
-      |> Verifier.get_entities(:layouts)
+      index.layouts
       |> collect_ids()
 
     # Combine all IDs
@@ -99,21 +99,21 @@ defmodule UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier do
   use Spark.Dsl.Verifier
 
   alias Spark.Dsl.Verifier
+  alias UnifiedUi.Dsl.CompileIndex
 
   @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
+    widgets = CompileIndex.get(dsl_state).widgets
 
     # Collect all text_input IDs (these are required)
     input_ids =
-      dsl_state
-      |> Verifier.get_entities(:widgets)
+      widgets
       |> Enum.filter(&(&1.__struct__ == UnifiedIUR.Widgets.TextInput))
       |> Enum.map(& &1.id)
 
     # Verify label :for attributes
-    dsl_state
-    |> Verifier.get_entities(:widgets)
+    widgets
     |> Enum.filter(&(&1.__struct__ == UnifiedIUR.Widgets.Label))
     |> Enum.each(fn label ->
       verify_label_for(module, label, input_ids)
@@ -159,14 +159,15 @@ defmodule UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier do
   use Spark.Dsl.Verifier
 
   alias Spark.Dsl.Verifier
+  alias UnifiedUi.Dsl.CompileIndex
 
   @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
+    widgets = CompileIndex.get(dsl_state).widgets
 
     # Check all widgets with signal handlers
-    dsl_state
-    |> Verifier.get_entities(:widgets)
+    widgets
     |> Enum.each(fn entity ->
       verify_entity_handlers(module, entity)
     end)
@@ -262,6 +263,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier do
   use Spark.Dsl.Verifier
 
   alias Spark.Dsl.Verifier
+  alias UnifiedUi.Dsl.CompileIndex
 
   # Valid style attributes based on the styles section schema
   @valid_style_attrs [
@@ -289,12 +291,13 @@ defmodule UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier do
   @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
+    index = CompileIndex.get(dsl_state)
 
     # Check all entities with style attributes
     Enum.each(
       [
-        Verifier.get_entities(dsl_state, :widgets),
-        Verifier.get_entities(dsl_state, :layouts)
+        index.widgets,
+        index.layouts
       ],
       fn entities ->
         Enum.each(entities, fn entity ->
@@ -362,16 +365,15 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
   use Spark.Dsl.Verifier
 
   alias Spark.Dsl.Verifier
+  alias UnifiedUi.Dsl.CompileIndex
 
   @spec verify(Spark.Dsl.t()) :: :ok | no_return()
   def verify(dsl_state) do
     module = Verifier.get_persisted(dsl_state, :module)
+    index = CompileIndex.get(dsl_state)
 
-    # Get initial state definition from [:ui, :state] path
-    # The state entity is a nested entity within [:ui]
-    ui_section = Map.get(dsl_state, :ui, %{})
-    state_section = Map.get(ui_section, :state, %{entities: []})
-    state_entities = Map.get(state_section, :entities, [])
+    # Get initial state definition from precomputed index.
+    state_entities = index.state
 
     initial_state_keys =
       case state_entities do
@@ -383,7 +385,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
       end
 
     verify_initial_state_structure(module, state_entities)
-    state_references = collect_state_references(dsl_state)
+    state_references = collect_state_references(index.flat)
     verify_state_references(module, state_references, initial_state_keys)
 
     :ok
@@ -433,23 +435,10 @@ defmodule UnifiedUi.Dsl.Verifiers.StateReferenceVerifier do
     :ok
   end
 
-  defp collect_state_references(dsl_state) do
-    [
-      safe_get_entities(dsl_state, :widgets),
-      safe_get_entities(dsl_state, :layouts),
-      safe_get_entities(dsl_state, :ui)
-    ]
-    |> List.flatten()
+  defp collect_state_references(entities) do
+    entities
     |> Enum.flat_map(&extract_state_refs/1)
     |> Enum.uniq()
-  end
-
-  defp safe_get_entities(dsl_state, path) do
-    Verifier.get_entities(dsl_state, path)
-  rescue
-    _ -> []
-  catch
-    _, _ -> []
   end
 
   defp extract_state_refs({:state, key}) when is_atom(key), do: [key]

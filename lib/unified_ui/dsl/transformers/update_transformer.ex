@@ -15,12 +15,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   use Spark.Dsl.Transformer
 
   alias Spark.Dsl.Transformer
+  alias UnifiedUi.Dsl.CompileIndex
   alias UnifiedIUR.Widgets
 
   @click_signal_type "unified.button.clicked"
   @change_signal_type "unified.input.changed"
   @submit_signal_type "unified.form.submitted"
-  @nested_entity_keys [:entities, :children, :items, :tabs, :nodes, :columns]
 
   @impl true
   @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
@@ -351,44 +351,8 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   end
 
   defp collect_entities(dsl_state) do
-    roots =
-      [
-        safe_get_entities(dsl_state, :widgets),
-        safe_get_entities(dsl_state, [:ui]),
-        safe_get_entities(dsl_state, :ui)
-      ]
-      |> List.flatten()
-      |> Enum.reject(&is_nil/1)
-
-    flatten_entities(roots)
+    CompileIndex.get(dsl_state).flat
   end
-
-  defp safe_get_entities(dsl_state, path) do
-    Transformer.get_entities(dsl_state, path)
-  rescue
-    _ -> []
-  catch
-    _, _ -> []
-  end
-
-  defp flatten_entities(entities) when is_list(entities) do
-    Enum.flat_map(entities, &flatten_entity/1)
-  end
-
-  defp flatten_entity(entity) when is_map(entity) do
-    nested =
-      @nested_entity_keys
-      |> Enum.flat_map(fn key ->
-        case Map.get(entity, key) do
-          values when is_list(values) -> values
-          _ -> []
-        end
-      end)
-
-    [entity | flatten_entities(nested)]
-  end
-
-  defp flatten_entity(entity), do: [entity]
 
   defp extract_click_routes(entities) do
     entities

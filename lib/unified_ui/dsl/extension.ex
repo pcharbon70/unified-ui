@@ -88,6 +88,7 @@ defmodule UnifiedUi.Dsl.Extension do
   use Spark.Dsl.Extension,
     sections: @sections,
     transformers: [
+      UnifiedUi.Dsl.Transformers.PrecomputeTransformer,
       UnifiedUi.Dsl.Transformers.InitTransformer,
       UnifiedUi.Dsl.Transformers.UpdateTransformer,
       UnifiedUi.Dsl.Transformers.ViewTransformer

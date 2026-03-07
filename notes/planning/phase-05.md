@@ -46,7 +46,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 - [x] 5.2.4 Profile signal dispatch latency
 - [x] 5.2.5 Profile style resolution performance
 - [x] 5.2.6 Identify top 5 bottlenecks
-- [ ] 5.2.7 Optimize DSL compilation (caching, reduced traversals)
+- [x] 5.2.7 Optimize DSL compilation (caching, reduced traversals)
 - [x] 5.2.8 Optimize rendering (dirty tracking, batch updates)
 - [ ] 5.2.9 Optimize signal dispatch (pubsub for broadcast)
 - [x] 5.2.10 Add performance benchmarks

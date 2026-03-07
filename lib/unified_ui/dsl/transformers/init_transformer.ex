@@ -24,6 +24,7 @@ defmodule UnifiedUi.Dsl.Transformers.InitTransformer do
   """
 
   use Spark.Dsl.Transformer
+  alias UnifiedUi.Dsl.CompileIndex
 
   @impl true
   @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
@@ -64,7 +65,7 @@ defmodule UnifiedUi.Dsl.Transformers.InitTransformer do
 
   # Extract initial state from DSL state entity
   defp get_initial_state(dsl_state) do
-    case Spark.Dsl.Transformer.get_entities(dsl_state, [:ui, :state]) do
+    case CompileIndex.get(dsl_state).state do
       [] -> %{}
       [%{attrs: state_keyword}] when is_list(state_keyword) -> Enum.into(state_keyword, %{})
       _ -> %{}
