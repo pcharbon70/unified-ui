@@ -73,6 +73,22 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   alias UnifiedUi.Signals
   alias UnifiedUi.Adapters.Security
 
+  @navigation_key_actions %{
+    up: :navigate_up,
+    down: :navigate_down,
+    left: :navigate_left,
+    right: :navigate_right,
+    home: :navigate_first,
+    end: :navigate_last,
+    page_up: :navigate_page_up,
+    page_down: :navigate_page_down,
+    tab: :navigate_next,
+    shift_tab: :navigate_previous,
+    enter: :activate,
+    space: :activate,
+    escape: :dismiss
+  }
+
   @typedoc "Desktop event type."
   @type event_type ::
           :click
@@ -320,6 +336,25 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   @spec key_press(atom(), [atom()], keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
   def key_press(key, modifiers \\ [], opts \\ []) do
     to_signal(:key_press, %{key: key, modifiers: modifiers}, opts)
+  end
+
+  @doc """
+  Creates a normalized keyboard navigation signal for navigation widgets.
+
+  The `key` is mapped to a standard navigation action and emitted as
+  `unified.key.pressed` with `widget_id`, `key`, and `action` metadata.
+  """
+  @spec navigation_key(atom(), atom(), keyword()) :: {:ok, Jido.Signal.t()} | {:error, term()}
+  def navigation_key(widget_id, key, opts \\ [])
+
+  def navigation_key(widget_id, key, opts) when is_atom(widget_id) and is_atom(key) do
+    case Map.fetch(@navigation_key_actions, key) do
+      {:ok, action} ->
+        to_signal(:key_press, %{widget_id: widget_id, key: key, action: action}, opts)
+
+      :error ->
+        {:error, :unsupported_navigation_key}
+    end
   end
 
   # Mouse Event Helpers

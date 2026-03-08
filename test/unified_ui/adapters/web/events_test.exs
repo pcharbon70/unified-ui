@@ -262,6 +262,30 @@ defmodule UnifiedUi.Adapters.Web.EventsTest do
     end
   end
 
+  describe "navigation_key/3" do
+    test "maps directional navigation keys to normalized actions" do
+      assert {:ok, signal} = Events.navigation_key(:main_tabs, :down)
+
+      assert signal.type == "unified.key.pressed"
+      assert signal.data.widget_id == :main_tabs
+      assert signal.data.key == :down
+      assert signal.data.action == :navigate_down
+      assert signal.data.platform == :web
+    end
+
+    test "maps tab to next navigation action" do
+      assert {:ok, signal} = Events.navigation_key(:main_menu, :tab)
+
+      assert signal.data.widget_id == :main_menu
+      assert signal.data.key == :tab
+      assert signal.data.action == :navigate_next
+    end
+
+    test "returns error for unsupported keys" do
+      assert {:error, :unsupported_navigation_key} = Events.navigation_key(:main_tree, :f1)
+    end
+  end
+
   describe "key_release/3" do
     test "creates key release signal for Enter" do
       assert {:ok, signal} = Events.key_release(:enter)
