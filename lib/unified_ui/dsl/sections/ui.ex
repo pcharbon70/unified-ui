@@ -53,7 +53,9 @@ defmodule UnifiedUi.Dsl.Sections.Ui do
       UnifiedUi.Dsl.Entities.Navigation.tree_view_entity(),
       UnifiedUi.Dsl.Entities.DialogFeedback.dialog_entity(),
       UnifiedUi.Dsl.Entities.DialogFeedback.alert_dialog_entity(),
-      UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity()
+      UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity(),
+      UnifiedUi.Dsl.Entities.InputWidgets.pick_list_entity(),
+      UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity()
     ],
     top_level?: true
   }

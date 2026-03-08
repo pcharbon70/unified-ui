@@ -68,6 +68,23 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{email: "test@example.com"} = module.update(state, signal)
     end
 
+    test "pick_list on_select routes are handled as change routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          pick_list :country_select, [{"us", "United States"}, {"ca", "Canada"}],
+            on_select: :country_selected
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{widget_id: :country_select, value: "ca"})
+
+      assert %{country_select: "ca"} = module.update(state, signal)
+    end
+
     test "submit route merges static payload and submitted form data" do
       module =
         compile_fixture("""
@@ -87,6 +104,29 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       updated = module.update(state, signal)
 
       assert updated.submitted == true
+      assert updated.email == "user@example.com"
+    end
+
+    test "form_builder on_submit routes are handled as submit routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          form_builder :profile_form, [%{name: :email, type: :email}],
+            on_submit: {:profile_saved, %{saved: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.form.submitted", %{
+          form_id: :profile_form,
+          data: %{email: "user@example.com"}
+        })
+
+      updated = module.update(state, signal)
+
+      assert updated.saved == true
       assert updated.email == "user@example.com"
     end
 

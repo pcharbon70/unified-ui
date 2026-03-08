@@ -123,7 +123,11 @@ defmodule UnifiedUi.IUR.Builder do
              Widgets.DialogButton,
              Widgets.Dialog,
              Widgets.AlertDialog,
-             Widgets.Toast
+             Widgets.Toast,
+             Widgets.PickListOption,
+             Widgets.PickList,
+             Widgets.FormField,
+             Widgets.FormBuilder
            ] do
     entity
   end
@@ -206,6 +210,22 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :toast} = entity, dsl_state) do
     build_toast(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :pick_list_option} = entity, dsl_state) do
+    build_pick_list_option(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :pick_list} = entity, dsl_state) do
+    build_pick_list(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :form_field} = entity, dsl_state) do
+    build_form_field(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :form_builder} = entity, dsl_state) do
+    build_form_builder(entity, dsl_state)
   end
 
   def build_entity(_entity, _dsl_state) do
@@ -742,6 +762,99 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  # Advanced input widget builders
+
+  @doc """
+  Builds a PickListOption IUR struct from a pick_list_option DSL entity.
+  """
+  @spec build_pick_list_option(map(), Dsl.t()) :: Widgets.PickListOption.t()
+  def build_pick_list_option(entity, _dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Widgets.PickListOption{
+      value: Map.get(attrs, :value),
+      label: Map.get(attrs, :label),
+      id: Map.get(attrs, :id),
+      disabled: Map.get(attrs, :disabled, false),
+      visible: Map.get(attrs, :visible, true)
+    }
+  end
+
+  @doc """
+  Builds a PickList IUR struct from a pick_list DSL entity.
+  """
+  @spec build_pick_list(map(), Dsl.t()) :: Widgets.PickList.t()
+  def build_pick_list(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    options =
+      case build_nested_entities(entity, dsl_state, :options, &build_pick_list_option/2,
+             child_name: :pick_list_option
+           ) do
+        [] -> normalize_pick_list_options(Map.get(attrs, :options), dsl_state)
+        nested -> nested
+      end
+
+    %Widgets.PickList{
+      id: Map.get(attrs, :id),
+      options: options,
+      selected: Map.get(attrs, :selected),
+      placeholder: Map.get(attrs, :placeholder),
+      searchable: Map.get(attrs, :searchable, false),
+      on_select: Map.get(attrs, :on_select),
+      allow_clear: Map.get(attrs, :allow_clear, false),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a FormField IUR struct from a form_field DSL entity.
+  """
+  @spec build_form_field(map(), Dsl.t()) :: Widgets.FormField.t()
+  def build_form_field(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Widgets.FormField{
+      name: Map.get(attrs, :name),
+      type: Map.get(attrs, :type),
+      label: Map.get(attrs, :label),
+      placeholder: Map.get(attrs, :placeholder),
+      required: Map.get(attrs, :required, false),
+      default: Map.get(attrs, :default),
+      options: Map.get(attrs, :options),
+      disabled: Map.get(attrs, :disabled, false),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a FormBuilder IUR struct from a form_builder DSL entity.
+  """
+  @spec build_form_builder(map(), Dsl.t()) :: Widgets.FormBuilder.t()
+  def build_form_builder(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    fields =
+      case build_nested_entities(entity, dsl_state, :fields, &build_form_field/2,
+             child_name: :form_field
+           ) do
+        [] -> normalize_form_fields(Map.get(attrs, :fields), dsl_state)
+        nested -> nested
+      end
+
+    %Widgets.FormBuilder{
+      id: Map.get(attrs, :id),
+      fields: fields,
+      action: Map.get(attrs, :action),
+      on_submit: Map.get(attrs, :on_submit),
+      submit_label: Map.get(attrs, :submit_label, "Submit"),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
   # Children building
 
   @doc """
@@ -880,6 +993,18 @@ defmodule UnifiedUi.IUR.Builder do
   def validate(%Widgets.Dialog{}), do: :ok
   def validate(%Widgets.AlertDialog{}), do: :ok
   def validate(%Widgets.Toast{}), do: :ok
+  def validate(%Widgets.PickListOption{}), do: :ok
+
+  def validate(%Widgets.PickList{options: options}) when is_list(options),
+    do: validate_children(options)
+
+  def validate(%Widgets.PickList{}), do: :ok
+  def validate(%Widgets.FormField{}), do: :ok
+
+  def validate(%Widgets.FormBuilder{fields: fields}) when is_list(fields),
+    do: validate_children(fields)
+
+  def validate(%Widgets.FormBuilder{}), do: :ok
 
   def validate(%Layouts.VBox{children: children}), do: validate_children(children)
   def validate(%Layouts.HBox{children: children}), do: validate_children(children)
@@ -982,4 +1107,56 @@ defmodule UnifiedUi.IUR.Builder do
   end
 
   defp normalize_dialog_buttons(other, _dsl_state), do: other
+
+  defp normalize_pick_list_options(nil, _dsl_state), do: nil
+
+  defp normalize_pick_list_options(options, dsl_state) when is_list(options) do
+    Enum.map(options, fn
+      %Widgets.PickListOption{} = option ->
+        option
+
+      %{name: :pick_list_option} = option_entity ->
+        build_pick_list_option(option_entity, dsl_state)
+
+      {value, label} ->
+        build_pick_list_option(%{attrs: %{value: value, label: label}}, dsl_state)
+
+      attrs when is_map(attrs) ->
+        build_pick_list_option(%{attrs: attrs}, dsl_state)
+
+      attrs when is_list(attrs) ->
+        build_pick_list_option(%{attrs: Enum.into(attrs, %{})}, dsl_state)
+
+      other ->
+        other
+    end)
+  end
+
+  defp normalize_pick_list_options(other, _dsl_state), do: other
+
+  defp normalize_form_fields(nil, _dsl_state), do: nil
+
+  defp normalize_form_fields(fields, dsl_state) when is_list(fields) do
+    Enum.map(fields, fn
+      %Widgets.FormField{} = field ->
+        field
+
+      %{name: :form_field} = field_entity ->
+        build_form_field(field_entity, dsl_state)
+
+      {name, type} when is_atom(name) and is_atom(type) ->
+        build_form_field(%{attrs: %{name: name, type: type}}, dsl_state)
+
+      attrs when is_map(attrs) ->
+        build_form_field(%{attrs: attrs}, dsl_state)
+
+      attrs when is_list(attrs) ->
+        build_form_field(%{attrs: Enum.into(attrs, %{})}, dsl_state)
+
+      other ->
+        other
+    end)
+  end
+
+  defp normalize_form_fields(other, _dsl_state), do: other
 end

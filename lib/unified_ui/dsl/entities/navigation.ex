@@ -49,7 +49,7 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
   """
 
   alias UnifiedIUR.Widgets
-  alias UnifiedUi.Dsl.Entities.{DataViz, Tables}
+  alias UnifiedUi.Dsl.Entities.{DataViz, InputWidgets, Tables}
   alias UnifiedUi.Dsl.Entities.Widgets, as: WidgetEntities
 
   # ============================================================================
@@ -252,7 +252,9 @@ defmodule UnifiedUi.Dsl.Entities.Navigation do
     DataViz.sparkline_entity(),
     DataViz.bar_chart_entity(),
     DataViz.line_chart_entity(),
-    Tables.table_entity()
+    Tables.table_entity(),
+    InputWidgets.pick_list_entity(),
+    InputWidgets.form_builder_entity()
   ]
 
   @tab_entity %Spark.Dsl.Entity{

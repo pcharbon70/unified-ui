@@ -10,7 +10,7 @@ defmodule UnifiedUi.Dsl.Entities.DialogFeedback do
   """
 
   alias UnifiedIUR.Widgets
-  alias UnifiedUi.Dsl.Entities.{DataViz, Navigation, Tables}
+  alias UnifiedUi.Dsl.Entities.{DataViz, InputWidgets, Navigation, Tables}
   alias UnifiedUi.Dsl.Entities.Widgets, as: WidgetEntities
 
   @signal_type {:or, [:atom, {:tuple, [:atom, :map]}, {:tuple, [:atom, :atom, {:list, :any}]}]}
@@ -80,7 +80,9 @@ defmodule UnifiedUi.Dsl.Entities.DialogFeedback do
     Navigation.menu_entity(),
     Navigation.context_menu_entity(),
     Navigation.tabs_entity(),
-    Navigation.tree_view_entity()
+    Navigation.tree_view_entity(),
+    InputWidgets.pick_list_entity(),
+    InputWidgets.form_builder_entity()
   ]
 
   @dialog_entity %Spark.Dsl.Entity{

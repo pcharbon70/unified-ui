@@ -249,5 +249,55 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
       assert %Widgets.Toast{id: :saved_toast, severity: :success, duration: 1500} = toast
       assert toast.on_dismiss == :toast_closed
     end
+
+    test "builds advanced input entities" do
+      pick_list =
+        Builder.build_entity(
+          %{
+            name: :pick_list,
+            attrs: %{
+              id: :country,
+              options: [{"us", "United States"}, {"ca", "Canada"}],
+              selected: "ca",
+              searchable: true,
+              on_select: :country_selected
+            }
+          },
+          %{}
+        )
+
+      form_builder =
+        Builder.build_entity(
+          %{
+            name: :form_builder,
+            attrs: %{
+              id: :profile_form,
+              fields: [%{name: :email, type: :email, required: true}],
+              on_submit: :save_profile,
+              submit_label: "Save"
+            }
+          },
+          %{}
+        )
+
+      assert %Widgets.PickList{
+               id: :country,
+               selected: "ca",
+               searchable: true,
+               on_select: :country_selected
+             } = pick_list
+
+      assert [%Widgets.PickListOption{value: "us"}, %Widgets.PickListOption{value: "ca"}] =
+               pick_list.options
+
+      assert %Widgets.FormBuilder{
+               id: :profile_form,
+               on_submit: :save_profile,
+               submit_label: "Save"
+             } = form_builder
+
+      assert [%Widgets.FormField{name: :email, type: :email, required: true}] =
+               form_builder.fields
+    end
   end
 end

@@ -249,6 +249,165 @@ defmodule UnifiedUi.Adapters.Terminal do
      }}
   end
 
+  # Advanced input widget converters
+
+  defp convert_by_type(%Widgets.PickListOption{} = option, :pick_list_option, _state) do
+    label =
+      cond do
+        is_binary(option.label) -> option.label
+        is_nil(option.value) -> ""
+        true -> to_string(option.value)
+      end
+
+    prefix = if option.disabled, do: "(x) ", else: "• "
+    TermUI.Component.Helpers.text("#{prefix}#{label}")
+  end
+
+  defp convert_by_type(%Widgets.PickList{} = pick_list, :pick_list, state) do
+    options = pick_list.options || []
+
+    selected_label =
+      Enum.find_value(options, fn
+        %Widgets.PickListOption{value: value, label: label} when value == pick_list.selected ->
+          label || to_string(value)
+
+        _ ->
+          nil
+      end)
+
+    title =
+      cond do
+        is_binary(selected_label) -> "▼ #{selected_label}"
+        not is_nil(pick_list.selected) -> "▼ #{inspect(pick_list.selected)}"
+        is_binary(pick_list.placeholder) -> "▼ [#{pick_list.placeholder}]"
+        true -> "▼ [Select]"
+      end
+
+    title_node = TermUI.Component.Helpers.text(title)
+
+    search_node =
+      if pick_list.searchable do
+        TermUI.Component.Helpers.text("Search: [type to filter]")
+      else
+        nil
+      end
+
+    option_nodes =
+      options
+      |> Enum.map(fn option -> convert_iur(option, state) end)
+      |> Enum.reject(&is_nil/1)
+
+    clear_node =
+      if pick_list.allow_clear do
+        TermUI.Component.Helpers.text("• (clear selection)")
+      else
+        nil
+      end
+
+    children =
+      [title_node, search_node]
+      |> Enum.reject(&is_nil/1)
+      |> Kernel.++(option_nodes)
+      |> then(fn nodes ->
+        if clear_node, do: nodes ++ [clear_node], else: nodes
+      end)
+
+    pick_list_node = TermUI.Component.Helpers.stack(:vertical, children, spacing: 0)
+
+    styled_node =
+      case Style.convert_style(pick_list.style) do
+        nil -> pick_list_node
+        style -> TermUI.Component.Helpers.styled(pick_list_node, style)
+      end
+
+    {:pick_list, styled_node,
+     %{
+       id: pick_list.id,
+       selected: pick_list.selected,
+       placeholder: pick_list.placeholder,
+       searchable: pick_list.searchable,
+       on_select: pick_list.on_select,
+       allow_clear: pick_list.allow_clear,
+       options: options
+     }}
+  end
+
+  defp convert_by_type(%Widgets.FormField{} = field, :form_field, _state) do
+    label =
+      cond do
+        is_binary(field.label) -> field.label
+        is_atom(field.name) -> field.name |> Atom.to_string() |> String.replace("_", " ")
+        true -> "Field"
+      end
+
+    required_suffix = if field.required, do: " *", else: ""
+
+    type_hint =
+      case field.type do
+        :checkbox -> "[ ]"
+        :select -> "<select>"
+        :password -> "<password>"
+        :email -> "<email>"
+        :number -> "<number>"
+        _ -> "<text>"
+      end
+
+    placeholder_hint =
+      case field.placeholder do
+        nil -> ""
+        placeholder -> " #{placeholder}"
+      end
+
+    text_node =
+      TermUI.Component.Helpers.text("#{label}#{required_suffix}: #{type_hint}#{placeholder_hint}")
+
+    styled_node =
+      case Style.convert_style(field.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:form_field, styled_node,
+     %{
+       name: field.name,
+       type: field.type,
+       label: field.label,
+       placeholder: field.placeholder,
+       required: field.required,
+       default: field.default,
+       options: field.options,
+       disabled: field.disabled
+     }}
+  end
+
+  defp convert_by_type(%Widgets.FormBuilder{} = form_builder, :form_builder, state) do
+    field_nodes =
+      form_builder.fields
+      |> List.wrap()
+      |> Enum.map(fn field -> convert_iur(field, state) end)
+      |> Enum.reject(&is_nil/1)
+
+    submit_node = TermUI.Component.Helpers.text("[ #{form_builder.submit_label || "Submit"} ]")
+
+    form_node =
+      TermUI.Component.Helpers.stack(:vertical, field_nodes ++ [submit_node], spacing: 1)
+
+    styled_node =
+      case Style.convert_style(form_builder.style) do
+        nil -> form_node
+        style -> TermUI.Component.Helpers.styled(form_node, style)
+      end
+
+    {:form_builder, styled_node,
+     %{
+       id: form_builder.id,
+       action: form_builder.action,
+       on_submit: form_builder.on_submit,
+       submit_label: form_builder.submit_label,
+       fields: form_builder.fields
+     }}
+  end
+
   # Data visualization converters
 
   defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do

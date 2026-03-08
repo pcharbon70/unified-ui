@@ -423,4 +423,75 @@ defmodule UnifiedUi.IUR.DslGoldenBuildTest do
              } = toast
     end
   end
+
+  describe "advanced input DSL state to IUR build" do
+    test "build/1 converts pick_list and form_builder entities" do
+      dsl_state = %{
+        [:ui] => %{
+          entities: [
+            %{
+              name: :vbox,
+              attrs: %{id: :input_root},
+              entities: [
+                %{
+                  name: :pick_list,
+                  attrs: %{
+                    id: :country_select,
+                    options: [{"us", "United States"}, {"ca", "Canada"}],
+                    selected: "ca",
+                    searchable: true,
+                    on_select: :country_selected
+                  }
+                },
+                %{
+                  name: :form_builder,
+                  attrs: %{
+                    id: :profile_form,
+                    fields: [
+                      %{name: :email, type: :email, required: true, placeholder: "user@site.com"},
+                      %{name: :newsletter, type: :checkbox, default: true}
+                    ],
+                    on_submit: :save_profile,
+                    submit_label: "Save Profile"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+
+      iur = Builder.build(dsl_state)
+
+      assert %Layouts.VBox{id: :input_root, children: [pick_list, form_builder]} = iur
+
+      assert %Widgets.PickList{
+               id: :country_select,
+               selected: "ca",
+               searchable: true,
+               on_select: :country_selected,
+               options: [us, ca]
+             } = pick_list
+
+      assert %Widgets.PickListOption{value: "us", label: "United States"} = us
+      assert %Widgets.PickListOption{value: "ca", label: "Canada"} = ca
+
+      assert %Widgets.FormBuilder{
+               id: :profile_form,
+               on_submit: :save_profile,
+               submit_label: "Save Profile",
+               fields: [email_field, newsletter_field]
+             } = form_builder
+
+      assert %Widgets.FormField{
+               name: :email,
+               type: :email,
+               required: true,
+               placeholder: "user@site.com"
+             } = email_field
+
+      assert %Widgets.FormField{name: :newsletter, type: :checkbox, default: true} =
+               newsletter_field
+    end
+  end
 end
