@@ -53,6 +53,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   alias Spark.Dsl.Transformer
   alias UnifiedIUR.Style
   alias UnifiedUi.Dsl.Style, as: DslStyle
+  alias UnifiedUi.Dsl.Theme, as: DslTheme
 
   @doc """
   Resolves a named style to an IUR.Style struct.
@@ -147,6 +148,22 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     end
   end
 
+  @doc """
+  Loads a named theme into a map of style tokens to resolved `IUR.Style` structs.
+
+  Theme inheritance is supported via `base_theme`. Local style mappings override
+  inherited mappings with the same token.
+
+  Returns an empty map when the theme cannot be found.
+  """
+  @spec load_theme(map(), atom()) :: %{atom() => Style.t()}
+  def load_theme(dsl_state, theme_name) when is_atom(theme_name) do
+    case find_theme(dsl_state, theme_name) do
+      nil -> %{}
+      theme -> resolve_theme_with_inheritance(dsl_state, theme, MapSet.new())
+    end
+  end
+
   # Private functions
 
   defp resolve_or_inline(dsl_state, style_name, overrides) do
@@ -168,6 +185,15 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     |> Transformer.get_entities(:styles)
     |> Enum.find(fn
       %DslStyle{name: ^style_name} -> true
+      _ -> false
+    end)
+  end
+
+  defp find_theme(dsl_state, theme_name) do
+    dsl_state
+    |> Transformer.get_entities(:styles)
+    |> Enum.find(fn
+      %DslTheme{name: ^theme_name} -> true
       _ -> false
     end)
   end
@@ -251,8 +277,25 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   def get_all_styles(dsl_state) do
     dsl_state
     |> Transformer.get_entities(:styles)
-    |> Enum.map(fn style -> {style.name, style} end)
-    |> Map.new()
+    |> Enum.reduce(%{}, fn
+      %DslStyle{name: name} = style, acc -> Map.put(acc, name, style)
+      _other, acc -> acc
+    end)
+  end
+
+  @doc """
+  Gets all named themes defined in the DSL state.
+
+  Returns a map of `theme_name => DslTheme` structs.
+  """
+  @spec get_all_themes(map()) :: %{atom() => DslTheme.t()}
+  def get_all_themes(dsl_state) do
+    dsl_state
+    |> Transformer.get_entities(:styles)
+    |> Enum.reduce(%{}, fn
+      %DslTheme{name: name} = theme, acc -> Map.put(acc, name, theme)
+      _other, acc -> acc
+    end)
   end
 
   @doc """
@@ -279,6 +322,73 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     case find_style(dsl_state, style_name) do
       nil -> {:error, :style_not_found}
       _style -> :ok
+    end
+  end
+
+  defp resolve_theme_with_inheritance(
+         dsl_state,
+         %DslTheme{base_theme: nil, styles: styles},
+         _seen
+       ) do
+    normalize_theme_styles(dsl_state, styles)
+  end
+
+  defp resolve_theme_with_inheritance(
+         dsl_state,
+         %DslTheme{name: name, base_theme: base_theme, styles: styles},
+         seen
+       ) do
+    if MapSet.member?(seen, name) do
+      module = get_persisted_module(dsl_state)
+
+      raise Spark.Error.DslError,
+        module: module,
+        path: [:styles, name],
+        message: """
+        Circular theme inheritance detected
+
+        Theme '#{inspect(name)} inherits from '#{inspect(base_theme)}', which creates a circular reference.
+
+        Theme inheritance chain:
+        #{format_seen_chain(seen)}
+
+        To fix this, remove the circular reference by adjusting `base_theme`.
+        """
+    end
+
+    seen = MapSet.put(seen, name)
+
+    inherited =
+      case find_theme(dsl_state, base_theme) do
+        nil -> %{}
+        parent_theme -> resolve_theme_with_inheritance(dsl_state, parent_theme, seen)
+      end
+
+    Map.merge(inherited, normalize_theme_styles(dsl_state, styles))
+  end
+
+  defp normalize_theme_styles(dsl_state, styles) when is_list(styles) do
+    Enum.reduce(styles, %{}, fn
+      {token, style_ref}, acc when is_atom(token) ->
+        case normalize_theme_style_ref(dsl_state, style_ref) do
+          nil -> acc
+          normalized -> Map.put(acc, token, normalized)
+        end
+
+      _entry, acc ->
+        acc
+    end)
+  end
+
+  defp normalize_theme_styles(_dsl_state, _styles), do: %{}
+
+  defp normalize_theme_style_ref(_dsl_state, %Style{} = style), do: style
+
+  defp normalize_theme_style_ref(dsl_state, style_ref) do
+    case style_ref do
+      nil -> nil
+      ref when is_atom(ref) or is_list(ref) -> resolve_style_ref(dsl_state, ref)
+      _ -> nil
     end
   end
 end

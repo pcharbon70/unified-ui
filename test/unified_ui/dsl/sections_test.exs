@@ -28,6 +28,7 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     refute Styles.top_level?()
     assert section.entities == Styles.entities()
     assert :style in entity_names
+    assert :theme in entity_names
 
     assert Keyword.has_key?(section.schema, :fg)
     assert Keyword.has_key?(section.schema, :bg)
