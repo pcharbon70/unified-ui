@@ -191,7 +191,11 @@ defmodule UnifiedUi.Integration.Phase4Test do
         tabs: [
           %Widgets.Tab{id: :home, label: "Home", content: %Widgets.Text{content: "Home Page"}},
           %Widgets.Tab{id: :about, label: "About", content: %Widgets.Text{content: "About Page"}},
-          %Widgets.Tab{id: :contact, label: "Contact", content: %Widgets.Text{content: "Contact Page"}}
+          %Widgets.Tab{
+            id: :contact,
+            label: "Contact",
+            content: %Widgets.Text{content: "Contact Page"}
+          }
         ]
       }
 
@@ -210,8 +214,16 @@ defmodule UnifiedUi.Integration.Phase4Test do
         active_tab: :tab1,
         position: :left,
         tabs: [
-          %Widgets.Tab{id: :tab1, label: "Section 1", content: %Widgets.Text{content: "Content 1"}},
-          %Widgets.Tab{id: :tab2, label: "Section 2", content: %Widgets.Text{content: "Content 2"}}
+          %Widgets.Tab{
+            id: :tab1,
+            label: "Section 1",
+            content: %Widgets.Text{content: "Content 1"}
+          },
+          %Widgets.Tab{
+            id: :tab2,
+            label: "Section 2",
+            content: %Widgets.Text{content: "Content 2"}
+          }
         ]
       }
 
@@ -664,6 +676,98 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert {:ok, _} = Terminal.render(ui)
       assert {:ok, _} = Desktop.render(ui)
       assert {:ok, _} = Web.render(ui)
+    end
+  end
+
+  # ============================================================================
+  # 4.4: Dialog and Feedback Widgets
+  # ============================================================================
+
+  describe "4.4 - Dialog and Feedback Widgets" do
+    test "Dialog with nested content and close signal" do
+      dialog = %Widgets.Dialog{
+        id: :settings_dialog,
+        title: "Settings",
+        content: %Layouts.VBox{
+          spacing: 1,
+          children: [
+            %Widgets.Text{content: "Update settings"},
+            %Widgets.TextInput{id: :name, placeholder: "Name"}
+          ]
+        },
+        on_close: :close_settings,
+        buttons: [
+          %Widgets.DialogButton{label: "Cancel", action: :close_settings, role: :cancel},
+          %Widgets.DialogButton{label: "Save", action: :save_settings, role: :confirm}
+        ]
+      }
+
+      assert dialog.on_close == :close_settings
+      assert length(dialog.buttons) == 2
+
+      assert {:ok, _} = Terminal.render(dialog)
+      assert {:ok, _} = Desktop.render(dialog)
+      assert {:ok, _} = Web.render(dialog)
+    end
+
+    test "Alert dialog severity metadata is preserved" do
+      alert = %Widgets.AlertDialog{
+        id: :delete_alert,
+        title: "Delete Item",
+        message: "This action cannot be undone.",
+        severity: :warning,
+        on_confirm: :confirm_delete,
+        on_cancel: :cancel_delete
+      }
+
+      assert alert.severity == :warning
+      assert alert.on_confirm == :confirm_delete
+      assert alert.on_cancel == :cancel_delete
+
+      assert {:ok, _} = Terminal.render(alert)
+      assert {:ok, _} = Desktop.render(alert)
+      assert {:ok, _} = Web.render(alert)
+    end
+
+    test "Toast duration and dismiss signal render across platforms" do
+      toast = %Widgets.Toast{
+        id: :save_toast,
+        message: "Saved successfully",
+        severity: :success,
+        duration: 1500,
+        on_dismiss: :dismiss_save_toast
+      }
+
+      assert toast.duration == 1500
+      assert toast.on_dismiss == :dismiss_save_toast
+
+      assert {:ok, _} = Terminal.render(toast)
+      assert {:ok, _} = Desktop.render(toast)
+      assert {:ok, _} = Web.render(toast)
+    end
+
+    test "All dialog widgets render on all platforms" do
+      widgets = [
+        %Widgets.Dialog{
+          id: :dialog_a,
+          title: "Dialog",
+          content: "Body",
+          buttons: [%Widgets.DialogButton{label: "OK", action: :ok}]
+        },
+        %Widgets.AlertDialog{
+          id: :alert_a,
+          title: "Alert",
+          message: "Attention",
+          severity: :error
+        },
+        %Widgets.Toast{id: :toast_a, message: "Done", duration: 1000}
+      ]
+
+      Enum.each(widgets, fn widget ->
+        assert {:ok, _} = Terminal.render(widget)
+        assert {:ok, _} = Desktop.render(widget)
+        assert {:ok, _} = Web.render(widget)
+      end)
     end
   end
 

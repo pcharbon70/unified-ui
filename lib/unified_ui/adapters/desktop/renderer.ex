@@ -745,6 +745,149 @@ defmodule UnifiedUi.Adapters.Desktop do
      }}
   end
 
+  # Dialog and feedback converters
+
+  defp convert_by_type(%Widgets.DialogButton{} = button, :dialog_button, _state) do
+    props =
+      []
+      |> Style.add_props(button.style)
+      |> then(fn props ->
+        if button.disabled, do: [{:disabled, true} | props], else: props
+      end)
+      |> then(fn props -> [{:role, button.role} | props] end)
+
+    base_widget = build_button(button.label || "", button.action, props)
+
+    {:dialog_button, Map.put(base_widget, :id, button.id),
+     %{
+       id: button.id,
+       label: button.label,
+       action: button.action,
+       role: button.role,
+       disabled: button.disabled
+     }}
+  end
+
+  defp convert_by_type(%Widgets.Dialog{} = dialog, :dialog, state) do
+    content_children =
+      case dialog.content do
+        nil ->
+          []
+
+        content when is_list(content) ->
+          Enum.map(content, fn item ->
+            if is_binary(item), do: build_label(item), else: convert_iur(item, state)
+          end)
+
+        content ->
+          [if(is_binary(content), do: build_label(content), else: convert_iur(content, state))]
+      end
+      |> Enum.reject(&is_nil/1)
+
+    button_children =
+      dialog.buttons
+      |> List.wrap()
+      |> Enum.map(&convert_iur(&1, state))
+      |> Enum.reject(&is_nil/1)
+
+    button_bar =
+      if button_children == [] do
+        []
+      else
+        [
+          %{
+            type: :container,
+            id: nil,
+            props: [direction: :hbox, spacing: 1],
+            children: button_children
+          }
+        ]
+      end
+
+    props =
+      []
+      |> Style.add_props(dialog.style)
+      |> then(fn props -> [{:title, dialog.title} | props] end)
+      |> then(fn props -> [{:closable, dialog.closable} | props] end)
+      |> then(fn props -> [{:modal, dialog.modal} | props] end)
+      |> then(fn props -> if dialog.width, do: [{:width, dialog.width} | props], else: props end)
+      |> then(fn props ->
+        if dialog.height, do: [{:height, dialog.height} | props], else: props
+      end)
+
+    base_widget = %{
+      type: :dialog,
+      id: dialog.id,
+      props: props,
+      children: content_children ++ button_bar
+    }
+
+    {:dialog, base_widget,
+     %{
+       id: dialog.id,
+       title: dialog.title,
+       on_close: dialog.on_close,
+       closable: dialog.closable,
+       modal: dialog.modal,
+       width: dialog.width,
+       height: dialog.height
+     }}
+  end
+
+  defp convert_by_type(%Widgets.AlertDialog{} = alert, :alert_dialog, _state) do
+    props =
+      []
+      |> Style.add_props(alert.style)
+      |> then(fn props -> [{:title, alert.title} | props] end)
+      |> then(fn props -> [{:message, alert.message} | props] end)
+      |> then(fn props -> [{:severity, alert.severity} | props] end)
+      |> then(fn props -> [{:modal, alert.modal} | props] end)
+      |> then(fn props -> [{:closable, alert.closable} | props] end)
+
+    base_widget = %{
+      type: :alert_dialog,
+      id: alert.id,
+      props: props,
+      children: []
+    }
+
+    {:alert_dialog, base_widget,
+     %{
+       id: alert.id,
+       title: alert.title,
+       message: alert.message,
+       severity: alert.severity,
+       on_confirm: alert.on_confirm,
+       on_cancel: alert.on_cancel,
+       modal: alert.modal
+     }}
+  end
+
+  defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    props =
+      []
+      |> Style.add_props(toast.style)
+      |> then(fn props -> [{:message, toast.message} | props] end)
+      |> then(fn props -> [{:severity, toast.severity} | props] end)
+      |> then(fn props -> [{:duration, toast.duration} | props] end)
+
+    base_widget = %{
+      type: :toast,
+      id: toast.id,
+      props: props,
+      children: []
+    }
+
+    {:toast, base_widget,
+     %{
+       id: toast.id,
+       message: toast.message,
+       severity: toast.severity,
+       duration: toast.duration,
+       on_dismiss: toast.on_dismiss
+     }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

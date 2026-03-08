@@ -908,6 +908,124 @@ defmodule UnifiedUi.Adapters.Web do
     ~s(<div#{attrs}><ul class="tree-root">#{root_nodes_html}</ul></div>)
   end
 
+  # Dialog and feedback converters
+
+  defp convert_by_type(%Widgets.DialogButton{} = button, :dialog_button, _state) do
+    attrs_list = [{"class", "dialog-button dialog-role-#{button.role}"}]
+    attrs_list = if button.id, do: [{"id", button.id} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if button.action do
+        event_name = atom_to_event_name(button.action)
+        [{"phx-click", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list = if button.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
+
+    style = Style.to_css(button.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+    attrs = build_attributes(attrs_list)
+
+    ~s(<button#{attrs}>#{escape_html(button.label || "")}</button>)
+  end
+
+  defp convert_by_type(%Widgets.Dialog{} = dialog, :dialog, state) do
+    attrs_list = [{"class", "unified-dialog"}]
+    attrs_list = if dialog.id, do: [{"id", dialog.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-modal", dialog.modal} | attrs_list]
+    attrs_list = [{"data-closable", dialog.closable} | attrs_list]
+
+    attrs_list =
+      if dialog.on_close do
+        event_name = atom_to_event_name(dialog.on_close)
+        [{"data-close-event", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list =
+      if dialog.width, do: [{"data-width", dialog.width} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if dialog.height, do: [{"data-height", dialog.height} | attrs_list], else: attrs_list
+
+    style = Style.to_css(dialog.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+
+    content_html =
+      case dialog.content do
+        nil ->
+          ""
+
+        content when is_list(content) ->
+          Enum.map_join(content, "\n", fn item ->
+            if is_binary(item), do: escape_html(item), else: convert_iur(item, state)
+          end)
+
+        content ->
+          if is_binary(content), do: escape_html(content), else: convert_iur(content, state)
+      end
+
+    buttons_html =
+      dialog.buttons
+      |> List.wrap()
+      |> Enum.map_join("\n", &convert_iur(&1, state))
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div class="unified-dialog-backdrop"><div#{attrs}><header class="dialog-header">#{escape_html(dialog.title || "")}</header><section class="dialog-content">#{content_html}</section><footer class="dialog-actions">#{buttons_html}</footer></div></div>)
+  end
+
+  defp convert_by_type(%Widgets.AlertDialog{} = alert, :alert_dialog, _state) do
+    attrs_list = [{"class", "unified-alert-dialog alert-#{alert.severity}"}]
+    attrs_list = if alert.id, do: [{"id", alert.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-modal", alert.modal} | attrs_list]
+
+    attrs_list =
+      if alert.on_confirm do
+        event_name = atom_to_event_name(alert.on_confirm)
+        [{"data-confirm-event", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list =
+      if alert.on_cancel do
+        event_name = atom_to_event_name(alert.on_cancel)
+        [{"data-cancel-event", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    style = Style.to_css(alert.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div class="unified-dialog-backdrop"><div#{attrs}><header class="alert-title">#{escape_html(alert.title || "")}</header><p class="alert-message">#{escape_html(alert.message || "")}</p></div></div>)
+  end
+
+  defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    attrs_list = [{"class", "unified-toast toast-#{toast.severity}"}]
+    attrs_list = if toast.id, do: [{"id", toast.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-duration", toast.duration} | attrs_list]
+
+    attrs_list =
+      if toast.on_dismiss do
+        event_name = atom_to_event_name(toast.on_dismiss)
+        [{"data-dismiss-event", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    style = Style.to_css(toast.style)
+    attrs_list = if style, do: [{"style", style} | attrs_list], else: attrs_list
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{escape_html(toast.message || "")}</div>)
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

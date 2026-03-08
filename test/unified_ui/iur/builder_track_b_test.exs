@@ -172,5 +172,82 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
       assert [%Widgets.TreeNode{id: :readme, label: "README.md"}, %Widgets.TreeNode{id: :mix}] =
                tree_view.root_nodes
     end
+
+    test "builds dialog and feedback entities" do
+      dialog =
+        Builder.build_entity(
+          %{
+            name: :dialog,
+            attrs: %{
+              id: :confirm_delete,
+              title: "Delete file",
+              content: "Are you sure?",
+              on_close: :close_dialog,
+              width: 40,
+              closable: true
+            },
+            entities: [
+              %{
+                name: :buttons,
+                entities: [
+                  %{
+                    name: :dialog_button,
+                    attrs: %{label: "Cancel", action: :cancel, role: :cancel}
+                  },
+                  %{
+                    name: :dialog_button,
+                    attrs: %{label: "Delete", action: :confirm_delete, role: :destructive}
+                  }
+                ]
+              }
+            ]
+          },
+          %{}
+        )
+
+      alert_dialog =
+        Builder.build_entity(
+          %{
+            name: :alert_dialog,
+            attrs: %{
+              id: :disk_alert,
+              title: "Disk Space",
+              message: "Low disk space remaining",
+              severity: :warning,
+              on_confirm: :open_cleanup,
+              on_cancel: :dismiss_alert
+            }
+          },
+          %{}
+        )
+
+      toast =
+        Builder.build_entity(
+          %{
+            name: :toast,
+            attrs: %{
+              id: :saved_toast,
+              message: "Saved successfully",
+              severity: :success,
+              duration: 1500,
+              on_dismiss: :toast_closed
+            }
+          },
+          %{}
+        )
+
+      assert %Widgets.Dialog{id: :confirm_delete, title: "Delete file", on_close: :close_dialog} =
+               dialog
+
+      assert [%Widgets.DialogButton{label: "Cancel"}, %Widgets.DialogButton{label: "Delete"}] =
+               dialog.buttons
+
+      assert %Widgets.AlertDialog{id: :disk_alert, severity: :warning} = alert_dialog
+      assert alert_dialog.on_confirm == :open_cleanup
+      assert alert_dialog.on_cancel == :dismiss_alert
+
+      assert %Widgets.Toast{id: :saved_toast, severity: :success, duration: 1500} = toast
+      assert toast.on_dismiss == :toast_closed
+    end
   end
 end

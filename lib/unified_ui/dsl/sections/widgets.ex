@@ -22,7 +22,10 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
       UnifiedUi.Dsl.Entities.Navigation.menu_entity(),
       UnifiedUi.Dsl.Entities.Navigation.context_menu_entity(),
       UnifiedUi.Dsl.Entities.Navigation.tabs_entity(),
-      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity()
+      UnifiedUi.Dsl.Entities.Navigation.tree_view_entity(),
+      UnifiedUi.Dsl.Entities.DialogFeedback.dialog_entity(),
+      UnifiedUi.Dsl.Entities.DialogFeedback.alert_dialog_entity(),
+      UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity()
     ]
   }
 

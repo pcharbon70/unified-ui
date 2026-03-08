@@ -336,4 +336,91 @@ defmodule UnifiedUi.IUR.DslGoldenBuildTest do
       assert %Widgets.TreeNode{id: :main, label: "main.ex"} = main
     end
   end
+
+  describe "dialog and feedback DSL state to IUR build" do
+    test "build/1 converts dialog, alert_dialog, and toast entities" do
+      dsl_state = %{
+        [:ui] => %{
+          entities: [
+            %{
+              name: :vbox,
+              attrs: %{id: :dialog_root},
+              entities: [
+                %{
+                  name: :dialog,
+                  attrs: %{
+                    id: :delete_dialog,
+                    title: "Delete item",
+                    content: "Delete the selected item?",
+                    on_close: :close_delete_dialog
+                  },
+                  entities: [
+                    %{
+                      name: :buttons,
+                      entities: [
+                        %{
+                          name: :dialog_button,
+                          attrs: %{label: "Cancel", action: :cancel_delete}
+                        },
+                        %{
+                          name: :dialog_button,
+                          attrs: %{label: "Delete", action: :confirm_delete, role: :destructive}
+                        }
+                      ]
+                    }
+                  ]
+                },
+                %{
+                  name: :alert_dialog,
+                  attrs: %{
+                    id: :warning_alert,
+                    title: "Warning",
+                    message: "Operation cannot be undone",
+                    severity: :warning,
+                    on_confirm: :confirm_warning,
+                    on_cancel: :dismiss_warning
+                  }
+                },
+                %{
+                  name: :toast,
+                  attrs: %{
+                    id: :save_toast,
+                    message: "Saved",
+                    severity: :success,
+                    duration: 1200,
+                    on_dismiss: :toast_dismissed
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+
+      iur = Builder.build(dsl_state)
+
+      assert %Layouts.VBox{id: :dialog_root, children: [dialog, alert, toast]} = iur
+      assert %Widgets.Dialog{id: :delete_dialog, title: "Delete item"} = dialog
+
+      assert %Widgets.DialogButton{label: "Cancel", action: :cancel_delete} =
+               Enum.at(dialog.buttons, 0)
+
+      assert %Widgets.DialogButton{role: :destructive, action: :confirm_delete} =
+               Enum.at(dialog.buttons, 1)
+
+      assert %Widgets.AlertDialog{
+               id: :warning_alert,
+               severity: :warning,
+               on_confirm: :confirm_warning,
+               on_cancel: :dismiss_warning
+             } = alert
+
+      assert %Widgets.Toast{
+               id: :save_toast,
+               severity: :success,
+               duration: 1200,
+               on_dismiss: :toast_dismissed
+             } = toast
+    end
+  end
 end

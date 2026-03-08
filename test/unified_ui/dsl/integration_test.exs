@@ -384,8 +384,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic widgets + 4 data visualization widgets + 1 table + 4 navigation widgets = 13 total
-      assert length(widgets_section.entities) == 13
+      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback widgets = 16 total
+      assert length(widgets_section.entities) == 16
     end
 
     test "widget entities are accessible from extension" do
@@ -401,14 +401,31 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     test "data visualization widget entities are accessible from extension" do
       # Data visualization widget entity functions should be callable
       assert %Spark.Dsl.Entity{name: :gauge} = UnifiedUi.Dsl.Entities.DataViz.gauge_entity()
-      assert %Spark.Dsl.Entity{name: :sparkline} = UnifiedUi.Dsl.Entities.DataViz.sparkline_entity()
-      assert %Spark.Dsl.Entity{name: :bar_chart} = UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity()
-      assert %Spark.Dsl.Entity{name: :line_chart} = UnifiedUi.Dsl.Entities.DataViz.line_chart_entity()
+
+      assert %Spark.Dsl.Entity{name: :sparkline} =
+               UnifiedUi.Dsl.Entities.DataViz.sparkline_entity()
+
+      assert %Spark.Dsl.Entity{name: :bar_chart} =
+               UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity()
+
+      assert %Spark.Dsl.Entity{name: :line_chart} =
+               UnifiedUi.Dsl.Entities.DataViz.line_chart_entity()
     end
 
     test "table widget entity is accessible from extension" do
       # Table widget entity function should be callable
       assert %Spark.Dsl.Entity{name: :table} = UnifiedUi.Dsl.Entities.Tables.table_entity()
+    end
+
+    test "dialog and feedback widget entities are accessible from extension" do
+      assert %Spark.Dsl.Entity{name: :dialog} =
+               UnifiedUi.Dsl.Entities.DialogFeedback.dialog_entity()
+
+      assert %Spark.Dsl.Entity{name: :alert_dialog} =
+               UnifiedUi.Dsl.Entities.DialogFeedback.alert_dialog_entity()
+
+      assert %Spark.Dsl.Entity{name: :toast} =
+               UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity()
     end
   end
 
