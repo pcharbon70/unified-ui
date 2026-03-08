@@ -1,3 +1,4 @@
+# credo:disable-for-this-file Credo.Check.Refactor.LongQuoteBlocks
 defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   @moduledoc """
   Spark transformer that generates a DSL-driven `update/2` function.
@@ -26,10 +27,13 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   @spec transform(Spark.Dsl.t()) :: {:ok, Spark.Dsl.t()} | {:error, term()}
   def transform(dsl_state) do
     routes = extract_routes(dsl_state)
+    modal_scopes = extract_modal_scopes(dsl_state)
     click_routes = Macro.escape(routes.click)
     change_routes = Macro.escape(routes.change)
     submit_routes = Macro.escape(routes.submit)
+    modal_scopes = Macro.escape(modal_scopes)
 
+    # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     code =
       quote do
         @impl true
@@ -68,44 +72,68 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         end
 
         defp dispatch_click_signal(state, signal) do
-          route =
-            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
-              unquote(click_routes),
-              signal,
-              :click
-            )
+          if UnifiedUi.Dsl.Transformers.UpdateTransformer.modal_blocked?(
+               state,
+               signal,
+               unquote(modal_scopes)
+             ) do
+            state
+          else
+            route =
+              UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+                unquote(click_routes),
+                signal,
+                :click
+              )
 
-          case route do
-            nil -> handle_click_signal(state, signal)
-            route -> handle_click_signal(state, signal, route)
+            case route do
+              nil -> handle_click_signal(state, signal)
+              route -> handle_click_signal(state, signal, route)
+            end
           end
         end
 
         defp dispatch_change_signal(state, signal) do
-          route =
-            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
-              unquote(change_routes),
-              signal,
-              :change
-            )
+          if UnifiedUi.Dsl.Transformers.UpdateTransformer.modal_blocked?(
+               state,
+               signal,
+               unquote(modal_scopes)
+             ) do
+            state
+          else
+            route =
+              UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+                unquote(change_routes),
+                signal,
+                :change
+              )
 
-          case route do
-            nil -> handle_change_signal(state, signal)
-            route -> handle_change_signal(state, signal, route)
+            case route do
+              nil -> handle_change_signal(state, signal)
+              route -> handle_change_signal(state, signal, route)
+            end
           end
         end
 
         defp dispatch_submit_signal(state, signal) do
-          route =
-            UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
-              unquote(submit_routes),
-              signal,
-              :submit
-            )
+          if UnifiedUi.Dsl.Transformers.UpdateTransformer.modal_blocked?(
+               state,
+               signal,
+               unquote(modal_scopes)
+             ) do
+            state
+          else
+            route =
+              UnifiedUi.Dsl.Transformers.UpdateTransformer.find_matching_route(
+                unquote(submit_routes),
+                signal,
+                :submit
+              )
 
-          case route do
-            nil -> handle_submit_signal(state, signal)
-            route -> handle_submit_signal(state, signal, route)
+            case route do
+              nil -> handle_submit_signal(state, signal)
+              route -> handle_submit_signal(state, signal, route)
+            end
           end
         end
 
@@ -209,6 +237,32 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     Enum.find(routes, fn route -> route.source in source_keys end) ||
       Enum.find(routes, fn route -> route.key in action_keys end)
   end
+
+  @doc false
+  @spec modal_blocked?(map(), map(), map()) :: boolean()
+  def modal_blocked?(state, signal, modal_scopes)
+      when is_map(state) and is_map(modal_scopes) do
+    source_id =
+      signal
+      |> extract_signal_data()
+      |> extract_modal_source_id()
+
+    cond do
+      map_size(modal_scopes) == 0 ->
+        false
+
+      is_nil(source_id) ->
+        false
+
+      true ->
+        case active_modal_allowed_ids(state, modal_scopes) do
+          nil -> false
+          allowed_ids -> not MapSet.member?(allowed_ids, source_id)
+        end
+    end
+  end
+
+  def modal_blocked?(_state, _signal, _modal_scopes), do: false
 
   @doc false
   @spec apply_route_update(:click | :change | :submit, map(), map(), map()) :: map()
@@ -340,6 +394,53 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   defp normalize_route_result({:noreply, %{} = result}, _fallback), do: result
   defp normalize_route_result(_result, fallback), do: fallback
 
+  defp extract_modal_scopes(dsl_state) do
+    entities = collect_entities(dsl_state)
+
+    modal_entities =
+      Enum.flat_map(entities, fn
+        %Widgets.Dialog{id: id, visible: visible} when is_atom(id) ->
+          [%{id: id, default_visible: visible != false}]
+
+        %Widgets.AlertDialog{id: id, visible: visible} when is_atom(id) ->
+          [%{id: id, default_visible: visible != false}]
+
+        %{name: name, attrs: attrs} when name in [:dialog, :alert_dialog] ->
+          modal_id = attr_get(attrs, :id)
+
+          if is_atom(modal_id) do
+            [%{id: modal_id, default_visible: attr_get(attrs, :visible) != false}]
+          else
+            []
+          end
+
+        _ ->
+          []
+      end)
+
+    dialog_button_ids =
+      entities
+      |> Enum.flat_map(fn
+        %Widgets.DialogButton{id: id} when is_atom(id) ->
+          [id]
+
+        %{name: :dialog_button, attrs: attrs} ->
+          case attr_get(attrs, :id) do
+            id when is_atom(id) -> [id]
+            _ -> []
+          end
+
+        _ ->
+          []
+      end)
+      |> MapSet.new()
+
+    Enum.reduce(modal_entities, %{}, fn %{id: modal_id, default_visible: default_visible}, acc ->
+      allowed_ids = dialog_button_ids |> MapSet.put(modal_id)
+      Map.put(acc, modal_id, %{default_visible: default_visible, allowed_ids: allowed_ids})
+    end)
+  end
+
   defp extract_routes(dsl_state) do
     entities = collect_entities(dsl_state)
 
@@ -352,6 +453,47 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
   defp collect_entities(dsl_state) do
     CompileIndex.get(dsl_state).flat
+  end
+
+  defp extract_modal_source_id(data) do
+    [
+      Map.get(data, :widget_id),
+      Map.get(data, :button_id),
+      Map.get(data, :input_id),
+      Map.get(data, :form_id),
+      Map.get(data, :id)
+    ]
+    |> Enum.find(&is_atom/1)
+  end
+
+  defp active_modal_allowed_ids(state, modal_scopes) do
+    allowed =
+      modal_scopes
+      |> Enum.reduce(MapSet.new(), fn {modal_id,
+                                       %{
+                                         default_visible: default_visible,
+                                         allowed_ids: allowed_ids
+                                       }},
+                                      acc ->
+        if modal_active?(state, modal_id, default_visible) do
+          MapSet.union(acc, allowed_ids)
+        else
+          acc
+        end
+      end)
+
+    if MapSet.size(allowed) > 0, do: allowed, else: nil
+  end
+
+  defp modal_active?(state, modal_id, default_visible) do
+    open_key = :"#{modal_id}_open"
+    visible_key = :"#{modal_id}_visible"
+
+    cond do
+      Map.has_key?(state, open_key) -> state[open_key] not in [false, nil]
+      Map.has_key?(state, visible_key) -> state[visible_key] not in [false, nil]
+      true -> default_visible != false
+    end
   end
 
   defp extract_click_routes(entities) do

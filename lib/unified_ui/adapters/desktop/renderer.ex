@@ -810,6 +810,7 @@ defmodule UnifiedUi.Adapters.Desktop do
       |> then(fn props -> [{:title, dialog.title} | props] end)
       |> then(fn props -> [{:closable, dialog.closable} | props] end)
       |> then(fn props -> [{:modal, dialog.modal} | props] end)
+      |> then(fn props -> [{:blocks_background, dialog.modal == true} | props] end)
       |> then(fn props -> if dialog.width, do: [{:width, dialog.width} | props], else: props end)
       |> then(fn props ->
         if dialog.height, do: [{:height, dialog.height} | props], else: props
@@ -829,6 +830,7 @@ defmodule UnifiedUi.Adapters.Desktop do
        on_close: dialog.on_close,
        closable: dialog.closable,
        modal: dialog.modal,
+       blocks_background: dialog.modal == true,
        width: dialog.width,
        height: dialog.height
      }}
@@ -842,6 +844,7 @@ defmodule UnifiedUi.Adapters.Desktop do
       |> then(fn props -> [{:message, alert.message} | props] end)
       |> then(fn props -> [{:severity, alert.severity} | props] end)
       |> then(fn props -> [{:modal, alert.modal} | props] end)
+      |> then(fn props -> [{:blocks_background, alert.modal == true} | props] end)
       |> then(fn props -> [{:closable, alert.closable} | props] end)
 
     base_widget = %{
@@ -859,17 +862,22 @@ defmodule UnifiedUi.Adapters.Desktop do
        severity: alert.severity,
        on_confirm: alert.on_confirm,
        on_cancel: alert.on_cancel,
-       modal: alert.modal
+       modal: alert.modal,
+       blocks_background: alert.modal == true
      }}
   end
 
   defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    dismiss_at = toast_dismiss_at(toast.duration)
+
     props =
       []
       |> Style.add_props(toast.style)
       |> then(fn props -> [{:message, toast.message} | props] end)
       |> then(fn props -> [{:severity, toast.severity} | props] end)
       |> then(fn props -> [{:duration, toast.duration} | props] end)
+      |> then(fn props -> [{:auto_dismiss, not is_nil(dismiss_at)} | props] end)
+      |> then(fn props -> if dismiss_at, do: [{:dismiss_at, dismiss_at} | props], else: props end)
 
     base_widget = %{
       type: :toast,
@@ -884,7 +892,9 @@ defmodule UnifiedUi.Adapters.Desktop do
        message: toast.message,
        severity: toast.severity,
        duration: toast.duration,
-       on_dismiss: toast.on_dismiss
+       on_dismiss: toast.on_dismiss,
+       auto_dismiss: not is_nil(dismiss_at),
+       dismiss_at: dismiss_at
      }}
   end
 
@@ -968,6 +978,12 @@ defmodule UnifiedUi.Adapters.Desktop do
   defp maybe_add_justify_content(props, :center), do: [{:justify, :center} | props]
   defp maybe_add_justify_content(props, :end), do: [{:justify, :bottom} | props]
   defp maybe_add_justify_content(props, justify), do: [{:justify, justify} | props]
+
+  defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
+    System.monotonic_time(:millisecond) + duration
+  end
+
+  defp toast_dismiss_at(_duration), do: nil
 
   # Desktop table helpers
 

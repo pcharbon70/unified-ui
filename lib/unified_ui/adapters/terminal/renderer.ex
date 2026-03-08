@@ -986,7 +986,8 @@ defmodule UnifiedUi.Adapters.Terminal do
        width: dialog.width,
        height: dialog.height,
        closable: dialog.closable,
-       modal: dialog.modal
+       modal: dialog.modal,
+       blocks_background: dialog.modal == true
      }}
   end
 
@@ -1020,11 +1021,14 @@ defmodule UnifiedUi.Adapters.Terminal do
        severity: alert.severity,
        on_confirm: alert.on_confirm,
        on_cancel: alert.on_cancel,
-       modal: alert.modal
+       modal: alert.modal,
+       blocks_background: alert.modal == true
      }}
   end
 
   defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    dismiss_at = toast_dismiss_at(toast.duration)
+
     prefix =
       case toast.severity do
         :success -> "✓ "
@@ -1047,7 +1051,9 @@ defmodule UnifiedUi.Adapters.Terminal do
        message: toast.message,
        severity: toast.severity,
        duration: toast.duration,
-       on_dismiss: toast.on_dismiss
+       on_dismiss: toast.on_dismiss,
+       auto_dismiss: not is_nil(dismiss_at),
+       dismiss_at: dismiss_at
      }}
   end
 
@@ -1130,6 +1136,12 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   defp maybe_add_justify(opts, nil), do: opts
   defp maybe_add_justify(opts, justify), do: Keyword.put(opts, :justify, justify)
+
+  defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
+    System.monotonic_time(:millisecond) + duration
+  end
+
+  defp toast_dismiss_at(_duration), do: nil
 
   # Table rendering helpers
 
