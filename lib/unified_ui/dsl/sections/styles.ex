@@ -56,7 +56,8 @@ defmodule UnifiedUi.Dsl.Sections.Styles do
       ]
     ],
     entities: [
-      UnifiedUi.Dsl.Entities.Styles.style_entity()
+      UnifiedUi.Dsl.Entities.Styles.style_entity(),
+      UnifiedUi.Dsl.Entities.Styles.theme_entity()
     ]
   }
 

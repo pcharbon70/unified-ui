@@ -13,6 +13,7 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
 
   alias UnifiedUi.Dsl.StyleResolver
   alias UnifiedUi.Dsl.Style, as: DslStyle
+  alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedIUR.Style
 
   # Helper to create a mock DSL state with styles
@@ -34,6 +35,19 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
     ]
 
     struct(DslStyle, Keyword.merge(defaults, opts))
+  end
+
+  # Helper to create a DslTheme entity
+  defp create_theme(name, opts) do
+    defaults = [
+      __struct__: DslTheme,
+      name: name,
+      base_theme: nil,
+      styles: [],
+      __meta__: []
+    ]
+
+    struct(DslTheme, Keyword.merge(defaults, opts))
   end
 
   describe "resolve/3" do
@@ -249,6 +263,70 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       result = StyleResolver.get_all_styles(dsl_state)
 
       assert result == %{}
+    end
+  end
+
+  describe "load_theme/2" do
+    test "loads theme style mappings with base_theme inheritance" do
+      entities = [
+        create_style(:base_text, attributes: [fg: :white, attrs: [:bold]]),
+        create_style(:danger_text, attributes: [fg: :red]),
+        create_theme(:default,
+          styles: [
+            text: :base_text,
+            card: [bg: :black, padding: 2]
+          ]
+        ),
+        create_theme(:dark,
+          base_theme: :default,
+          styles: [
+            text: [:base_text, fg: :yellow],
+            danger: :danger_text
+          ]
+        )
+      ]
+
+      dsl_state = create_dsl_state(entities)
+      loaded = StyleResolver.load_theme(dsl_state, :dark)
+
+      assert %Style{fg: :yellow, attrs: [:bold]} = loaded.text
+      assert %Style{bg: :black, padding: 2} = loaded.card
+      assert %Style{fg: :red} = loaded.danger
+    end
+
+    test "returns empty map when theme is missing" do
+      dsl_state = create_dsl_state([])
+
+      assert StyleResolver.load_theme(dsl_state, :missing) == %{}
+    end
+
+    test "raises on circular theme inheritance" do
+      entities = [
+        create_theme(:a, base_theme: :b, styles: [text: [fg: :white]]),
+        create_theme(:b, base_theme: :a, styles: [text: [fg: :black]])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Circular theme inheritance detected/, fn ->
+        StyleResolver.load_theme(dsl_state, :a)
+      end
+    end
+  end
+
+  describe "get_all_themes/1" do
+    test "returns map of all defined themes" do
+      entities = [
+        create_theme(:default, styles: [text: [fg: :white]]),
+        create_theme(:dark, base_theme: :default, styles: [text: [fg: :yellow]])
+      ]
+
+      dsl_state = create_dsl_state(entities)
+      result = StyleResolver.get_all_themes(dsl_state)
+
+      assert map_size(result) == 2
+      assert %DslTheme{name: :default} = result[:default]
+      assert %DslTheme{name: :dark, base_theme: :default} = result[:dark]
     end
   end
 

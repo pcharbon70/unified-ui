@@ -69,6 +69,7 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
   """
 
   alias UnifiedUi.Dsl.Style
+  alias UnifiedUi.Dsl.Theme
 
   @style_entity %Spark.Dsl.Entity{
     name: :style,
@@ -118,7 +119,53 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
     """
   }
 
+  @theme_entity %Spark.Dsl.Entity{
+    name: :theme,
+    target: Theme,
+    args: [:name],
+    schema: [
+      name: [
+        type: :atom,
+        doc: "Unique name for this theme.",
+        required: true
+      ],
+      styles: [
+        type: :keyword_list,
+        doc: """
+        Theme style mappings as a keyword list.
+
+        Each key is a theme-specific style token (for example `:primary_button`)
+        and each value is any valid style reference:
+        * named style atom
+        * inline style keyword list
+        * named style with inline overrides (list starting with atom)
+        """,
+        required: false,
+        default: []
+      ],
+      base_theme: [
+        type: :atom,
+        doc: """
+        Optional parent theme name.
+
+        When present, this theme inherits all style mappings from the base theme.
+        Local mappings override inherited keys.
+        """,
+        required: false
+      ]
+    ],
+    describe: """
+    A named theme that groups style references under semantic keys.
+
+    Themes can inherit from other themes using `base_theme`.
+    """
+  }
+
   @doc false
   @spec style_entity() :: Spark.Dsl.Entity.t()
   def style_entity, do: @style_entity
+
+  @doc false
+  @spec theme_entity() :: Spark.Dsl.Entity.t()
+  def theme_entity, do: @theme_entity
 end

@@ -347,7 +347,7 @@ Create advanced layout containers for complex UI arrangements.
 Create a complete theming system with named styles, themes, and platform adaptation.
 
 - [x] 4.10.1 Expand `@style_entity` with full attribute support
-- [ ] 4.10.2 Define `@theme_entity` with schema:
+- [x] 4.10.2 Define `@theme_entity` with schema:
   - args: `[:name]`
   - options: `styles`, `base_theme`
 - [ ] 4.10.3 Define all style attributes:
@@ -357,7 +357,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
   - Borders: border (width, color, style)
 - [x] 4.10.4 Create style resolver module
 - [x] 4.10.5 Implement style inheritance
-- [ ] 4.10.6 Implement theme loading
+- [x] 4.10.6 Implement theme loading
 - [x] 4.10.7 Implement platform style adaptation:
   - Terminal: ANSI codes
   - Desktop: native styles
@@ -375,7 +375,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
 **Unit Tests for Section 4.10:**
 - [ ] Test style with all attributes
 - [x] Test style inheritance
-- [ ] Test theme loads correctly
+- [x] Test theme loads correctly
 - [ ] Test theme switching works
 - [x] Test terminal style conversion
 - [x] Test desktop style conversion
