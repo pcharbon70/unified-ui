@@ -384,8 +384,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback widgets = 16 total
-      assert length(widgets_section.entities) == 16
+      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback + 2 input widgets = 18
+      assert length(widgets_section.entities) == 18
     end
 
     test "widget entities are accessible from extension" do
@@ -426,6 +426,14 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
       assert %Spark.Dsl.Entity{name: :toast} =
                UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity()
+    end
+
+    test "input widget entities are accessible from extension" do
+      assert %Spark.Dsl.Entity{name: :pick_list} =
+               UnifiedUi.Dsl.Entities.InputWidgets.pick_list_entity()
+
+      assert %Spark.Dsl.Entity{name: :form_builder} =
+               UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity()
     end
   end
 

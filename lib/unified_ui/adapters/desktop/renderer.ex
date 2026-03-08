@@ -271,6 +271,136 @@ defmodule UnifiedUi.Adapters.Desktop do
      }}
   end
 
+  # Advanced input widget converters
+
+  defp convert_by_type(%Widgets.PickListOption{} = option, :pick_list_option, _state) do
+    label =
+      cond do
+        is_binary(option.label) -> option.label
+        is_nil(option.value) -> ""
+        true -> inspect(option.value)
+      end
+
+    props = if option.disabled, do: [disabled: true], else: []
+    base_widget = build_label(label, props)
+
+    {:pick_list_option, Map.put(base_widget, :id, option.id),
+     %{
+       id: option.id,
+       value: option.value,
+       label: option.label,
+       disabled: option.disabled
+     }}
+  end
+
+  defp convert_by_type(%Widgets.PickList{} = pick_list, :pick_list, _state) do
+    selected_label =
+      Enum.find_value(pick_list.options || [], fn
+        %Widgets.PickListOption{value: value, label: label} when value == pick_list.selected ->
+          label || inspect(value)
+
+        _ ->
+          nil
+      end)
+
+    display_text =
+      cond do
+        is_binary(selected_label) -> selected_label
+        not is_nil(pick_list.selected) -> inspect(pick_list.selected)
+        is_binary(pick_list.placeholder) -> pick_list.placeholder
+        true -> "Select option"
+      end
+
+    props =
+      []
+      |> Style.add_props(pick_list.style)
+      |> then(fn props -> [{:searchable, pick_list.searchable} | props] end)
+      |> then(fn props -> [{:allow_clear, pick_list.allow_clear} | props] end)
+
+    base_widget =
+      %{
+        type: :pick_list,
+        id: pick_list.id,
+        props: [{:selected, pick_list.selected}, {:display_text, display_text} | props],
+        children: []
+      }
+
+    {:pick_list, base_widget,
+     %{
+       id: pick_list.id,
+       options: pick_list.options,
+       selected: pick_list.selected,
+       placeholder: pick_list.placeholder,
+       searchable: pick_list.searchable,
+       on_select: pick_list.on_select,
+       allow_clear: pick_list.allow_clear
+     }}
+  end
+
+  defp convert_by_type(%Widgets.FormField{} = field, :form_field, _state) do
+    label =
+      cond do
+        is_binary(field.label) -> field.label
+        is_atom(field.name) -> field.name |> Atom.to_string() |> String.replace("_", " ")
+        true -> "Field"
+      end
+
+    props =
+      []
+      |> Style.add_props(field.style)
+      |> then(fn props -> [{:field_type, field.type} | props] end)
+      |> then(fn props -> [{:required, field.required} | props] end)
+      |> then(fn props -> [{:disabled, field.disabled} | props] end)
+      |> then(fn props -> [{:placeholder, field.placeholder} | props] end)
+
+    base_widget = build_label(label, props)
+
+    {:form_field, base_widget,
+     %{
+       name: field.name,
+       type: field.type,
+       label: field.label,
+       placeholder: field.placeholder,
+       required: field.required,
+       default: field.default,
+       options: field.options,
+       disabled: field.disabled
+     }}
+  end
+
+  defp convert_by_type(%Widgets.FormBuilder{} = form_builder, :form_builder, state) do
+    field_children =
+      form_builder.fields
+      |> List.wrap()
+      |> Enum.map(fn field -> convert_iur(field, state) end)
+      |> Enum.reject(&is_nil/1)
+
+    submit_widget =
+      build_button(form_builder.submit_label || "Submit", form_builder.on_submit, [])
+
+    props =
+      []
+      |> Style.add_props(form_builder.style)
+      |> then(fn props -> [{:action, form_builder.action} | props] end)
+      |> then(fn props -> [{:submit_label, form_builder.submit_label} | props] end)
+
+    base_widget = %{
+      type: :form_builder,
+      id: form_builder.id,
+      props: props,
+      children: field_children ++ [submit_widget]
+    }
+
+    {:form_builder, base_widget,
+     %{
+       id: form_builder.id,
+       fields: form_builder.fields,
+       action: form_builder.action,
+       on_submit: form_builder.on_submit,
+       submit_label: form_builder.submit_label
+     }}
+  end
+
   # Data visualization converters
 
   defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do

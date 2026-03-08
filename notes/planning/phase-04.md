@@ -167,17 +167,17 @@ Create modal dialogs and notification widgets.
 
 Create specialized input widgets for data entry.
 
-- [ ] 4.5.1 Define `@pick_list_option_entity` (nested)
-- [ ] 4.5.2 Define `@pick_list_entity` with schema:
+- [x] 4.5.1 Define `@pick_list_option_entity` (nested)
+- [x] 4.5.2 Define `@pick_list_entity` with schema:
   - args: `[:id, options]`
   - options: `selected`, `placeholder`, `searchable`, `on_select`, `allow_clear`
-- [ ] 4.5.3 Define `@form_field_entity` (nested)
-- [ ] 4.5.4 Define `@form_builder_entity` with schema:
+- [x] 4.5.3 Define `@form_field_entity` (nested)
+- [x] 4.5.4 Define `@form_builder_entity` with schema:
   - args: `[:id, fields]`
   - options: `action`, `on_submit`, `submit_label`
-- [ ] 4.5.5 Define field types
-- [ ] 4.5.6 Create target and IUR structs
-- [ ] 4.5.7 Implement renderer converters for all platforms
+- [x] 4.5.5 Define field types
+- [x] 4.5.6 Create target and IUR structs
+- [x] 4.5.7 Implement renderer converters for all platforms
 - [ ] 4.5.8 Implement form validation
 - [ ] 4.5.9 Implement search/filter for pick_list
 
@@ -188,13 +188,13 @@ Create specialized input widgets for data entry.
 - Validation runs on submit
 
 **Unit Tests for Section 4.5:**
-- [ ] Test pick_list with options
+- [x] Test pick_list with options
 - [ ] Test pick_list search/filter
-- [ ] Test pick_list selection emits signal
-- [ ] Test form_builder with fields
+- [x] Test pick_list selection emits signal
+- [x] Test form_builder with fields
 - [ ] Test form validation
-- [ ] Test form submission signal
-- [ ] Test all platforms render input widgets
+- [x] Test form submission signal
+- [x] Test all platforms render input widgets
 
 ---
 

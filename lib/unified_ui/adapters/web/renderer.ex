@@ -247,6 +247,229 @@ defmodule UnifiedUi.Adapters.Web do
     ~s(<input#{attrs} />)
   end
 
+  # Advanced input widget converters
+
+  defp convert_by_type(%Widgets.PickListOption{} = option, :pick_list_option, _state) do
+    attrs_list = [{"value", serialize_option_value(option.value)}]
+    attrs_list = if option.id, do: [{"id", option.id} | attrs_list], else: attrs_list
+    attrs_list = if option.disabled, do: [{"disabled", "true"} | attrs_list], else: attrs_list
+    attrs = build_attributes(attrs_list)
+
+    label =
+      cond do
+        is_binary(option.label) -> option.label
+        is_nil(option.value) -> ""
+        true -> serialize_option_value(option.value)
+      end
+
+    ~s(<option#{attrs}>#{escape_html(label)}</option>)
+  end
+
+  defp convert_by_type(%Widgets.PickList{} = pick_list, :pick_list, state) do
+    style = Style.to_css(pick_list.style)
+
+    select_attrs = [
+      {"class", "unified-pick-list-select"},
+      {"style", style},
+      {"data-searchable", pick_list.searchable},
+      {"data-allow-clear", pick_list.allow_clear}
+    ]
+
+    select_attrs = if pick_list.id, do: [{"id", pick_list.id} | select_attrs], else: select_attrs
+
+    select_attrs =
+      if pick_list.on_select do
+        event_name = atom_to_event_name(pick_list.on_select)
+        [{"phx-change", event_name} | select_attrs]
+      else
+        select_attrs
+      end
+
+    placeholder_html =
+      cond do
+        is_binary(pick_list.placeholder) ->
+          selected_attr = if is_nil(pick_list.selected), do: ~s( selected="selected"), else: ""
+          ~s(<option value=""#{selected_attr}>#{escape_html(pick_list.placeholder)}</option>)
+
+        pick_list.allow_clear ->
+          selected_attr = if is_nil(pick_list.selected), do: ~s( selected="selected"), else: ""
+          ~s(<option value=""#{selected_attr}></option>)
+
+        true ->
+          ""
+      end
+
+    options_html =
+      pick_list.options
+      |> List.wrap()
+      |> Enum.map_join("\n", fn option ->
+        option =
+          case option do
+            %Widgets.PickListOption{} = struct_option -> struct_option
+            {value, label} -> %Widgets.PickListOption{value: value, label: label}
+            attrs when is_map(attrs) -> struct(Widgets.PickListOption, attrs)
+            attrs when is_list(attrs) -> struct(Widgets.PickListOption, Enum.into(attrs, %{}))
+            other -> %Widgets.PickListOption{value: other, label: serialize_option_value(other)}
+          end
+
+        option_html = convert_iur(option, state)
+        value_match? = option.value == pick_list.selected
+
+        if value_match? and option_html != "" do
+          String.replace(option_html, "<option", ~s(<option selected="selected"), global: false)
+        else
+          option_html
+        end
+      end)
+
+    search_html =
+      if pick_list.searchable do
+        search_id =
+          case pick_list.id do
+            id when is_atom(id) -> "#{id}_search"
+            _ -> nil
+          end
+
+        attrs =
+          build_attributes([
+            {"class", "unified-pick-list-search"},
+            {"type", "search"},
+            {"placeholder", "Search..."},
+            {"id", search_id}
+          ])
+
+        ~s(<input#{attrs} />)
+      else
+        ""
+      end
+
+    attrs = build_attributes(select_attrs)
+
+    ~s(<div class="unified-pick-list">#{search_html}<select#{attrs}>#{placeholder_html}#{options_html}</select></div>)
+  end
+
+  defp convert_by_type(%Widgets.FormField{} = field, :form_field, _state) do
+    style = Style.to_css(field.style)
+    field_name = form_field_name(field.name)
+
+    wrapper_attrs =
+      build_attributes([
+        {"class", "unified-form-field"},
+        {"style", style},
+        {"data-field-name", field_name},
+        {"data-field-type", field.type}
+      ])
+
+    label_html =
+      if field.label do
+        required_suffix = if field.required, do: " *", else: ""
+
+        ~s(<label for="#{escape_html(field_name)}">#{escape_html(field.label)}#{required_suffix}</label>)
+      else
+        ""
+      end
+
+    input_html =
+      case field.type do
+        :checkbox ->
+          attrs =
+            build_attributes([
+              {"type", "checkbox"},
+              {"id", field_name},
+              {"name", field_name},
+              {"checked", if(field.default in [true, "true", 1], do: "true", else: nil)},
+              {"disabled", if(field.disabled, do: "true", else: nil)}
+            ])
+
+          ~s(<input#{attrs} />)
+
+        :select ->
+          select_attrs =
+            build_attributes([
+              {"id", field_name},
+              {"name", field_name},
+              {"required", if(field.required, do: "true", else: nil)},
+              {"disabled", if(field.disabled, do: "true", else: nil)}
+            ])
+
+          options_html =
+            field.options
+            |> List.wrap()
+            |> Enum.map_join("\n", fn option ->
+              {value, label} = normalize_form_option(option)
+              selected = if value == field.default, do: ~s( selected="selected"), else: ""
+
+              ~s(<option value="#{escape_html(serialize_option_value(value))}"#{selected}>#{escape_html(label)}</option>)
+            end)
+
+          ~s(<select#{select_attrs}>#{options_html}</select>)
+
+        _ ->
+          input_type =
+            case field.type do
+              :password -> "password"
+              :email -> "email"
+              :number -> "number"
+              _ -> "text"
+            end
+
+          attrs =
+            build_attributes([
+              {"type", input_type},
+              {"id", field_name},
+              {"name", field_name},
+              {"placeholder", field.placeholder},
+              {"value",
+               if(is_nil(field.default), do: nil, else: serialize_option_value(field.default))},
+              {"required", if(field.required, do: "true", else: nil)},
+              {"disabled", if(field.disabled, do: "true", else: nil)}
+            ])
+
+          ~s(<input#{attrs} />)
+      end
+
+    ~s(<div#{wrapper_attrs}>#{label_html}#{input_html}</div>)
+  end
+
+  defp convert_by_type(%Widgets.FormBuilder{} = form_builder, :form_builder, state) do
+    style = Style.to_css(form_builder.style)
+
+    attrs_list = [
+      {"class", "unified-form-builder"},
+      {"style", style}
+    ]
+
+    attrs_list = if form_builder.id, do: [{"id", form_builder.id} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if form_builder.on_submit do
+        event_name = atom_to_event_name(form_builder.on_submit)
+        [{"phx-submit", event_name} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list =
+      if form_builder.action do
+        [{"data-action", form_builder.action} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    fields_html =
+      form_builder.fields
+      |> List.wrap()
+      |> Enum.map_join("\n", fn field ->
+        convert_iur(field, state)
+      end)
+
+    submit_label = escape_html(form_builder.submit_label || "Submit")
+
+    ~s(<form#{attrs}>#{fields_html}<div class="form-actions"><button type="submit">#{submit_label}</button></div></form>)
+  end
+
   # Data visualization converters
 
   defp convert_by_type(%Widgets.Gauge{} = gauge, :gauge, _state) do
@@ -1108,6 +1331,44 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_children(_, _state), do: ""
+
+  defp form_field_name(nil), do: "field"
+  defp form_field_name(name) when is_atom(name), do: Atom.to_string(name)
+  defp form_field_name(name) when is_binary(name), do: name
+  defp form_field_name(name), do: serialize_option_value(name)
+
+  defp normalize_form_option(%Widgets.PickListOption{} = option) do
+    value = option.value
+    label = option.label || serialize_option_value(value)
+    {value, label}
+  end
+
+  defp normalize_form_option({value, label}), do: {value, serialize_option_value(label)}
+
+  defp normalize_form_option(%{value: value, label: label}) do
+    {value, serialize_option_value(label)}
+  end
+
+  defp normalize_form_option(option) when is_map(option) do
+    value = Map.get(option, :value) || Map.get(option, "value")
+    label = Map.get(option, :label) || Map.get(option, "label") || serialize_option_value(value)
+    {value, serialize_option_value(label)}
+  end
+
+  defp normalize_form_option(option) when is_list(option) do
+    option
+    |> Enum.into(%{})
+    |> normalize_form_option()
+  end
+
+  defp normalize_form_option(option), do: {option, serialize_option_value(option)}
+
+  defp serialize_option_value(nil), do: ""
+  defp serialize_option_value(value) when is_binary(value), do: value
+  defp serialize_option_value(value) when is_atom(value), do: Atom.to_string(value)
+  defp serialize_option_value(value) when is_integer(value), do: Integer.to_string(value)
+  defp serialize_option_value(value) when is_float(value), do: Float.to_string(value)
+  defp serialize_option_value(value), do: inspect(value)
 
   # Build HTML attributes string
   defp build_attributes(attrs_list) do

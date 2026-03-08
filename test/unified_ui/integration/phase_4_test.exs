@@ -844,6 +844,106 @@ defmodule UnifiedUi.Integration.Phase4Test do
   end
 
   # ============================================================================
+  # 4.5: Input Widgets
+  # ============================================================================
+
+  describe "4.5 - Input Widgets" do
+    test "PickList renders with options and selection metadata" do
+      pick_list = %Widgets.PickList{
+        id: :country_select,
+        options: [
+          %Widgets.PickListOption{value: "us", label: "United States"},
+          %Widgets.PickListOption{value: "ca", label: "Canada"}
+        ],
+        selected: "ca",
+        searchable: true,
+        on_select: :country_selected
+      }
+
+      assert {:pick_list, _terminal_node, terminal_meta} = Terminal.convert_iur(pick_list)
+      assert terminal_meta.id == :country_select
+      assert terminal_meta.selected == "ca"
+      assert terminal_meta.searchable == true
+      assert terminal_meta.on_select == :country_selected
+
+      assert {:pick_list, desktop_widget, desktop_meta} = Desktop.convert_iur(pick_list)
+      assert desktop_widget.type == :pick_list
+      assert desktop_meta.selected == "ca"
+
+      web_html = Web.convert_iur(pick_list)
+      assert web_html =~ ~s(id="country_select")
+      assert web_html =~ ~s(data-searchable="true")
+      assert web_html =~ "Canada"
+      assert web_html =~ ~s(phx-change="country-selected")
+    end
+
+    test "FormBuilder renders fields and submit metadata" do
+      form_builder = %Widgets.FormBuilder{
+        id: :profile_form,
+        fields: [
+          %Widgets.FormField{
+            name: :email,
+            type: :email,
+            label: "Email",
+            required: true,
+            placeholder: "user@example.com"
+          },
+          %Widgets.FormField{name: :newsletter, type: :checkbox, label: "Subscribe"}
+        ],
+        action: :save_profile,
+        on_submit: :profile_saved,
+        submit_label: "Save Profile"
+      }
+
+      assert {:form_builder, _terminal_node, terminal_meta} = Terminal.convert_iur(form_builder)
+      assert terminal_meta.id == :profile_form
+      assert terminal_meta.on_submit == :profile_saved
+
+      assert {:form_builder, desktop_widget, desktop_meta} = Desktop.convert_iur(form_builder)
+      assert desktop_widget.type == :form_builder
+      assert desktop_meta.submit_label == "Save Profile"
+
+      web_html = Web.convert_iur(form_builder)
+      assert web_html =~ ~s(<form)
+      assert web_html =~ ~s(id="profile_form")
+      assert web_html =~ ~s(phx-submit="profile-saved")
+      assert web_html =~ ~s(type="email")
+      assert web_html =~ ~s(required="true")
+      assert web_html =~ "Save Profile"
+    end
+
+    test "All input widgets render on all platforms" do
+      widgets = [
+        %Widgets.PickList{
+          id: :status_select,
+          options: [
+            %Widgets.PickListOption{value: :open, label: "Open"},
+            %Widgets.PickListOption{value: :closed, label: "Closed"}
+          ],
+          allow_clear: true
+        },
+        %Widgets.FormBuilder{
+          id: :task_form,
+          fields: [
+            %Widgets.FormField{name: :title, type: :text, required: true},
+            %Widgets.FormField{
+              name: :priority,
+              type: :select,
+              options: [{"low", "Low"}, {"high", "High"}]
+            }
+          ]
+        }
+      ]
+
+      Enum.each(widgets, fn widget ->
+        assert {:ok, _} = Terminal.render(widget)
+        assert {:ok, _} = Desktop.render(widget)
+        assert {:ok, _} = Web.render(widget)
+      end)
+    end
+  end
+
+  # ============================================================================
   # Cross-Platform Rendering Parity
   # ============================================================================
 

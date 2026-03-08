@@ -586,6 +586,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
       %{name: :text_input, attrs: attrs} ->
         [build_route(:change, attr_get(attrs, :on_change), attr_get(attrs, :id))]
 
+      %Widgets.PickList{} = pick_list ->
+        [build_route(:change, pick_list.on_select, pick_list.id)]
+
+      %{name: :pick_list, attrs: attrs} ->
+        [build_route(:change, attr_get(attrs, :on_select), attr_get(attrs, :id))]
+
       _ ->
         []
     end)
@@ -601,6 +607,14 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
       %{name: :text_input, attrs: attrs} ->
         fallback = attr_get(attrs, :form_id) || attr_get(attrs, :id)
+        [build_route(:submit, attr_get(attrs, :on_submit), fallback)]
+
+      %Widgets.FormBuilder{} = form_builder ->
+        fallback = form_builder.action || form_builder.id
+        [build_route(:submit, form_builder.on_submit, fallback)]
+
+      %{name: :form_builder, attrs: attrs} ->
+        fallback = attr_get(attrs, :action) || attr_get(attrs, :id)
         [build_route(:submit, attr_get(attrs, :on_submit), fallback)]
 
       _ ->
