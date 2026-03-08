@@ -104,12 +104,6 @@ defmodule UnifiedUi.Benchmarks.Phase5Baseline do
         :"M#{System.unique_integer([:positive])}"
       ])
 
-    widget_lines =
-      for index <- 1..widget_count do
-        "text \"Widget #{index}\", id: :widget_#{index}"
-      end
-      |> Enum.join("\n    ")
-
     source = """
     defmodule #{inspect(module)} do
       @behaviour UnifiedUi.ElmArchitecture
@@ -118,14 +112,11 @@ defmodule UnifiedUi.Benchmarks.Phase5Baseline do
       vbox do
         id :root
         spacing 1
-        #{widget_lines}
+
+        for index <- 1..#{widget_count} do
+          text "Widget \#{index}", id: :"widget_\#{index}"
+        end
       end
-
-      @impl true
-      def init(_opts), do: %{count: 0}
-
-      @impl true
-      def update(state, _signal), do: state
     end
     """
 

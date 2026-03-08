@@ -93,7 +93,8 @@ defmodule UnifiedUi.DslTest do
       assert %Layouts.VBox{id: :nav_root, children: [menu, context_menu, tabs, tree]} =
                module.view(%{})
 
-      assert %Widgets.Menu{id: :main_menu, title: "Main", position: :top, items: menu_items} = menu
+      assert %Widgets.Menu{id: :main_menu, title: "Main", position: :top, items: menu_items} =
+               menu
 
       assert [%Widgets.MenuItem{id: :open_item, label: "Open"}, %Widgets.MenuItem{label: "Save"}] =
                menu_items
@@ -182,6 +183,31 @@ defmodule UnifiedUi.DslTest do
       assert [%{id: 1, name: "Alice"}, %{id: 2, name: "Bob"}] = table.data
       assert %Widgets.Column{key: :id, header: "ID", align: :right, width: 4} = id_col
       assert %Widgets.Column{key: :name, header: "Name", sortable: true} = name_col
+    end
+
+    test "supports for-comprehension generated widgets inside layout blocks" do
+      module = unique_fixture_module(:for_generated_widgets)
+
+      compile_fixture(
+        module,
+        """
+        vbox do
+          id :loop_root
+
+          for i <- 1..100 do
+            text "Widget \#{i}", id: :"widget_\#{i}"
+          end
+        end
+        """
+      )
+
+      assert function_exported?(module, :view, 1)
+
+      assert %Layouts.VBox{id: :loop_root, children: children} = module.view(%{})
+      assert length(children) == 100
+      assert Enum.all?(children, &match?(%Widgets.Text{}, &1))
+      assert %Widgets.Text{id: :widget_1, content: "Widget 1"} = List.first(children)
+      assert %Widgets.Text{id: :widget_100, content: "Widget 100"} = List.last(children)
     end
   end
 
