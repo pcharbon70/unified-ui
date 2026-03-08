@@ -362,7 +362,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
   - Terminal: ANSI codes
   - Desktop: native styles
   - Web: CSS
-- [ ] 4.10.8 Define standard themes (default, dark, light)
+- [x] 4.10.8 Define standard themes (default, dark, light)
 - [ ] 4.10.9 Add theme switching at runtime
 
 **Implementation Notes:**
@@ -380,7 +380,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
 - [x] Test terminal style conversion
 - [x] Test desktop style conversion
 - [x] Test web style conversion (CSS)
-- [ ] Test standard themes load
+- [x] Test standard themes load
 
 ---
 

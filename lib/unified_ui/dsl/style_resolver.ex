@@ -55,6 +55,42 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
 
+  @standard_theme_attrs %{
+    default: %{
+      root: [fg: :black, bg: :white],
+      panel: [fg: :black, bg: :white, padding: 1],
+      text: [fg: :black],
+      muted_text: [fg: :gray],
+      accent: [fg: :blue, attrs: [:bold]],
+      button: [fg: :white, bg: :blue, attrs: [:bold], padding: 1],
+      button_primary: [fg: :white, bg: :blue, attrs: [:bold], padding: 1],
+      button_danger: [fg: :white, bg: :red, attrs: [:bold], padding: 1],
+      input: [fg: :black, bg: :white]
+    },
+    dark: %{
+      root: [fg: "#f5f5f5", bg: "#111111"],
+      panel: [fg: "#f5f5f5", bg: "#1a1a1a", padding: 1],
+      text: [fg: "#f5f5f5"],
+      muted_text: [fg: "#b0b0b0"],
+      accent: [fg: "#66b3ff", attrs: [:bold]],
+      button: [fg: "#f5f5f5", bg: "#2d5aa0", attrs: [:bold], padding: 1],
+      button_primary: [fg: :white, bg: "#2563eb", attrs: [:bold], padding: 1],
+      button_danger: [fg: :white, bg: "#b91c1c", attrs: [:bold], padding: 1],
+      input: [fg: "#f5f5f5", bg: "#222222"]
+    },
+    light: %{
+      root: [fg: "#111111", bg: "#ffffff"],
+      panel: [fg: "#111111", bg: "#f7f7f7", padding: 1],
+      text: [fg: "#111111"],
+      muted_text: [fg: "#555555"],
+      accent: [fg: "#1d4ed8", attrs: [:bold]],
+      button: [fg: :white, bg: "#1d4ed8", attrs: [:bold], padding: 1],
+      button_primary: [fg: :white, bg: "#1d4ed8", attrs: [:bold], padding: 1],
+      button_danger: [fg: :white, bg: "#dc2626", attrs: [:bold], padding: 1],
+      input: [fg: "#111111", bg: "#ffffff"]
+    }
+  }
+
   @doc """
   Resolves a named style to an IUR.Style struct.
 
@@ -159,7 +195,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   @spec load_theme(map(), atom()) :: %{atom() => Style.t()}
   def load_theme(dsl_state, theme_name) when is_atom(theme_name) do
     case find_theme(dsl_state, theme_name) do
-      nil -> %{}
+      nil -> load_standard_theme(theme_name)
       theme -> resolve_theme_with_inheritance(dsl_state, theme, MapSet.new())
     end
   end
@@ -360,7 +396,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
 
     inherited =
       case find_theme(dsl_state, base_theme) do
-        nil -> %{}
+        nil -> load_standard_theme(base_theme)
         parent_theme -> resolve_theme_with_inheritance(dsl_state, parent_theme, seen)
       end
 
@@ -390,5 +426,11 @@ defmodule UnifiedUi.Dsl.StyleResolver do
       ref when is_atom(ref) or is_list(ref) -> resolve_style_ref(dsl_state, ref)
       _ -> nil
     end
+  end
+
+  defp load_standard_theme(theme_name) when is_atom(theme_name) do
+    @standard_theme_attrs
+    |> Map.get(theme_name, %{})
+    |> Enum.into(%{}, fn {token, attrs} -> {token, Style.new(attrs)} end)
   end
 end

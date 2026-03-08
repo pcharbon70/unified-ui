@@ -267,6 +267,20 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
   end
 
   describe "load_theme/2" do
+    test "loads built-in standard themes when no DSL theme exists" do
+      dsl_state = create_dsl_state([])
+
+      default_theme = StyleResolver.load_theme(dsl_state, :default)
+      dark_theme = StyleResolver.load_theme(dsl_state, :dark)
+      light_theme = StyleResolver.load_theme(dsl_state, :light)
+
+      assert %Style{fg: :black, bg: :white} = default_theme.root
+      assert %Style{bg: "#111111"} = dark_theme.root
+      assert %Style{bg: "#ffffff"} = light_theme.root
+      assert %Style{} = dark_theme.button_primary
+      assert %Style{} = light_theme.button_danger
+    end
+
     test "loads theme style mappings with base_theme inheritance" do
       entities = [
         create_style(:base_text, attributes: [fg: :white, attrs: [:bold]]),
@@ -292,6 +306,26 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       assert %Style{fg: :yellow, attrs: [:bold]} = loaded.text
       assert %Style{bg: :black, padding: 2} = loaded.card
       assert %Style{fg: :red} = loaded.danger
+    end
+
+    test "DSL theme can inherit from a standard base theme" do
+      entities = [
+        create_theme(:brand_dark,
+          base_theme: :dark,
+          styles: [
+            accent: [fg: :magenta, attrs: [:bold]],
+            heading: [fg: :yellow, attrs: [:bold]]
+          ]
+        )
+      ]
+
+      dsl_state = create_dsl_state(entities)
+      loaded = StyleResolver.load_theme(dsl_state, :brand_dark)
+
+      assert %Style{bg: "#111111"} = loaded.root
+      assert %Style{fg: :magenta} = loaded.accent
+      assert :bold in loaded.accent.attrs
+      assert %Style{fg: :yellow} = loaded.heading
     end
 
     test "returns empty map when theme is missing" do
@@ -327,6 +361,13 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       assert map_size(result) == 2
       assert %DslTheme{name: :default} = result[:default]
       assert %DslTheme{name: :dark, base_theme: :default} = result[:dark]
+    end
+
+    test "does not include built-in standard themes in DSL theme map" do
+      dsl_state = create_dsl_state([])
+      result = StyleResolver.get_all_themes(dsl_state)
+
+      assert result == %{}
     end
   end
 
