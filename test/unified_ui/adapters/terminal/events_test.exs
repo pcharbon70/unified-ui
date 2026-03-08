@@ -240,6 +240,30 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
   end
 
+  describe "navigation_key/3" do
+    test "maps directional navigation keys to normalized actions" do
+      assert {:ok, signal} = Events.navigation_key(:main_tabs, :right)
+
+      assert signal.type == "unified.key.pressed"
+      assert signal.data.widget_id == :main_tabs
+      assert signal.data.key == :right
+      assert signal.data.action == :navigate_right
+      assert signal.data.platform == :terminal
+    end
+
+    test "maps activation keys to activate action" do
+      assert {:ok, signal} = Events.navigation_key(:main_menu, :enter)
+
+      assert signal.data.widget_id == :main_menu
+      assert signal.data.key == :enter
+      assert signal.data.action == :activate
+    end
+
+    test "returns error for unsupported keys" do
+      assert {:error, :unsupported_navigation_key} = Events.navigation_key(:main_tree, :f1)
+    end
+  end
+
   describe "extract_handlers/1" do
     test "extracts button click handlers from render tree" do
       render_tree = {:button, nil, %{

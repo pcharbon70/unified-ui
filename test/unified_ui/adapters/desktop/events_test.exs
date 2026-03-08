@@ -320,6 +320,30 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
     end
   end
 
+  describe "navigation_key/3" do
+    test "maps directional navigation keys to normalized actions" do
+      assert {:ok, signal} = Events.navigation_key(:main_tabs, :left)
+
+      assert signal.type == "unified.key.pressed"
+      assert signal.data.widget_id == :main_tabs
+      assert signal.data.key == :left
+      assert signal.data.action == :navigate_left
+      assert signal.data.platform == :desktop
+    end
+
+    test "maps escape to dismiss action" do
+      assert {:ok, signal} = Events.navigation_key(:main_menu, :escape)
+
+      assert signal.data.widget_id == :main_menu
+      assert signal.data.key == :escape
+      assert signal.data.action == :dismiss
+    end
+
+    test "returns error for unsupported keys" do
+      assert {:error, :unsupported_navigation_key} = Events.navigation_key(:main_tree, :f1)
+    end
+  end
+
   describe "mouse_click/5" do
     test "creates mouse click signal with default values" do
       assert {:ok, signal} = Events.mouse_click(:my_button)

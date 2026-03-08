@@ -80,7 +80,7 @@ Create a comprehensive table widget with sorting, selection, and scrolling.
 
 ## 4.3 Navigation Widgets
 
-- [ ] **Task 4.3** Implement navigation widgets (menu, tabs, tree_view)
+- [x] **Task 4.3** Implement navigation widgets (menu, tabs, tree_view)
 
 Create widgets for navigation: menus, tabs, and tree views.
 
@@ -119,7 +119,7 @@ Create widgets for navigation: menus, tabs, and tree views.
 - [x] Test tab switching works
 - [x] Test tree_view entity
 - [x] Test tree expand/collapse
-- [ ] Test keyboard navigation
+- [x] Test keyboard navigation
 - [x] Test all platforms render navigation widgets
 
 ---

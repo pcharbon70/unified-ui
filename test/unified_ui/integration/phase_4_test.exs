@@ -10,7 +10,8 @@ defmodule UnifiedUi.Integration.Phase4Test do
   - 4.3.2: Context menu triggering
   - 4.3.3: Tabs with content switching
   - 4.3.4: Tree view with expand/collapse
-  - 4.3.5: Complex navigation UI
+  - 4.3.5: Keyboard navigation signals
+  - 4.3.6: Complex navigation UI
   """
 
   use ExUnit.Case, async: false
@@ -450,10 +451,51 @@ defmodule UnifiedUi.Integration.Phase4Test do
   end
 
   # ============================================================================
-  # 4.3.5: Complex Navigation UI
+  # 4.3.5: Keyboard Navigation
   # ============================================================================
 
-  describe "4.3.5 - Complex Navigation UI" do
+  describe "4.3.5 - Keyboard Navigation" do
+    test "navigation keys map to normalized actions across adapters" do
+      adapter_platforms = [
+        {Terminal.Events, :terminal},
+        {Desktop.Events, :desktop},
+        {Web.Events, :web}
+      ]
+
+      Enum.each(adapter_platforms, fn {events_module, platform} ->
+        assert {:ok, signal} = events_module.navigation_key(:main_tabs, :right)
+        assert signal.type == "unified.key.pressed"
+        assert signal.data.widget_id == :main_tabs
+        assert signal.data.key == :right
+        assert signal.data.action == :navigate_right
+        assert signal.data.platform == platform
+      end)
+    end
+
+    test "activation and dismiss keys map consistently for navigation widgets" do
+      adapter_platforms = [
+        {Terminal.Events, :terminal},
+        {Desktop.Events, :desktop},
+        {Web.Events, :web}
+      ]
+
+      Enum.each(adapter_platforms, fn {events_module, platform} ->
+        assert {:ok, activate_signal} = events_module.navigation_key(:main_menu, :enter)
+        assert activate_signal.data.action == :activate
+        assert activate_signal.data.platform == platform
+
+        assert {:ok, dismiss_signal} = events_module.navigation_key(:context_menu, :escape)
+        assert dismiss_signal.data.action == :dismiss
+        assert dismiss_signal.data.platform == platform
+      end)
+    end
+  end
+
+  # ============================================================================
+  # 4.3.6: Complex Navigation UI
+  # ============================================================================
+
+  describe "4.3.6 - Complex Navigation UI" do
     test "Full application layout with all navigation widgets" do
       ui = %Layouts.VBox{
         id: :app_layout,
