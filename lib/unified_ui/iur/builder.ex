@@ -788,11 +788,27 @@ defmodule UnifiedUi.IUR.Builder do
     attrs = get_entity_attrs(entity)
 
     options =
-      case build_nested_entities(entity, dsl_state, :options, &build_pick_list_option/2,
+      case build_nested_entities(entity, dsl_state, :opts, &build_pick_list_option/2,
              child_name: :pick_list_option
            ) do
-        [] -> normalize_pick_list_options(Map.get(attrs, :options), dsl_state)
-        nested -> nested
+        [] ->
+          case build_nested_entities(entity, dsl_state, :option_items, &build_pick_list_option/2,
+                 child_name: :pick_list_option
+               ) do
+            [] ->
+              case build_nested_entities(entity, dsl_state, :options, &build_pick_list_option/2,
+                     child_name: :pick_list_option
+                   ) do
+                [] -> normalize_pick_list_options(Map.get(attrs, :options), dsl_state)
+                nested -> nested
+              end
+
+            nested ->
+              nested
+          end
+
+        nested ->
+          nested
       end
 
     %Widgets.PickList{
@@ -837,11 +853,27 @@ defmodule UnifiedUi.IUR.Builder do
     attrs = get_entity_attrs(entity)
 
     fields =
-      case build_nested_entities(entity, dsl_state, :fields, &build_form_field/2,
+      case build_nested_entities(entity, dsl_state, :flds, &build_form_field/2,
              child_name: :form_field
            ) do
-        [] -> normalize_form_fields(Map.get(attrs, :fields), dsl_state)
-        nested -> nested
+        [] ->
+          case build_nested_entities(entity, dsl_state, :field_items, &build_form_field/2,
+                 child_name: :form_field
+               ) do
+            [] ->
+              case build_nested_entities(entity, dsl_state, :fields, &build_form_field/2,
+                     child_name: :form_field
+                   ) do
+                [] -> normalize_form_fields(Map.get(attrs, :fields), dsl_state)
+                nested -> nested
+              end
+
+            nested ->
+              nested
+          end
+
+        nested ->
+          nested
       end
 
     %Widgets.FormBuilder{

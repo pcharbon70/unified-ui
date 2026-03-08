@@ -338,16 +338,18 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     input_key = route.source
     input_value = Map.get(signal_data, :value)
 
-    if is_atom(input_key) and not is_nil(input_value) do
-      Map.put(route.payload, input_key, input_value)
-    else
-      route.payload
-    end
+    route.payload
+    |> maybe_put_input_value(input_key, input_value)
+    |> maybe_put_pick_list_filter(route, signal_data)
   end
 
   defp default_route_updates(:submit, signal, route) do
     signal_data = extract_signal_data(signal)
-    Map.merge(route.payload, extract_submit_updates(signal_data))
+    submit_data = extract_submit_updates(signal_data)
+
+    route.payload
+    |> Map.merge(submit_data)
+    |> maybe_put_form_validation(route, submit_data)
   end
 
   defp default_route_updates(_kind, _signal, _route), do: %{}
@@ -587,10 +589,24 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
         [build_route(:change, attr_get(attrs, :on_change), attr_get(attrs, :id))]
 
       %Widgets.PickList{} = pick_list ->
-        [build_route(:change, pick_list.on_select, pick_list.id)]
+        [
+          build_pick_list_change_route(
+            pick_list.on_select,
+            pick_list.id,
+            pick_list.searchable,
+            pick_list.options
+          )
+        ]
 
       %{name: :pick_list, attrs: attrs} ->
-        [build_route(:change, attr_get(attrs, :on_select), attr_get(attrs, :id))]
+        [
+          build_pick_list_change_route(
+            attr_get(attrs, :on_select),
+            attr_get(attrs, :id),
+            attr_get(attrs, :searchable),
+            attr_get(attrs, :options)
+          )
+        ]
 
       _ ->
         []
@@ -611,11 +627,18 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
       %Widgets.FormBuilder{} = form_builder ->
         fallback = form_builder.action || form_builder.id
-        [build_route(:submit, form_builder.on_submit, fallback)]
+        [build_form_builder_submit_route(form_builder.on_submit, fallback, form_builder.fields)]
 
       %{name: :form_builder, attrs: attrs} ->
         fallback = attr_get(attrs, :action) || attr_get(attrs, :id)
-        [build_route(:submit, attr_get(attrs, :on_submit), fallback)]
+
+        [
+          build_form_builder_submit_route(
+            attr_get(attrs, :on_submit),
+            fallback,
+            attr_get(attrs, :fields)
+          )
+        ]
 
       _ ->
         []
@@ -638,6 +661,33 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
       }
     else
       nil
+    end
+  end
+
+  defp build_pick_list_change_route(handler, fallback_key, searchable, options) do
+    case build_route(:change, handler, fallback_key) do
+      nil ->
+        nil
+
+      route ->
+        Map.merge(route, %{
+          widget: :pick_list,
+          searchable: searchable == true,
+          options: normalize_pick_list_options(options)
+        })
+    end
+  end
+
+  defp build_form_builder_submit_route(handler, fallback_key, fields) do
+    case build_route(:submit, handler, fallback_key) do
+      nil ->
+        nil
+
+      route ->
+        Map.merge(route, %{
+          widget: :form_builder,
+          fields: normalize_form_builder_fields(fields)
+        })
     end
   end
 
@@ -681,6 +731,269 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
   defp handler_payload({_signal_name, payload}) when is_map(payload), do: payload
   defp handler_payload(_), do: %{}
+
+  defp maybe_put_input_value(payload, input_key, input_value)
+       when is_atom(input_key) and not is_nil(input_value) do
+    Map.put(payload, input_key, input_value)
+  end
+
+  defp maybe_put_input_value(payload, _input_key, _input_value), do: payload
+
+  defp maybe_put_pick_list_filter(payload, route, signal_data) do
+    query =
+      Map.get(signal_data, :query) || Map.get(signal_data, :search) ||
+        Map.get(signal_data, :filter)
+
+    source = Map.get(route, :source)
+    searchable? = Map.get(route, :searchable) == true
+    widget = Map.get(route, :widget)
+
+    cond do
+      widget != :pick_list ->
+        payload
+
+      searchable? != true ->
+        payload
+
+      not is_atom(source) ->
+        payload
+
+      not is_binary(query) ->
+        payload
+
+      true ->
+        filtered_options = filter_pick_list_options(Map.get(route, :options, []), query)
+
+        payload
+        |> Map.put(:"#{source}_search_query", query)
+        |> Map.put(:"#{source}_filtered_options", filtered_options)
+    end
+  end
+
+  defp maybe_put_form_validation(payload, route, submit_data) do
+    source = Map.get(route, :source)
+    widget = Map.get(route, :widget)
+
+    cond do
+      widget != :form_builder ->
+        payload
+
+      not is_atom(source) ->
+        payload
+
+      true ->
+        errors = validate_form_builder_fields(Map.get(route, :fields, []), submit_data)
+        valid? = map_size(errors) == 0
+
+        payload
+        |> Map.put(:"#{source}_valid", valid?)
+        |> Map.put(:"#{source}_errors", errors)
+    end
+  end
+
+  defp filter_pick_list_options(options, query) when is_list(options) and is_binary(query) do
+    normalized_query =
+      query
+      |> String.trim()
+      |> String.downcase()
+
+    if normalized_query == "" do
+      options
+    else
+      Enum.filter(options, fn option ->
+        label =
+          option
+          |> pick_list_option_label()
+          |> String.downcase()
+
+        value =
+          option
+          |> pick_list_option_value()
+          |> stringify_value()
+          |> String.downcase()
+
+        String.contains?(label, normalized_query) or String.contains?(value, normalized_query)
+      end)
+    end
+  end
+
+  defp filter_pick_list_options(options, _query) when is_list(options), do: options
+  defp filter_pick_list_options(_options, _query), do: []
+
+  defp pick_list_option_label(%{label: label}) when is_binary(label), do: label
+
+  defp pick_list_option_label(option) do
+    option
+    |> pick_list_option_value()
+    |> stringify_value()
+  end
+
+  defp pick_list_option_value(%{value: value}), do: value
+  defp pick_list_option_value({value, _label}), do: value
+  defp pick_list_option_value(option), do: option
+
+  defp normalize_pick_list_options(nil), do: []
+
+  defp normalize_pick_list_options(options) when is_list(options) do
+    Enum.map(options, fn
+      %Widgets.PickListOption{} = option ->
+        %{value: option.value, label: option.label, disabled: option.disabled}
+
+      {value, label} ->
+        %{value: value, label: stringify_value(label), disabled: false}
+
+      option when is_map(option) ->
+        %{
+          value: Map.get(option, :value) || Map.get(option, "value"),
+          label:
+            Map.get(option, :label) || Map.get(option, "label") ||
+              stringify_value(Map.get(option, :value) || Map.get(option, "value")),
+          disabled: Map.get(option, :disabled) || Map.get(option, "disabled") || false
+        }
+
+      option when is_list(option) ->
+        normalize_pick_list_options([Enum.into(option, %{})]) |> List.first()
+
+      option ->
+        %{value: option, label: stringify_value(option), disabled: false}
+    end)
+  end
+
+  defp normalize_pick_list_options(_options), do: []
+
+  defp normalize_form_builder_fields(nil), do: []
+
+  defp normalize_form_builder_fields(fields) when is_list(fields) do
+    fields
+    |> Enum.map(&normalize_form_builder_field/1)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp normalize_form_builder_fields(_fields), do: []
+
+  defp normalize_form_builder_field(%Widgets.FormField{} = field) do
+    %{
+      name: field.name,
+      type: field.type,
+      required: field.required == true,
+      options: normalize_pick_list_options(field.options)
+    }
+  end
+
+  defp normalize_form_builder_field({name, type}) when is_atom(name) and is_atom(type) do
+    %{name: name, type: type, required: false, options: []}
+  end
+
+  defp normalize_form_builder_field(field) when is_list(field) do
+    field
+    |> Enum.into(%{})
+    |> normalize_form_builder_field()
+  end
+
+  defp normalize_form_builder_field(field) when is_map(field) do
+    name = Map.get(field, :name) || Map.get(field, "name")
+    type = Map.get(field, :type) || Map.get(field, "type")
+
+    if is_atom(name) and is_atom(type) do
+      %{
+        name: name,
+        type: type,
+        required: (Map.get(field, :required) || Map.get(field, "required")) == true,
+        options:
+          normalize_pick_list_options(Map.get(field, :options) || Map.get(field, "options"))
+      }
+    else
+      nil
+    end
+  end
+
+  defp normalize_form_builder_field(_field), do: nil
+
+  defp validate_form_builder_fields(fields, submit_data)
+       when is_list(fields) and is_map(submit_data) do
+    Enum.reduce(fields, %{}, fn field, acc ->
+      case validate_form_builder_field(field, submit_data) do
+        :ok ->
+          acc
+
+        {:error, field_name, reason} ->
+          Map.update(acc, field_name, [reason], fn reasons -> reasons ++ [reason] end)
+      end
+    end)
+  end
+
+  defp validate_form_builder_fields(_fields, _submit_data), do: %{}
+
+  defp validate_form_builder_field(%{name: name} = field, submit_data) when is_atom(name) do
+    value = Map.get(submit_data, name)
+    type = Map.get(field, :type)
+    required? = Map.get(field, :required) == true
+
+    cond do
+      required? and blank_value?(value) ->
+        {:error, name, :required}
+
+      blank_value?(value) ->
+        :ok
+
+      type == :email and not valid_email_value?(value) ->
+        {:error, name, :invalid_email}
+
+      type == :number and not valid_number_value?(value) ->
+        {:error, name, :invalid_number}
+
+      type == :select and
+          not valid_select_value?(value, Map.get(field, :options, [])) ->
+        {:error, name, :invalid_option}
+
+      type == :checkbox and not valid_checkbox_value?(value) ->
+        {:error, name, :invalid_checkbox}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp validate_form_builder_field(_field, _submit_data), do: :ok
+
+  defp blank_value?(nil), do: true
+  defp blank_value?(value) when is_binary(value), do: String.trim(value) == ""
+  defp blank_value?(value) when is_list(value), do: value == []
+  defp blank_value?(_value), do: false
+
+  defp valid_email_value?(value) when is_binary(value) do
+    String.match?(value, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
+  end
+
+  defp valid_email_value?(_value), do: false
+
+  defp valid_number_value?(value) when is_integer(value) or is_float(value), do: true
+
+  defp valid_number_value?(value) when is_binary(value) do
+    String.match?(String.trim(value), ~r/^-?\d+(\.\d+)?$/)
+  end
+
+  defp valid_number_value?(_value), do: false
+
+  defp valid_checkbox_value?(value) do
+    value in [true, false, "true", "false", "on", "off", "1", "0", 1, 0]
+  end
+
+  defp valid_select_value?(value, options) when is_list(options) do
+    option_values =
+      options
+      |> Enum.map(&pick_list_option_value/1)
+
+    value in option_values
+  end
+
+  defp valid_select_value?(_value, _options), do: false
+
+  defp stringify_value(value) when is_binary(value), do: value
+  defp stringify_value(value) when is_atom(value), do: Atom.to_string(value)
+  defp stringify_value(value) when is_integer(value), do: Integer.to_string(value)
+  defp stringify_value(value) when is_float(value), do: Float.to_string(value)
+  defp stringify_value(value), do: inspect(value)
 
   defp attr_get(attrs, key) when is_map(attrs), do: Map.get(attrs, key)
   defp attr_get(attrs, key) when is_list(attrs), do: Keyword.get(attrs, key)

@@ -107,7 +107,7 @@ defmodule UnifiedUi.Dsl.Entities.InputWidgets do
       ]
     ],
     entities: [
-      options: [@pick_list_option_entity]
+      opts: [@pick_list_option_entity]
     ],
     describe: """
     A pick list widget for selecting one value from a list of options.
@@ -222,7 +222,7 @@ defmodule UnifiedUi.Dsl.Entities.InputWidgets do
       ]
     ],
     entities: [
-      fields: [@form_field_entity]
+      flds: [@form_field_entity]
     ],
     describe: """
     A dynamic form builder that composes multiple form fields.
