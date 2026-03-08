@@ -126,7 +126,7 @@ Create widgets for navigation: menus, tabs, and tree views.
 
 ## 4.4 Dialog and Feedback Widgets
 
-- [ ] **Task 4.4** Implement dialog and feedback widgets (dialog, alert_dialog, toast)
+- [x] **Task 4.4** Implement dialog and feedback widgets (dialog, alert_dialog, toast)
 
 Create modal dialogs and notification widgets.
 
@@ -142,8 +142,8 @@ Create modal dialogs and notification widgets.
   - options: `severity`, `duration`, `on_dismiss`
 - [x] 4.4.5 Create target and IUR structs
 - [x] 4.4.6 Implement renderer converters for all platforms
-- [ ] 4.4.7 Implement modal behavior
-- [ ] 4.4.8 Implement auto-dismiss for toast
+- [x] 4.4.7 Implement modal behavior
+- [x] 4.4.8 Implement auto-dismiss for toast
 
 **Implementation Notes:**
 - Dialog content can be nested layouts
@@ -155,8 +155,8 @@ Create modal dialogs and notification widgets.
 - [x] Test dialog entity with content
 - [x] Test dialog close signal
 - [x] Test alert_dialog severity
-- [ ] Test toast auto-dismiss
-- [ ] Test modal behavior blocks background
+- [x] Test toast auto-dismiss
+- [x] Test modal behavior blocks background
 - [x] Test all platforms render dialogs
 
 ---

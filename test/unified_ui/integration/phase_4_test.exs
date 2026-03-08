@@ -710,6 +710,46 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert {:ok, _} = Web.render(dialog)
     end
 
+    test "Modal behavior marks background as blocked across adapters" do
+      modal_dialog = %Widgets.Dialog{
+        id: :blocking_dialog,
+        title: "Blocking Dialog",
+        content: "Modal content",
+        modal: true
+      }
+
+      non_modal_dialog = %Widgets.Dialog{
+        id: :non_blocking_dialog,
+        title: "Non-Blocking Dialog",
+        content: "Overlay content",
+        modal: false
+      }
+
+      assert {:dialog, _node, terminal_modal_meta} = Terminal.convert_iur(modal_dialog)
+      assert terminal_modal_meta.blocks_background == true
+
+      assert {:dialog, _node, terminal_non_modal_meta} = Terminal.convert_iur(non_modal_dialog)
+      assert terminal_non_modal_meta.blocks_background == false
+
+      assert {:dialog, desktop_modal_widget, desktop_modal_meta} =
+               Desktop.convert_iur(modal_dialog)
+
+      assert desktop_modal_meta.blocks_background == true
+      assert desktop_modal_widget.props[:blocks_background] == true
+
+      assert {:dialog, desktop_non_modal_widget, desktop_non_modal_meta} =
+               Desktop.convert_iur(non_modal_dialog)
+
+      assert desktop_non_modal_meta.blocks_background == false
+      assert desktop_non_modal_widget.props[:blocks_background] == false
+
+      modal_html = Web.convert_iur(modal_dialog)
+      non_modal_html = Web.convert_iur(non_modal_dialog)
+
+      assert modal_html =~ "data-blocks-background=\"true\""
+      assert non_modal_html =~ "data-blocks-background=\"false\""
+    end
+
     test "Alert dialog severity metadata is preserved" do
       alert = %Widgets.AlertDialog{
         id: :delete_alert,
@@ -729,7 +769,7 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert {:ok, _} = Web.render(alert)
     end
 
-    test "Toast duration and dismiss signal render across platforms" do
+    test "Toast auto-dismiss metadata is generated when duration is positive" do
       toast = %Widgets.Toast{
         id: :save_toast,
         message: "Saved successfully",
@@ -741,9 +781,41 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert toast.duration == 1500
       assert toast.on_dismiss == :dismiss_save_toast
 
-      assert {:ok, _} = Terminal.render(toast)
-      assert {:ok, _} = Desktop.render(toast)
-      assert {:ok, _} = Web.render(toast)
+      assert {:toast, _node, terminal_meta} = Terminal.convert_iur(toast)
+      assert terminal_meta.auto_dismiss == true
+      assert is_integer(terminal_meta.dismiss_at)
+
+      assert {:toast, desktop_widget, desktop_meta} = Desktop.convert_iur(toast)
+      assert desktop_widget.props[:auto_dismiss] == true
+      assert is_integer(desktop_widget.props[:dismiss_at])
+      assert desktop_meta.auto_dismiss == true
+      assert is_integer(desktop_meta.dismiss_at)
+
+      web_html = Web.convert_iur(toast)
+      assert web_html =~ "data-auto-dismiss=\"true\""
+      assert web_html =~ "data-dismiss-at=\""
+    end
+
+    test "Toast duration 0 disables auto-dismiss" do
+      persistent_toast = %Widgets.Toast{
+        id: :persistent_toast,
+        message: "Requires manual dismiss",
+        duration: 0
+      }
+
+      assert {:toast, _node, terminal_meta} = Terminal.convert_iur(persistent_toast)
+      assert terminal_meta.auto_dismiss == false
+      assert terminal_meta.dismiss_at == nil
+
+      assert {:toast, desktop_widget, desktop_meta} = Desktop.convert_iur(persistent_toast)
+      assert desktop_widget.props[:auto_dismiss] == false
+      refute Keyword.has_key?(desktop_widget.props, :dismiss_at)
+      assert desktop_meta.auto_dismiss == false
+      assert desktop_meta.dismiss_at == nil
+
+      web_html = Web.convert_iur(persistent_toast)
+      assert web_html =~ "data-auto-dismiss=\"false\""
+      refute web_html =~ "data-dismiss-at=\""
     end
 
     test "All dialog widgets render on all platforms" do

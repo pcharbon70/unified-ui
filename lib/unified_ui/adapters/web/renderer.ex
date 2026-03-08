@@ -936,6 +936,7 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = if dialog.id, do: [{"id", dialog.id} | attrs_list], else: attrs_list
     attrs_list = [{"data-modal", dialog.modal} | attrs_list]
     attrs_list = [{"data-closable", dialog.closable} | attrs_list]
+    attrs_list = [{"data-blocks-background", dialog.modal == true} | attrs_list]
 
     attrs_list =
       if dialog.on_close do
@@ -982,6 +983,7 @@ defmodule UnifiedUi.Adapters.Web do
     attrs_list = [{"class", "unified-alert-dialog alert-#{alert.severity}"}]
     attrs_list = if alert.id, do: [{"id", alert.id} | attrs_list], else: attrs_list
     attrs_list = [{"data-modal", alert.modal} | attrs_list]
+    attrs_list = [{"data-blocks-background", alert.modal == true} | attrs_list]
 
     attrs_list =
       if alert.on_confirm do
@@ -1007,9 +1009,15 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    dismiss_at = toast_dismiss_at(toast.duration)
+
     attrs_list = [{"class", "unified-toast toast-#{toast.severity}"}]
     attrs_list = if toast.id, do: [{"id", toast.id} | attrs_list], else: attrs_list
     attrs_list = [{"data-duration", toast.duration} | attrs_list]
+    attrs_list = [{"data-auto-dismiss", not is_nil(dismiss_at)} | attrs_list]
+
+    attrs_list =
+      if dismiss_at, do: [{"data-dismiss-at", dismiss_at} | attrs_list], else: attrs_list
 
     attrs_list =
       if toast.on_dismiss do
@@ -1224,6 +1232,12 @@ defmodule UnifiedUi.Adapters.Web do
   defp align_to_css_class(:left), do: "align-left"
   defp align_to_css_class(:right), do: "align-right"
   defp align_to_css_class(:center), do: "align-center"
+
+  defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
+    System.monotonic_time(:millisecond) + duration
+  end
+
+  defp toast_dismiss_at(_duration), do: nil
 
   defp put_config(%State{} = renderer_state, config) when is_list(config) do
     %{renderer_state | config: config}

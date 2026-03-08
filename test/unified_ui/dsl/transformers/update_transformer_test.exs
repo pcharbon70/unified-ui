@@ -165,6 +165,62 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{closed: true} = module.update(state, signal)
     end
 
+    test "modal dialogs block background click routes until closed" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Background",
+            id: :background_btn,
+            on_click: {:background_clicked, %{background_clicked: true}}
+
+          alert_dialog :confirm_dialog, "Confirm", "Are you sure?",
+            on_confirm: {:confirm_clicked, %{confirm_clicked: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      background_signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :background_btn,
+          action: :background_clicked
+        })
+
+      # Background click is blocked while the modal is active (default visible: true).
+      assert state == module.update(state, background_signal)
+
+      modal_signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :confirm_dialog,
+          action: :confirm_clicked
+        })
+
+      assert %{confirm_clicked: true} = module.update(state, modal_signal)
+    end
+
+    test "modal blocking can be disabled through modal visibility state flags" do
+      module =
+        compile_fixture("""
+        vbox do
+          button "Background",
+            id: :background_btn,
+            on_click: {:background_clicked, %{background_clicked: true}}
+
+          dialog :confirm_dialog, "Confirm", "Are you sure?"
+        end
+        """)
+
+      state = module.init([]) |> Map.put(:confirm_dialog_visible, false)
+
+      signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :background_btn,
+          action: :background_clicked
+        })
+
+      assert %{background_clicked: true} = module.update(state, signal)
+    end
+
     test "unmatched signals return state unchanged" do
       module =
         compile_fixture("""
