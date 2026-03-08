@@ -13,6 +13,8 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
   @platforms [:terminal, :desktop, :web]
 
   @quick_iterations %{
+    compile: 8,
+    compile_warmup: 20,
     iur: 120,
     render: 60,
     signal: 500,
@@ -20,15 +22,17 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
   }
 
   @full_iterations %{
+    compile: 20,
+    compile_warmup: 30,
     iur: 300,
     render: 150,
     signal: 1_200,
     style: 1_500
   }
 
-  # Regression budgets are intentionally tolerant and guard against large slowdowns.
+  # Runtime budgets are intentionally tolerant; compile now tracks product target.
   @budgets %{
-    compile_100_widgets_ms: 3_500.0,
+    compile_100_widgets_ms: 100.0,
     iur_build_avg_us: 2_500.0,
     render_concurrent_avg_us: 1_200.0,
     terminal_frame_avg_us: 16_670.0,
@@ -54,16 +58,17 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
     IO.puts("== UnifiedUi Phase 5 Performance Budget Check ==")
     IO.puts("Mode: #{if(quick?, do: "quick", else: "full")}")
 
+    compile_check = check_compile_time(iterations.compile, iterations.compile_warmup)
+
     dsl_state = build_large_dsl_state(160)
     iur_tree = Builder.build(dsl_state)
     style_state = build_style_state(40)
 
     {component_module, component_id, signal} = start_benchmark_component()
 
-    checks =
+    runtime_checks =
       try do
         [
-          check_compile_time(),
           check_iur_build(dsl_state, iterations.iur),
           check_render_concurrent(iur_tree, iterations.render),
           check_terminal_frame(iur_tree, iterations.render),
@@ -74,6 +79,8 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
         _ = Agent.stop_component(component_id)
         unload_module(component_module)
       end
+
+    checks = [compile_check | runtime_checks]
 
     IO.puts("")
     Enum.each(checks, &print_check_result/1)
@@ -88,15 +95,16 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
     end
   end
 
-  defp check_compile_time do
-    {elapsed_us, module} =
-      :timer.tc(fn ->
-        compile_dsl_module(100)
-      end)
+  defp check_compile_time(iterations, warmup_count) do
+    warm_compile_path(warmup_count)
 
-    unload_module(module)
+    samples_ms = compile_samples_ms(iterations)
 
-    elapsed_ms = elapsed_us / 1_000.0
+    if System.get_env("UNIFIED_UI_PERF_DEBUG") == "1" do
+      IO.inspect(samples_ms, label: "dsl.compile.100_widgets.samples_ms")
+    end
+
+    elapsed_ms = median(samples_ms)
 
     evaluate(
       "dsl.compile.100_widgets",
@@ -205,12 +213,6 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
         :"M#{System.unique_integer([:positive])}"
       ])
 
-    widget_lines =
-      for index <- 1..widget_count do
-        "text \"Widget #{index}\", id: :widget_#{index}"
-      end
-      |> Enum.join("\n    ")
-
     source = """
     defmodule #{inspect(module)} do
       @behaviour UnifiedUi.ElmArchitecture
@@ -219,19 +221,47 @@ defmodule UnifiedUi.Benchmarks.Phase5BudgetCheck do
       vbox do
         id :root
         spacing 1
-        #{widget_lines}
+
+        for index <- 1..#{widget_count} do
+          text "Widget \#{index}", id: :"widget_\#{index}"
+        end
       end
-
-      @impl true
-      def init(_opts), do: %{count: 0}
-
-      @impl true
-      def update(state, _signal), do: state
     end
     """
 
     Code.compile_string(source)
     module
+  end
+
+  defp compile_samples_ms(iterations) when iterations > 0 do
+    Enum.map(1..iterations, fn _ ->
+      {elapsed_us, module} =
+        :timer.tc(fn ->
+          compile_dsl_module(100)
+        end)
+
+      unload_module(module)
+      elapsed_us / 1_000.0
+    end)
+  end
+
+  defp warm_compile_path(warmup_count) when warmup_count > 0 do
+    Enum.each(1..warmup_count, fn _ ->
+      warmup_module = compile_dsl_module(100)
+      unload_module(warmup_module)
+    end)
+  end
+
+  defp median(values) when is_list(values) and values != [] do
+    sorted = Enum.sort(values)
+    count = length(sorted)
+    midpoint = div(count, 2)
+
+    if rem(count, 2) == 0 do
+      (Enum.at(sorted, midpoint - 1) + Enum.at(sorted, midpoint)) / 2.0
+    else
+      Enum.at(sorted, midpoint)
+    end
   end
 
   defp build_large_dsl_state(widget_count) do

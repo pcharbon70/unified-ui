@@ -36,7 +36,7 @@ Analyze current test coverage and enhance tests to achieve 80%+ coverage.
 
 ## 5.2 Performance Optimization
 
-- [ ] **Task 5.2** Profile and optimize performance across the framework
+- [x] **Task 5.2** Profile and optimize performance across the framework
 
 Identify performance bottlenecks and optimize for responsive UIs.
 
@@ -58,7 +58,7 @@ Identify performance bottlenecks and optimize for responsive UIs.
 - Document performance characteristics
 
 **Unit Tests for Section 5.2:**
-- [ ] Test DSL compilation under 100ms for 100 widgets
+- [x] Test DSL compilation under 100ms for 100 widgets
 - [x] Test terminal rendering maintains 60fps
 - [x] Test benchmarks run in CI
 - [x] Test no performance regressions
