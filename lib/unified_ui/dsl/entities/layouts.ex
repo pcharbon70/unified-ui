@@ -36,7 +36,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   """
 
   alias UnifiedIUR.Layouts
-  alias UnifiedUi.Dsl.Entities.{DataViz, Navigation, Tables, Widgets}
+  alias UnifiedUi.Dsl.Entities.{DataViz, DialogFeedback, Navigation, Tables, Widgets}
 
   @layout_children [
     Widgets.button_entity(),
@@ -51,7 +51,10 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     Navigation.menu_entity(),
     Navigation.context_menu_entity(),
     Navigation.tabs_entity(),
-    Navigation.tree_view_entity()
+    Navigation.tree_view_entity(),
+    DialogFeedback.dialog_entity(),
+    DialogFeedback.alert_dialog_entity(),
+    DialogFeedback.toast_entity()
   ]
 
   @vbox_entity %Spark.Dsl.Entity{

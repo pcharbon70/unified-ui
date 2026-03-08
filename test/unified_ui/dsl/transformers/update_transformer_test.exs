@@ -145,6 +145,26 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{total: 42} = module.update(state, signal)
     end
 
+    test "dialog close routes are handled as click routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          dialog :settings_dialog, "Settings", "Dialog body",
+            on_close: {:close_settings, %{closed: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :settings_dialog,
+          action: :close_settings
+        })
+
+      assert %{closed: true} = module.update(state, signal)
+    end
+
     test "unmatched signals return state unchanged" do
       module =
         compile_fixture("""

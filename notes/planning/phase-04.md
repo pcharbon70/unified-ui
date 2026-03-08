@@ -130,18 +130,18 @@ Create widgets for navigation: menus, tabs, and tree views.
 
 Create modal dialogs and notification widgets.
 
-- [ ] 4.4.1 Define `@dialog_button_entity` (nested)
-- [ ] 4.4.2 Define `@dialog_entity` with schema:
+- [x] 4.4.1 Define `@dialog_button_entity` (nested)
+- [x] 4.4.2 Define `@dialog_entity` with schema:
   - args: `[:id, title, content]`
   - options: `buttons`, `on_close`, `width`, `height`, `closable`
-- [ ] 4.4.3 Define `@alert_dialog_entity` with schema:
+- [x] 4.4.3 Define `@alert_dialog_entity` with schema:
   - args: `[:id, title, message]`
   - options: `severity`, `on_confirm`, `on_cancel`
-- [ ] 4.4.4 Define `@toast_entity` with schema:
+- [x] 4.4.4 Define `@toast_entity` with schema:
   - args: `[:id, message]`
   - options: `severity`, `duration`, `on_dismiss`
-- [ ] 4.4.5 Create target and IUR structs
-- [ ] 4.4.6 Implement renderer converters for all platforms
+- [x] 4.4.5 Create target and IUR structs
+- [x] 4.4.6 Implement renderer converters for all platforms
 - [ ] 4.4.7 Implement modal behavior
 - [ ] 4.4.8 Implement auto-dismiss for toast
 
@@ -152,12 +152,12 @@ Create modal dialogs and notification widgets.
 - Modal blocks input to underlying UI
 
 **Unit Tests for Section 4.4:**
-- [ ] Test dialog entity with content
-- [ ] Test dialog close signal
-- [ ] Test alert_dialog severity
+- [x] Test dialog entity with content
+- [x] Test dialog close signal
+- [x] Test alert_dialog severity
 - [ ] Test toast auto-dismiss
 - [ ] Test modal behavior blocks background
-- [ ] Test all platforms render dialogs
+- [x] Test all platforms render dialogs
 
 ---
 

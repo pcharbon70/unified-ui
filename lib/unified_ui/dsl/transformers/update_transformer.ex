@@ -399,6 +399,36 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
           build_route(:click, attr_get(attrs, :on_toggle), attr_get(attrs, :id))
         ]
 
+      %Widgets.DialogButton{} = button ->
+        [build_route(:click, button.action, button.id)]
+
+      %{name: :dialog_button, attrs: attrs} ->
+        [build_route(:click, attr_get(attrs, :action), attr_get(attrs, :id))]
+
+      %Widgets.Dialog{} = dialog ->
+        [build_route(:click, dialog.on_close, dialog.id)]
+
+      %{name: :dialog, attrs: attrs} ->
+        [build_route(:click, attr_get(attrs, :on_close), attr_get(attrs, :id))]
+
+      %Widgets.AlertDialog{} = alert ->
+        [
+          build_route(:click, alert.on_confirm, alert.id),
+          build_route(:click, alert.on_cancel, alert.id)
+        ]
+
+      %{name: :alert_dialog, attrs: attrs} ->
+        [
+          build_route(:click, attr_get(attrs, :on_confirm), attr_get(attrs, :id)),
+          build_route(:click, attr_get(attrs, :on_cancel), attr_get(attrs, :id))
+        ]
+
+      %Widgets.Toast{} = toast ->
+        [build_route(:click, toast.on_dismiss, toast.id)]
+
+      %{name: :toast, attrs: attrs} ->
+        [build_route(:click, attr_get(attrs, :on_dismiss), attr_get(attrs, :id))]
+
       _ ->
         []
     end)

@@ -897,6 +897,160 @@ defmodule UnifiedUi.Adapters.Terminal do
      }}
   end
 
+  # Dialog and feedback converters
+
+  defp convert_by_type(%Widgets.DialogButton{} = button, :dialog_button, _state) do
+    role_prefix =
+      case button.role do
+        :confirm -> "✓ "
+        :cancel -> "↩ "
+        :destructive -> "! "
+        _ -> ""
+      end
+
+    disabled_prefix = if button.disabled, do: "(×) ", else: ""
+    text_node = TermUI.Component.Helpers.text("[#{disabled_prefix}#{role_prefix}#{button.label}]")
+
+    styled_node =
+      case Style.convert_style(button.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:dialog_button, styled_node,
+     %{
+       id: button.id,
+       label: button.label,
+       action: button.action,
+       role: button.role,
+       disabled: button.disabled
+     }}
+  end
+
+  defp convert_by_type(%Widgets.Dialog{} = dialog, :dialog, state) do
+    title_node = TermUI.Component.Helpers.text("┌ #{dialog.title || "Dialog"} ┐")
+
+    content_node =
+      case dialog.content do
+        nil ->
+          nil
+
+        content when is_list(content) ->
+          converted =
+            content
+            |> Enum.map(fn item ->
+              if is_binary(item),
+                do: TermUI.Component.Helpers.text(item),
+                else: convert_iur(item, state)
+            end)
+            |> Enum.reject(&is_nil/1)
+
+          TermUI.Component.Helpers.stack(:vertical, converted, spacing: 0)
+
+        content ->
+          if is_binary(content),
+            do: TermUI.Component.Helpers.text(content),
+            else: convert_iur(content, state)
+      end
+
+    button_nodes =
+      dialog.buttons
+      |> List.wrap()
+      |> Enum.map(&convert_iur(&1, state))
+      |> Enum.reject(&is_nil/1)
+
+    buttons_row =
+      if button_nodes == [] do
+        nil
+      else
+        TermUI.Component.Helpers.stack(:horizontal, button_nodes, spacing: 1)
+      end
+
+    children =
+      [title_node, content_node, buttons_row]
+      |> Enum.reject(&is_nil/1)
+
+    dialog_node = TermUI.Component.Helpers.stack(:vertical, children, spacing: 1)
+
+    styled_node =
+      case Style.convert_style(dialog.style) do
+        nil -> dialog_node
+        style -> TermUI.Component.Helpers.styled(dialog_node, style)
+      end
+
+    {:dialog, styled_node,
+     %{
+       id: dialog.id,
+       title: dialog.title,
+       on_close: dialog.on_close,
+       width: dialog.width,
+       height: dialog.height,
+       closable: dialog.closable,
+       modal: dialog.modal
+     }}
+  end
+
+  defp convert_by_type(%Widgets.AlertDialog{} = alert, :alert_dialog, _state) do
+    severity_label =
+      case alert.severity do
+        :success -> "SUCCESS"
+        :warning -> "WARNING"
+        :error -> "ERROR"
+        _ -> "INFO"
+      end
+
+    lines = [
+      "[#{severity_label}] #{alert.title || "Alert"}",
+      alert.message || ""
+    ]
+
+    text_node = TermUI.Component.Helpers.text(Enum.join(lines, "\n"))
+
+    styled_node =
+      case Style.convert_style(alert.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:alert_dialog, styled_node,
+     %{
+       id: alert.id,
+       title: alert.title,
+       message: alert.message,
+       severity: alert.severity,
+       on_confirm: alert.on_confirm,
+       on_cancel: alert.on_cancel,
+       modal: alert.modal
+     }}
+  end
+
+  defp convert_by_type(%Widgets.Toast{} = toast, :toast, _state) do
+    prefix =
+      case toast.severity do
+        :success -> "✓ "
+        :warning -> "! "
+        :error -> "✖ "
+        _ -> "i "
+      end
+
+    text_node = TermUI.Component.Helpers.text("#{prefix}#{toast.message || ""}")
+
+    styled_node =
+      case Style.convert_style(toast.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:toast, styled_node,
+     %{
+       id: toast.id,
+       message: toast.message,
+       severity: toast.severity,
+       duration: toast.duration,
+       on_dismiss: toast.on_dismiss
+     }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do

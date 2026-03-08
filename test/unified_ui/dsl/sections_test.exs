@@ -60,6 +60,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :gauge in entity_names
     assert :tabs in entity_names
     assert :tree_view in entity_names
+    assert :dialog in entity_names
+    assert :alert_dialog in entity_names
+    assert :toast in entity_names
   end
 
   test "ui section is top level and includes state/layout/widget entities" do
@@ -77,5 +80,7 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :button in entity_names
     assert :line_chart in entity_names
     assert :table in entity_names
+    assert :dialog in entity_names
+    assert :toast in entity_names
   end
 end

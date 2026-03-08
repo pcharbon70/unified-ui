@@ -119,7 +119,11 @@ defmodule UnifiedUi.IUR.Builder do
              Widgets.Tabs,
              Widgets.Tab,
              Widgets.TreeView,
-             Widgets.TreeNode
+             Widgets.TreeNode,
+             Widgets.DialogButton,
+             Widgets.Dialog,
+             Widgets.AlertDialog,
+             Widgets.Toast
            ] do
     entity
   end
@@ -186,6 +190,22 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :tree_view} = entity, dsl_state) do
     build_tree_view(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :dialog_button} = entity, dsl_state) do
+    build_dialog_button(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :dialog} = entity, dsl_state) do
+    build_dialog(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :alert_dialog} = entity, dsl_state) do
+    build_alert_dialog(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :toast} = entity, dsl_state) do
+    build_toast(entity, dsl_state)
   end
 
   def build_entity(_entity, _dsl_state) do
@@ -624,6 +644,104 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  # Dialog and feedback builders
+
+  @doc """
+  Builds a DialogButton IUR struct from a dialog_button DSL entity.
+  """
+  @spec build_dialog_button(map(), Dsl.t()) :: Widgets.DialogButton.t()
+  def build_dialog_button(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Widgets.DialogButton{
+      label: Map.get(attrs, :label),
+      id: Map.get(attrs, :id),
+      action: Map.get(attrs, :action),
+      role: Map.get(attrs, :role, :default),
+      disabled: Map.get(attrs, :disabled, false),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a Dialog IUR struct from a dialog DSL entity.
+  """
+  @spec build_dialog(map(), Dsl.t()) :: Widgets.Dialog.t()
+  def build_dialog(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    content =
+      case build_nested_entities(entity, dsl_state, :content, &build_entity/2) do
+        [] ->
+          Map.get(attrs, :content)
+
+        [single] ->
+          single
+
+        nested ->
+          nested
+      end
+
+    buttons =
+      case build_nested_entities(entity, dsl_state, :buttons, &build_dialog_button/2,
+             child_name: :dialog_button
+           ) do
+        [] -> normalize_dialog_buttons(Map.get(attrs, :buttons), dsl_state)
+        nested -> nested
+      end
+
+    %Widgets.Dialog{
+      id: Map.get(attrs, :id),
+      title: Map.get(attrs, :title),
+      content: content,
+      buttons: buttons,
+      on_close: Map.get(attrs, :on_close),
+      width: Map.get(attrs, :width),
+      height: Map.get(attrs, :height),
+      closable: Map.get(attrs, :closable, true),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds an AlertDialog IUR struct from an alert_dialog DSL entity.
+  """
+  @spec build_alert_dialog(map(), Dsl.t()) :: Widgets.AlertDialog.t()
+  def build_alert_dialog(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Widgets.AlertDialog{
+      id: Map.get(attrs, :id),
+      title: Map.get(attrs, :title),
+      message: Map.get(attrs, :message),
+      severity: Map.get(attrs, :severity, :info),
+      on_confirm: Map.get(attrs, :on_confirm),
+      on_cancel: Map.get(attrs, :on_cancel),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a Toast IUR struct from a toast DSL entity.
+  """
+  @spec build_toast(map(), Dsl.t()) :: Widgets.Toast.t()
+  def build_toast(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Widgets.Toast{
+      id: Map.get(attrs, :id),
+      message: Map.get(attrs, :message),
+      severity: Map.get(attrs, :severity, :info),
+      duration: Map.get(attrs, :duration, 3000),
+      on_dismiss: Map.get(attrs, :on_dismiss),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
   # Children building
 
   @doc """
@@ -758,6 +876,10 @@ defmodule UnifiedUi.IUR.Builder do
   def validate(%Widgets.Tab{}), do: :ok
   def validate(%Widgets.TreeView{}), do: :ok
   def validate(%Widgets.TreeNode{}), do: :ok
+  def validate(%Widgets.DialogButton{}), do: :ok
+  def validate(%Widgets.Dialog{}), do: :ok
+  def validate(%Widgets.AlertDialog{}), do: :ok
+  def validate(%Widgets.Toast{}), do: :ok
 
   def validate(%Layouts.VBox{children: children}), do: validate_children(children)
   def validate(%Layouts.HBox{children: children}), do: validate_children(children)
@@ -834,4 +956,30 @@ defmodule UnifiedUi.IUR.Builder do
   end
 
   defp normalize_columns(other, _dsl_state), do: other
+
+  defp normalize_dialog_buttons(nil, _dsl_state), do: nil
+
+  defp normalize_dialog_buttons(buttons, dsl_state) when is_list(buttons) do
+    Enum.map(buttons, fn
+      %Widgets.DialogButton{} = button ->
+        button
+
+      %{name: :dialog_button} = button_entity ->
+        build_dialog_button(button_entity, dsl_state)
+
+      attrs when is_map(attrs) ->
+        build_dialog_button(%{attrs: attrs}, dsl_state)
+
+      attrs when is_list(attrs) ->
+        build_dialog_button(%{attrs: Enum.into(attrs, %{})}, dsl_state)
+
+      label when is_binary(label) ->
+        build_dialog_button(%{attrs: %{label: label}}, dsl_state)
+
+      other ->
+        other
+    end)
+  end
+
+  defp normalize_dialog_buttons(other, _dsl_state), do: other
 end
