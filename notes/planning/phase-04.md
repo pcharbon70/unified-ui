@@ -163,7 +163,7 @@ Create modal dialogs and notification widgets.
 
 ## 4.5 Input Widgets
 
-- [ ] **Task 4.5** Implement advanced input widgets (pick_list, form_builder)
+- [x] **Task 4.5** Implement advanced input widgets (pick_list, form_builder)
 
 Create specialized input widgets for data entry.
 
@@ -178,8 +178,8 @@ Create specialized input widgets for data entry.
 - [x] 4.5.5 Define field types
 - [x] 4.5.6 Create target and IUR structs
 - [x] 4.5.7 Implement renderer converters for all platforms
-- [ ] 4.5.8 Implement form validation
-- [ ] 4.5.9 Implement search/filter for pick_list
+- [x] 4.5.8 Implement form validation
+- [x] 4.5.9 Implement search/filter for pick_list
 
 **Implementation Notes:**
 - PickList options: list of {value, label}
@@ -189,10 +189,10 @@ Create specialized input widgets for data entry.
 
 **Unit Tests for Section 4.5:**
 - [x] Test pick_list with options
-- [ ] Test pick_list search/filter
+- [x] Test pick_list search/filter
 - [x] Test pick_list selection emits signal
 - [x] Test form_builder with fields
-- [ ] Test form validation
+- [x] Test form validation
 - [x] Test form submission signal
 - [x] Test all platforms render input widgets
 

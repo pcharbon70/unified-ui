@@ -85,6 +85,34 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{country_select: "ca"} = module.update(state, signal)
     end
 
+    test "pick_list searchable routes expose filtered options from query payload" do
+      module =
+        compile_fixture("""
+        vbox do
+          pick_list :country_select, [{"us", "United States"}, {"ca", "Canada"}, {"cm", "Cameroon"}],
+            searchable: true,
+            on_select: :country_selected
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{
+          widget_id: :country_select,
+          query: "ca"
+        })
+
+      updated = module.update(state, signal)
+
+      assert updated.country_select_search_query == "ca"
+
+      assert [
+               %{value: "ca", label: "Canada"},
+               %{value: "cm", label: "Cameroon"}
+             ] = updated.country_select_filtered_options
+    end
+
     test "submit route merges static payload and submitted form data" do
       module =
         compile_fixture("""
@@ -128,6 +156,37 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
 
       assert updated.saved == true
       assert updated.email == "user@example.com"
+      assert updated.profile_form_valid == true
+      assert updated.profile_form_errors == %{}
+    end
+
+    test "form_builder routes attach validation errors when submitted data is invalid" do
+      module =
+        compile_fixture("""
+        vbox do
+          form_builder :profile_form, [
+            %{name: :email, type: :email, required: true},
+            %{name: :age, type: :number, required: true},
+            %{name: :country, type: :select, options: [{"us", "United States"}, {"ca", "Canada"}]}
+          ],
+            on_submit: :profile_saved
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.form.submitted", %{
+          form_id: :profile_form,
+          data: %{email: "not-an-email", age: "twelve", country: "xx"}
+        })
+
+      updated = module.update(state, signal)
+
+      assert updated.profile_form_valid == false
+      assert updated.profile_form_errors.email == [:invalid_email]
+      assert updated.profile_form_errors.age == [:invalid_number]
+      assert updated.profile_form_errors.country == [:invalid_option]
     end
 
     test "map signals are supported in addition to Jido.Signal structs" do

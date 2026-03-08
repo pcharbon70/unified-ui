@@ -50,7 +50,7 @@ defmodule UnifiedUi.Dsl.Entities.InputWidgetsTest do
       assert on_select_schema != nil
       assert Keyword.get(allow_clear_schema, :default) == false
 
-      options_entities = Keyword.get(entity.entities, :options)
+      options_entities = Keyword.get(entity.entities, :opts)
       assert [%Spark.Dsl.Entity{name: :pick_list_option}] = options_entities
     end
   end
@@ -98,7 +98,7 @@ defmodule UnifiedUi.Dsl.Entities.InputWidgetsTest do
       assert on_submit_schema != nil
       assert Keyword.get(submit_label_schema, :default) == "Submit"
 
-      fields_entities = Keyword.get(entity.entities, :fields)
+      fields_entities = Keyword.get(entity.entities, :flds)
       assert [%Spark.Dsl.Entity{name: :form_field}] = fields_entities
     end
   end
