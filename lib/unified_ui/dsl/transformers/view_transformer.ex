@@ -39,10 +39,10 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
     code =
       quote do
         @impl true
-        def view(_state) do
+        def view(state) do
           view_state = UnifiedUi.Dsl.CompileIndex.runtime_view_state(__MODULE__)
 
-          case UnifiedUi.IUR.Builder.build(view_state) do
+          case UnifiedUi.IUR.Builder.build(view_state, state) do
             nil ->
               # Fallback to empty VBox if no entities defined
               %UnifiedIUR.Layouts.VBox{

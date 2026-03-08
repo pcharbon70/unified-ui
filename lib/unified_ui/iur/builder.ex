@@ -88,9 +88,21 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build(Dsl.t()) :: struct() | nil
   def build(dsl_state) do
-    dsl_state
+    build(dsl_state, %{})
+  end
+
+  @doc """
+  Builds an IUR tree from the DSL state using runtime state context.
+
+  Runtime state is used for dynamic theme resolution (for example `state.theme`).
+  """
+  @spec build(Dsl.t(), map()) :: struct() | nil
+  def build(dsl_state, runtime_state) when is_map(runtime_state) do
+    dsl_state_with_runtime = Map.put(dsl_state, :__runtime_state__, runtime_state)
+
+    dsl_state_with_runtime
     |> collect_root_entities()
-    |> Enum.find_value(fn entity -> build_entity(entity, dsl_state) end)
+    |> Enum.find_value(fn entity -> build_entity(entity, dsl_state_with_runtime) end)
   end
 
   @doc """
@@ -957,14 +969,71 @@ defmodule UnifiedUi.IUR.Builder do
   def build_style([], _dsl_state), do: nil
 
   def build_style(style_name, dsl_state) when is_atom(style_name) do
-    StyleResolver.resolve_style_ref(dsl_state, style_name)
+    case resolve_theme_style(dsl_state, style_name) do
+      %Style{} = themed_style -> themed_style
+      nil -> StyleResolver.resolve_style_ref(dsl_state, style_name)
+    end
   end
 
   def build_style(style_keyword, dsl_state) when is_list(style_keyword) do
-    StyleResolver.resolve_style_ref(dsl_state, style_keyword)
+    case style_keyword do
+      [style_name | overrides] when is_atom(style_name) ->
+        if Keyword.keyword?(overrides) do
+          case resolve_theme_style(dsl_state, style_name) do
+            %Style{} = themed_style ->
+              Style.merge(themed_style, Style.new(overrides))
+
+            nil ->
+              StyleResolver.resolve_style_ref(dsl_state, style_keyword)
+          end
+        else
+          StyleResolver.resolve_style_ref(dsl_state, style_keyword)
+        end
+
+      _ ->
+        StyleResolver.resolve_style_ref(dsl_state, style_keyword)
+    end
   end
 
   def build_style(%Style{} = style, _dsl_state), do: style
+
+  defp resolve_theme_style(dsl_state, style_name) when is_atom(style_name) do
+    dsl_state
+    |> active_theme_styles()
+    |> Map.get(style_name)
+  end
+
+  defp active_theme_styles(dsl_state) do
+    case active_theme_name(dsl_state) do
+      theme_name when is_atom(theme_name) ->
+        StyleResolver.load_theme(dsl_state, theme_name)
+
+      _ ->
+        %{}
+    end
+  end
+
+  defp active_theme_name(dsl_state) do
+    runtime_state = Map.get(dsl_state, :__runtime_state__, %{})
+    theme_ref = Map.get(runtime_state, :theme) || Map.get(runtime_state, "theme")
+
+    normalize_theme_name(dsl_state, theme_ref)
+  end
+
+  defp normalize_theme_name(_dsl_state, theme_name) when is_atom(theme_name), do: theme_name
+
+  defp normalize_theme_name(dsl_state, theme_name) when is_binary(theme_name) do
+    known_themes =
+      dsl_state
+      |> StyleResolver.get_all_themes()
+      |> Map.keys()
+      |> Kernel.++([:default, :dark, :light])
+      |> Enum.uniq()
+
+    Enum.find(known_themes, fn known -> Atom.to_string(known) == theme_name end)
+  end
+
+  defp normalize_theme_name(_dsl_state, _theme_name), do: nil
 
   # Helper functions
 

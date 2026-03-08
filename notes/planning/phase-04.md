@@ -363,7 +363,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
   - Desktop: native styles
   - Web: CSS
 - [x] 4.10.8 Define standard themes (default, dark, light)
-- [ ] 4.10.9 Add theme switching at runtime
+- [x] 4.10.9 Add theme switching at runtime
 
 **Implementation Notes:**
 - Styles can extend other styles
@@ -376,7 +376,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
 - [ ] Test style with all attributes
 - [x] Test style inheritance
 - [x] Test theme loads correctly
-- [ ] Test theme switching works
+- [x] Test theme switching works
 - [x] Test terminal style conversion
 - [x] Test desktop style conversion
 - [x] Test web style conversion (CSS)
