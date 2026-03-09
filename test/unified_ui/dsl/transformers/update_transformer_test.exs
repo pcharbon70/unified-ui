@@ -127,6 +127,25 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{main_split: %{split: 65}} = module.update(state, signal)
     end
 
+    test "canvas on_click routes are handled as click routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          canvas :chart_canvas, on_click: {:canvas_clicked, %{clicked: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :chart_canvas,
+          action: :canvas_clicked
+        })
+
+      assert %{clicked: true} = module.update(state, signal)
+    end
+
     test "pick_list searchable routes expose filtered options from query payload" do
       module =
         compile_fixture("""
@@ -153,6 +172,31 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
                %{value: "ca", label: "Canada"},
                %{value: "cm", label: "Cameroon"}
              ] = updated.country_select_filtered_options
+    end
+
+    test "command_palette routes expose filtered commands from query payload" do
+      module =
+        compile_fixture("""
+        vbox do
+          command_palette :main_commands, [
+            %{id: :open, label: "Open File", keywords: ["open", "file"]},
+            %{id: :save, label: "Save File", keywords: ["save", "write"]}
+          ], on_select: :command_selected
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{
+          widget_id: :main_commands,
+          query: "sav"
+        })
+
+      updated = module.update(state, signal)
+
+      assert updated.main_commands_search_query == "sav"
+      assert [%{id: :save, label: "Save File"}] = updated.main_commands_filtered_commands
     end
 
     test "theme selector pick_list updates theme key in runtime state" do

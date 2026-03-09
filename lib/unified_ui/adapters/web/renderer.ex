@@ -57,7 +57,7 @@ defmodule UnifiedUi.Adapters.Web do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Web.Style
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1335,6 +1335,70 @@ defmodule UnifiedUi.Adapters.Web do
     ~s(<div#{attrs}>#{panes_html}</div>)
   end
 
+  defp convert_by_type(%Canvas{} = canvas, :canvas, _state) do
+    css_parts = ["display: block"]
+    css_parts = maybe_add_width_css(css_parts, canvas.width)
+    css_parts = maybe_add_height_css(css_parts, canvas.height)
+    style = Style.to_css(canvas.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if canvas.id, do: [{"id", canvas.id} | attrs_list], else: attrs_list
+    attrs_list = if canvas.width, do: [{"width", canvas.width} | attrs_list], else: attrs_list
+    attrs_list = if canvas.height, do: [{"height", canvas.height} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if canvas.on_click do
+        [{"data-click-event", atom_to_event_name(canvas.on_click)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list =
+      if canvas.on_hover do
+        [{"data-hover-event", atom_to_event_name(canvas.on_hover)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<canvas#{attrs}></canvas>)
+  end
+
+  defp convert_by_type(%CommandPalette{} = palette, :command_palette, _state) do
+    commands_html =
+      palette.commands
+      |> List.wrap()
+      |> Enum.map_join(&command_palette_command_html/1)
+
+    css_parts = ["display: flex", "flex-direction: column", "gap: 8px", "width: 100%"]
+    style = Style.to_css(palette.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if palette.id, do: [{"id", palette.id} | attrs_list], else: attrs_list
+
+    attrs_list =
+      if palette.trigger_shortcut,
+        do: [{"data-trigger-shortcut", palette.trigger_shortcut} | attrs_list],
+        else: attrs_list
+
+    attrs_list =
+      if palette.on_select do
+        [{"data-select-event", atom_to_event_name(palette.on_select)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+    placeholder = escape_html(palette.placeholder || "Type a command...")
+
+    ~s(<div#{attrs}><input type="text" placeholder="#{placeholder}" /><ul>#{commands_html}</ul></div>)
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
@@ -1409,6 +1473,84 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_children(_, _state), do: ""
+
+  defp command_palette_command_html(command) do
+    command = command_palette_command_map(command)
+    id = Map.get(command, :id)
+    label = escape_html(Map.get(command, :label) || to_string(id || "command"))
+    description = Map.get(command, :description)
+    shortcut = Map.get(command, :shortcut)
+
+    attrs =
+      [
+        {"data-command-id", id},
+        {"data-command-label", Map.get(command, :label)},
+        {"data-command-shortcut", shortcut},
+        {"data-command-disabled", Map.get(command, :disabled) == true}
+      ]
+      |> build_attributes()
+
+    description_html =
+      if is_binary(description) and description != "" do
+        ~s(<small>#{escape_html(description)}</small>)
+      else
+        ""
+      end
+
+    shortcut_html =
+      if is_binary(shortcut) and shortcut != "" do
+        ~s(<kbd>#{escape_html(shortcut)}</kbd>)
+      else
+        ""
+      end
+
+    ~s(<li#{attrs}>#{label}#{shortcut_html}#{description_html}</li>)
+  end
+
+  defp command_palette_command_map(%Command{} = command) do
+    %{
+      id: command.id,
+      label: command.label,
+      description: command.description,
+      shortcut: command.shortcut,
+      keywords: command.keywords,
+      disabled: command.disabled
+    }
+  end
+
+  defp command_palette_command_map(command) when is_map(command) do
+    disabled =
+      cond do
+        Map.has_key?(command, :disabled) -> Map.get(command, :disabled) == true
+        Map.has_key?(command, "disabled") -> Map.get(command, "disabled") == true
+        true -> false
+      end
+
+    %{
+      id: Map.get(command, :id) || Map.get(command, "id"),
+      label: Map.get(command, :label) || Map.get(command, "label"),
+      description: Map.get(command, :description) || Map.get(command, "description"),
+      shortcut: Map.get(command, :shortcut) || Map.get(command, "shortcut"),
+      keywords:
+        (Map.get(command, :keywords) || Map.get(command, "keywords") || []) |> List.wrap(),
+      disabled: disabled
+    }
+  end
+
+  defp command_palette_command_map({id, label}) when is_atom(id) and is_binary(label) do
+    %{id: id, label: label, description: nil, shortcut: nil, keywords: [], disabled: false}
+  end
+
+  defp command_palette_command_map(other) do
+    %{
+      id: other,
+      label: inspect(other),
+      description: nil,
+      shortcut: nil,
+      keywords: [],
+      disabled: false
+    }
+  end
 
   defp maybe_add_width_css(parts, nil), do: parts
   defp maybe_add_width_css(parts, width) when is_integer(width), do: ["width: #{width}px" | parts]

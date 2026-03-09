@@ -232,23 +232,23 @@ Create containers for scrollable content and resizable panes.
 
 ## 4.7 Specialized Widgets
 
-- [ ] **Task 4.7** Implement specialized widgets (canvas, command_palette)
+- [x] **Task 4.7** Implement specialized widgets (canvas, command_palette)
 
 Create widgets for custom drawing and command discovery.
 
-- [ ] 4.7.1 Define `@canvas_entity` with schema:
+- [x] 4.7.1 Define `@canvas_entity` with schema:
   - args: `[:id]`
   - options: `width`, `height`, `draw`, `on_click`, `on_hover`
-- [ ] 4.7.2 Define drawing context protocol:
+- [x] 4.7.2 Define drawing context protocol:
   - `draw_text/3`, `draw_line/5`, `draw_rect/4`, `clear/0`
-- [ ] 4.7.3 Define `@command_entity` (nested)
-- [ ] 4.7.4 Define `@command_palette_entity` with schema:
+- [x] 4.7.3 Define `@command_entity` (nested)
+- [x] 4.7.4 Define `@command_palette_entity` with schema:
   - args: `[:id, commands]`
   - options: `placeholder`, `trigger_shortcut`, `on_select`
-- [ ] 4.7.5 Create target and IUR structs
-- [ ] 4.7.6 Implement renderer converters for all platforms
-- [ ] 4.7.7 Implement drawing context per platform
-- [ ] 4.7.8 Implement command palette search
+- [x] 4.7.5 Create target and IUR structs
+- [x] 4.7.6 Implement renderer converters for all platforms
+- [x] 4.7.7 Implement drawing context per platform
+- [x] 4.7.8 Implement command palette search
 
 **Implementation Notes:**
 - Canvas: drawing function receives context
@@ -258,12 +258,12 @@ Create widgets for custom drawing and command discovery.
 - Command palette: search filters by label
 
 **Unit Tests for Section 4.7:**
-- [ ] Test canvas with draw function
-- [ ] Test drawing context works
-- [ ] Test canvas click events
-- [ ] Test command_palette with commands
-- [ ] Test command_palette search
-- [ ] Test all platforms render specialized widgets
+- [x] Test canvas with draw function
+- [x] Test drawing context works
+- [x] Test canvas click events
+- [x] Test command_palette with commands
+- [x] Test command_palette search
+- [x] Test all platforms render specialized widgets
 
 ---
 

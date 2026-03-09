@@ -18,7 +18,7 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.{Layouts, Widgets}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web}
   alias UnifiedUi.Agent
@@ -1031,6 +1031,99 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
       updated = module.update(state, resize_signal)
       assert updated.main_split == %{split: 65}
+    end
+  end
+
+  # ============================================================================
+  # 4.7: Specialized Widgets
+  # ============================================================================
+
+  describe "4.7 - Specialized Widgets" do
+    test "canvas carries drawing metadata and renders on all platforms" do
+      canvas = %Canvas{
+        id: :chart_canvas,
+        width: 120,
+        height: 40,
+        draw: fn _ctx -> :ok end,
+        on_click: :canvas_clicked,
+        on_hover: :canvas_hovered
+      }
+
+      assert {:canvas, _terminal_node, terminal_meta} = Terminal.convert_iur(canvas)
+      assert terminal_meta.width == 120
+      assert terminal_meta.height == 40
+      assert terminal_meta.on_click == :canvas_clicked
+      assert terminal_meta.on_hover == :canvas_hovered
+      assert is_function(terminal_meta.draw, 1)
+
+      assert_renders_on_all_platforms(canvas)
+    end
+
+    test "canvas click signal updates state through generated click route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          canvas :chart_canvas, on_click: {:canvas_clicked, %{canvas_clicked: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      click_signal = %{
+        type: "unified.button.clicked",
+        data: %{widget_id: :chart_canvas, action: :canvas_clicked}
+      }
+
+      updated = module.update(state, click_signal)
+      assert updated.canvas_clicked == true
+    end
+
+    test "command palette carries command metadata and renders on all platforms" do
+      command_palette = %CommandPalette{
+        id: :main_commands,
+        placeholder: "Search commands",
+        trigger_shortcut: "ctrl+k",
+        on_select: :command_selected,
+        commands: [
+          %Command{id: :open, label: "Open File", keywords: ["open", "file"]},
+          %Command{id: :save, label: "Save File", keywords: ["save", "write"]}
+        ]
+      }
+
+      assert {:command_palette, _terminal_node, terminal_meta} =
+               Terminal.convert_iur(command_palette)
+
+      assert terminal_meta.id == :main_commands
+      assert terminal_meta.on_select == :command_selected
+
+      assert [%{id: :open, label: "Open File"}, %{id: :save, label: "Save File"}] =
+               terminal_meta.commands
+
+      assert_renders_on_all_platforms(command_palette)
+    end
+
+    test "command palette search signal updates filtered command state through generated route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          command_palette :main_commands, [
+            %{id: :open, label: "Open File", keywords: ["open", "file"]},
+            %{id: :save, label: "Save File", keywords: ["save", "write"]}
+          ], on_select: :command_selected
+        end
+        """)
+
+      state = module.init([])
+
+      search_signal = %{
+        type: "unified.input.changed",
+        data: %{widget_id: :main_commands, query: "sav"}
+      }
+
+      updated = module.update(state, search_signal)
+
+      assert updated.main_commands_search_query == "sav"
+      assert [%{id: :save, label: "Save File"}] = updated.main_commands_filtered_commands
     end
   end
 

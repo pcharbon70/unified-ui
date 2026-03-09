@@ -7,7 +7,7 @@ defmodule UnifiedUi.Adapters.DesktopTest do
 
   alias UnifiedUi.Adapters.Desktop
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -662,6 +662,47 @@ defmodule UnifiedUi.Adapters.DesktopTest do
       assert meta.initial_split == 55
       assert meta.min_size == 20
       assert meta.on_resize_change == :split_resized
+    end
+
+    test "converts canvas with draw and pointer metadata" do
+      canvas = %Canvas{
+        id: :chart_canvas,
+        width: 128,
+        height: 48,
+        draw: fn _ctx -> :ok end,
+        on_click: :canvas_clicked,
+        on_hover: :canvas_hovered
+      }
+
+      assert {:canvas, widget, meta} = Desktop.convert_iur(canvas)
+      assert widget.type == :canvas
+      assert meta.id == :chart_canvas
+      assert meta.width == 128
+      assert meta.height == 48
+      assert is_function(meta.draw, 1)
+      assert meta.on_click == :canvas_clicked
+      assert meta.on_hover == :canvas_hovered
+    end
+
+    test "converts command_palette with command list metadata" do
+      command_palette = %CommandPalette{
+        id: :main_commands,
+        placeholder: "Search commands",
+        trigger_shortcut: "ctrl+k",
+        on_select: :command_selected,
+        commands: [
+          %Command{id: :open, label: "Open File", shortcut: "ctrl+o"},
+          %Command{id: :save, label: "Save File", shortcut: "ctrl+s"}
+        ]
+      }
+
+      assert {:command_palette, widget, meta} = Desktop.convert_iur(command_palette)
+      assert widget.type == :command_palette
+      assert meta.id == :main_commands
+      assert meta.placeholder == "Search commands"
+      assert meta.trigger_shortcut == "ctrl+k"
+      assert meta.on_select == :command_selected
+      assert [%{id: :open, label: "Open File"}, %{id: :save, label: "Save File"}] = meta.commands
     end
   end
 end

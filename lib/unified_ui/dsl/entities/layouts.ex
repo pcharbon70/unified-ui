@@ -43,6 +43,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     DialogFeedback,
     InputWidgets,
     Navigation,
+    Specialized,
     Tables,
     Widgets
   }
@@ -67,7 +68,9 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     InputWidgets.pick_list_entity(),
     InputWidgets.form_builder_entity(),
     Containers.viewport_entity(),
-    Containers.split_pane_entity()
+    Containers.split_pane_entity(),
+    Specialized.canvas_entity(),
+    Specialized.command_palette_entity()
   ]
 
   @vbox_entity %Spark.Dsl.Entity{

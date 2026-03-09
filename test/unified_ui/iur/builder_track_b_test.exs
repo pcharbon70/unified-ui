@@ -4,7 +4,7 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedUi.IUR.Builder
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Widgets
 
   describe "Track B builder coverage" do
@@ -392,6 +392,64 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
 
       assert [%Widgets.Text{content: "Left pane"}, %Widgets.Text{content: "Right pane"}] =
                split_pane.panes
+    end
+
+    test "builds specialized widgets with command filtering metadata" do
+      canvas =
+        Builder.build_entity(
+          %{
+            name: :canvas,
+            attrs: %{
+              id: :chart_canvas,
+              width: 120,
+              height: 40,
+              on_click: :canvas_clicked,
+              on_hover: :canvas_hovered
+            }
+          },
+          %{}
+        )
+
+      command_palette =
+        Builder.build_entity(
+          %{
+            name: :command_palette,
+            attrs: %{
+              id: :main_commands,
+              placeholder: "Search commands",
+              trigger_shortcut: "ctrl+k",
+              on_select: :command_selected
+            },
+            entities: [
+              %{
+                name: :cmds,
+                entities: [
+                  %{name: :command, attrs: %{id: :open, label: "Open File", keywords: ["open"]}},
+                  %{name: :command, attrs: %{id: :save, label: "Save File", keywords: ["save"]}}
+                ]
+              }
+            ]
+          },
+          %{}
+        )
+
+      assert %Canvas{
+               id: :chart_canvas,
+               width: 120,
+               height: 40,
+               on_click: :canvas_clicked,
+               on_hover: :canvas_hovered
+             } = canvas
+
+      assert %CommandPalette{
+               id: :main_commands,
+               placeholder: "Search commands",
+               trigger_shortcut: "ctrl+k",
+               on_select: :command_selected
+             } = command_palette
+
+      assert [%Command{id: :open, label: "Open File"}, %Command{id: :save, label: "Save File"}] =
+               command_palette.commands
     end
   end
 end

@@ -29,7 +29,9 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
       UnifiedUi.Dsl.Entities.InputWidgets.pick_list_entity(),
       UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity(),
       UnifiedUi.Dsl.Entities.Containers.viewport_entity(),
-      UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
+      UnifiedUi.Dsl.Entities.Containers.split_pane_entity(),
+      UnifiedUi.Dsl.Entities.Specialized.canvas_entity(),
+      UnifiedUi.Dsl.Entities.Specialized.command_palette_entity()
     ]
   }
 

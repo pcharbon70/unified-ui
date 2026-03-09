@@ -7,7 +7,7 @@ defmodule UnifiedUi.Adapters.WebTest do
 
   alias UnifiedUi.Adapters.Web
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -679,6 +679,48 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert html =~ "flex-direction: column"
       assert html =~ "Top"
       assert html =~ "Bottom"
+    end
+
+    test "converts canvas with dimensions and pointer event metadata" do
+      canvas = %Canvas{
+        id: :chart_canvas,
+        width: 800,
+        height: 300,
+        on_click: :canvas_clicked,
+        on_hover: :canvas_hovered
+      }
+
+      html = Web.convert_iur(canvas)
+
+      assert html =~ ~s(<canvas)
+      assert html =~ ~s(id="chart_canvas")
+      assert html =~ ~s(width="800")
+      assert html =~ ~s(height="300")
+      assert html =~ ~s(data-click-event="canvas-clicked")
+      assert html =~ ~s(data-hover-event="canvas-hovered")
+    end
+
+    test "converts command_palette with searchable command list" do
+      command_palette = %CommandPalette{
+        id: :main_commands,
+        placeholder: "Search commands",
+        trigger_shortcut: "ctrl+k",
+        on_select: :command_selected,
+        commands: [
+          %Command{id: :open, label: "Open File", description: "Open project file"},
+          %Command{id: :save, label: "Save File", description: "Save current file"}
+        ]
+      }
+
+      html = Web.convert_iur(command_palette)
+
+      assert html =~ ~s(id="main_commands")
+      assert html =~ ~s(data-trigger-shortcut="ctrl+k")
+      assert html =~ ~s(data-select-event="command-selected")
+      assert html =~ ~s(placeholder="Search commands")
+      assert html =~ ~s(data-command-id="open")
+      assert html =~ "Open File"
+      assert html =~ "Save File"
     end
   end
 end

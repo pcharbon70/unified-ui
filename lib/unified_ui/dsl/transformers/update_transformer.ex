@@ -18,7 +18,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   alias Spark.Dsl.Transformer
   alias UnifiedUi.Dsl.CompileIndex
   alias UnifiedIUR.Widgets
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
 
   @click_signal_type "unified.button.clicked"
   @change_signal_type "unified.input.changed"
@@ -342,6 +342,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     route.payload
     |> maybe_put_input_value(input_key, input_value)
     |> maybe_put_pick_list_filter(route, signal_data)
+    |> maybe_put_command_palette_filter(route, signal_data)
   end
 
   defp default_route_updates(:submit, signal, route) do
@@ -574,6 +575,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
       %{name: :toast, attrs: attrs} ->
         [build_route(:click, attr_get(attrs, :on_dismiss), attr_get(attrs, :id))]
 
+      %Canvas{} = canvas ->
+        [build_route(:click, canvas.on_click, canvas.id)]
+
+      %{name: :canvas, attrs: attrs} ->
+        [build_route(:click, attr_get(attrs, :on_click), attr_get(attrs, :id))]
+
       _ ->
         []
     end)
@@ -620,6 +627,24 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
 
       %{name: :split_pane, attrs: attrs} ->
         [build_route(:change, attr_get(attrs, :on_resize_change), attr_get(attrs, :id))]
+
+      %Canvas{} = canvas ->
+        [build_route(:change, canvas.on_hover, canvas.id)]
+
+      %{name: :canvas, attrs: attrs} ->
+        [build_route(:change, attr_get(attrs, :on_hover), attr_get(attrs, :id))]
+
+      %CommandPalette{} = palette ->
+        [build_command_palette_change_route(palette.on_select, palette.id, palette.commands)]
+
+      %{name: :command_palette, attrs: attrs} ->
+        [
+          build_command_palette_change_route(
+            attr_get(attrs, :on_select),
+            attr_get(attrs, :id),
+            attr_get(attrs, :commands)
+          )
+        ]
 
       _ ->
         []
@@ -687,6 +712,19 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
           widget: :pick_list,
           searchable: searchable == true,
           options: normalize_pick_list_options(options)
+        })
+    end
+  end
+
+  defp build_command_palette_change_route(handler, fallback_key, commands) do
+    case build_route(:change, handler, fallback_key) do
+      nil ->
+        nil
+
+      route ->
+        Map.merge(route, %{
+          widget: :command_palette,
+          commands: normalize_command_palette_commands(commands)
         })
     end
   end
@@ -783,6 +821,33 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
     end
   end
 
+  defp maybe_put_command_palette_filter(payload, route, signal_data) do
+    query =
+      Map.get(signal_data, :query) || Map.get(signal_data, :search) ||
+        Map.get(signal_data, :filter)
+
+    source = Map.get(route, :source)
+    widget = Map.get(route, :widget)
+
+    cond do
+      widget != :command_palette ->
+        payload
+
+      not is_atom(source) ->
+        payload
+
+      not is_binary(query) ->
+        payload
+
+      true ->
+        filtered_commands = filter_command_palette_commands(Map.get(route, :commands, []), query)
+
+        payload
+        |> Map.put(:"#{source}_search_query", query)
+        |> Map.put(:"#{source}_filtered_commands", filtered_commands)
+    end
+  end
+
   defp maybe_put_form_validation(payload, route, submit_data) do
     source = Map.get(route, :source)
     widget = Map.get(route, :widget)
@@ -873,6 +938,122 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   end
 
   defp normalize_pick_list_options(_options), do: []
+
+  defp filter_command_palette_commands(commands, query)
+       when is_list(commands) and is_binary(query) do
+    normalized_query =
+      query
+      |> String.trim()
+      |> String.downcase()
+
+    if normalized_query == "" do
+      commands
+    else
+      Enum.filter(commands, fn command ->
+        id =
+          command
+          |> Map.get(:id)
+          |> stringify_value()
+          |> String.downcase()
+
+        label =
+          command
+          |> Map.get(:label, "")
+          |> stringify_value()
+          |> String.downcase()
+
+        description =
+          command
+          |> Map.get(:description, "")
+          |> stringify_value()
+          |> String.downcase()
+
+        keywords =
+          command
+          |> Map.get(:keywords, [])
+          |> List.wrap()
+          |> Enum.map(&(&1 |> stringify_value() |> String.downcase()))
+
+        String.contains?(id, normalized_query) or
+          String.contains?(label, normalized_query) or
+          String.contains?(description, normalized_query) or
+          Enum.any?(keywords, &String.contains?(&1, normalized_query))
+      end)
+    end
+  end
+
+  defp filter_command_palette_commands(commands, _query) when is_list(commands), do: commands
+  defp filter_command_palette_commands(_commands, _query), do: []
+
+  defp normalize_command_palette_commands(nil), do: []
+
+  defp normalize_command_palette_commands(commands) when is_list(commands) do
+    Enum.map(commands, fn
+      %Command{} = command ->
+        %{
+          id: command.id,
+          label: command.label,
+          description: command.description,
+          shortcut: command.shortcut,
+          keywords: List.wrap(command.keywords),
+          disabled: command.disabled == true,
+          visible: command.visible != false
+        }
+
+      {id, label} when is_atom(id) and is_binary(label) ->
+        %{
+          id: id,
+          label: label,
+          description: nil,
+          shortcut: nil,
+          keywords: [],
+          disabled: false,
+          visible: true
+        }
+
+      command when is_map(command) ->
+        disabled =
+          cond do
+            Map.has_key?(command, :disabled) -> Map.get(command, :disabled) == true
+            Map.has_key?(command, "disabled") -> Map.get(command, "disabled") == true
+            true -> false
+          end
+
+        visible =
+          cond do
+            Map.has_key?(command, :visible) -> Map.get(command, :visible) != false
+            Map.has_key?(command, "visible") -> Map.get(command, "visible") != false
+            true -> true
+          end
+
+        %{
+          id: Map.get(command, :id) || Map.get(command, "id"),
+          label: Map.get(command, :label) || Map.get(command, "label"),
+          description: Map.get(command, :description) || Map.get(command, "description"),
+          shortcut: Map.get(command, :shortcut) || Map.get(command, "shortcut"),
+          keywords:
+            (Map.get(command, :keywords) || Map.get(command, "keywords") || []) |> List.wrap(),
+          disabled: disabled,
+          visible: visible
+        }
+
+      command when is_list(command) ->
+        normalize_command_palette_commands([Enum.into(command, %{})]) |> List.first()
+
+      command ->
+        %{
+          id: command,
+          label: stringify_value(command),
+          description: nil,
+          shortcut: nil,
+          keywords: [],
+          disabled: false,
+          visible: true
+        }
+    end)
+  end
+
+  defp normalize_command_palette_commands(_commands), do: []
 
   defp normalize_form_builder_fields(nil), do: []
 
