@@ -61,6 +61,7 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Desktop.Style
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1025,6 +1026,74 @@ defmodule UnifiedUi.Adapters.Desktop do
        on_dismiss: toast.on_dismiss,
        auto_dismiss: not is_nil(dismiss_at),
        dismiss_at: dismiss_at
+     }}
+  end
+
+  # Container widget converters
+
+  defp convert_by_type(%Viewport{} = viewport, :viewport, state) do
+    content =
+      case viewport.content do
+        nil -> []
+        child -> [convert_iur(child, state)]
+      end
+
+    props =
+      []
+      |> Style.add_props(viewport.style)
+      |> then(fn props ->
+        if viewport.width, do: [{:width, viewport.width} | props], else: props
+      end)
+      |> then(fn props ->
+        if viewport.height, do: [{:height, viewport.height} | props], else: props
+      end)
+      |> then(fn props -> [{:scroll_x, viewport.scroll_x} | props] end)
+      |> then(fn props -> [{:scroll_y, viewport.scroll_y} | props] end)
+      |> then(fn props -> [{:border, viewport.border} | props] end)
+
+    widget = %{
+      type: :viewport,
+      id: viewport.id,
+      props: props,
+      children: content
+    }
+
+    {:viewport, widget,
+     %{
+       id: viewport.id,
+       width: viewport.width,
+       height: viewport.height,
+       scroll_x: viewport.scroll_x,
+       scroll_y: viewport.scroll_y,
+       on_scroll: viewport.on_scroll,
+       border: viewport.border
+     }}
+  end
+
+  defp convert_by_type(%SplitPane{} = split_pane, :split_pane, state) do
+    pane_widgets = convert_children(split_pane.panes, state)
+
+    props =
+      []
+      |> Style.add_props(split_pane.style)
+      |> then(fn props -> [{:orientation, split_pane.orientation} | props] end)
+      |> then(fn props -> [{:initial_split, split_pane.initial_split} | props] end)
+      |> then(fn props -> [{:min_size, split_pane.min_size} | props] end)
+
+    widget = %{
+      type: :split_pane,
+      id: split_pane.id,
+      props: props,
+      children: pane_widgets
+    }
+
+    {:split_pane, widget,
+     %{
+       id: split_pane.id,
+       orientation: split_pane.orientation,
+       initial_split: split_pane.initial_split,
+       min_size: split_pane.min_size,
+       on_resize_change: split_pane.on_resize_change
      }}
   end
 

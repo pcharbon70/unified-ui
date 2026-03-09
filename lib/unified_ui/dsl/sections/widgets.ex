@@ -27,7 +27,9 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
       UnifiedUi.Dsl.Entities.DialogFeedback.alert_dialog_entity(),
       UnifiedUi.Dsl.Entities.DialogFeedback.toast_entity(),
       UnifiedUi.Dsl.Entities.InputWidgets.pick_list_entity(),
-      UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity()
+      UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity(),
+      UnifiedUi.Dsl.Entities.Containers.viewport_entity(),
+      UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
     ]
   }
 

@@ -384,8 +384,9 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback + 2 input widgets = 18
-      assert length(widgets_section.entities) == 18
+      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback +
+      # 2 input widgets + 2 container widgets = 20
+      assert length(widgets_section.entities) == 20
     end
 
     test "widget entities are accessible from extension" do
@@ -434,6 +435,14 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
       assert %Spark.Dsl.Entity{name: :form_builder} =
                UnifiedUi.Dsl.Entities.InputWidgets.form_builder_entity()
+    end
+
+    test "container widget entities are accessible from extension" do
+      assert %Spark.Dsl.Entity{name: :viewport} =
+               UnifiedUi.Dsl.Entities.Containers.viewport_entity()
+
+      assert %Spark.Dsl.Entity{name: :split_pane} =
+               UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
     end
   end
 
@@ -576,13 +585,19 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       layouts_section = Enum.find(sections, fn %{name: name} -> name == :layouts end)
 
       assert layouts_section != nil
-      assert length(layouts_section.entities) == 2
+      assert length(layouts_section.entities) == 4
     end
 
     test "layout entities are accessible from extension" do
       # All layout entity functions should be callable
       assert %Spark.Dsl.Entity{name: :vbox} = UnifiedUi.Dsl.Entities.Layouts.vbox_entity()
       assert %Spark.Dsl.Entity{name: :hbox} = UnifiedUi.Dsl.Entities.Layouts.hbox_entity()
+
+      assert %Spark.Dsl.Entity{name: :viewport} =
+               UnifiedUi.Dsl.Entities.Containers.viewport_entity()
+
+      assert %Spark.Dsl.Entity{name: :split_pane} =
+               UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
     end
   end
 end

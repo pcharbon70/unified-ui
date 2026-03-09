@@ -18,6 +18,7 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   alias Spark.Dsl.Transformer
   alias UnifiedUi.Dsl.CompileIndex
   alias UnifiedIUR.Widgets
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
 
   @click_signal_type "unified.button.clicked"
   @change_signal_type "unified.input.changed"
@@ -607,6 +608,18 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
             attr_get(attrs, :options)
           )
         ]
+
+      %Viewport{} = viewport ->
+        [build_route(:change, viewport.on_scroll, viewport.id)]
+
+      %{name: :viewport, attrs: attrs} ->
+        [build_route(:change, attr_get(attrs, :on_scroll), attr_get(attrs, :id))]
+
+      %SplitPane{} = split_pane ->
+        [build_route(:change, split_pane.on_resize_change, split_pane.id)]
+
+      %{name: :split_pane, attrs: attrs} ->
+        [build_route(:change, attr_get(attrs, :on_resize_change), attr_get(attrs, :id))]
 
       _ ->
         []

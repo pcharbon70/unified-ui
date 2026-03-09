@@ -11,7 +11,9 @@ defmodule UnifiedUi.Dsl.Sections.Layouts do
     schema: [],
     entities: [
       UnifiedUi.Dsl.Entities.Layouts.vbox_entity(),
-      UnifiedUi.Dsl.Entities.Layouts.hbox_entity()
+      UnifiedUi.Dsl.Entities.Layouts.hbox_entity(),
+      UnifiedUi.Dsl.Entities.Containers.viewport_entity(),
+      UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
     ]
   }
 

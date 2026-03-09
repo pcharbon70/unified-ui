@@ -7,6 +7,7 @@ defmodule UnifiedUi.Adapters.DesktopTest do
 
   alias UnifiedUi.Adapters.Desktop
   alias UnifiedUi.Adapters.State
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -617,6 +618,50 @@ defmodule UnifiedUi.Adapters.DesktopTest do
       assert tree_meta.on_select == :select_node
       assert tree_meta.on_toggle == :toggle_node
       assert length(tree_widget.children) == 1
+    end
+  end
+
+  describe "convert_iur/2 - container widgets" do
+    test "converts viewport with metadata and nested child" do
+      viewport = %Viewport{
+        id: :main_viewport,
+        width: 90,
+        height: 24,
+        scroll_x: 2,
+        scroll_y: 5,
+        on_scroll: :viewport_scrolled,
+        border: :solid,
+        content: %Widgets.Text{content: "Scrollable desktop content"}
+      }
+
+      assert {:viewport, widget, meta} = Desktop.convert_iur(viewport)
+      assert widget.type == :viewport
+      assert meta.id == :main_viewport
+      assert meta.width == 90
+      assert meta.height == 24
+      assert meta.scroll_x == 2
+      assert meta.scroll_y == 5
+      assert meta.on_scroll == :viewport_scrolled
+      assert meta.border == :solid
+    end
+
+    test "converts split pane with orientation and resize metadata" do
+      split_pane = %SplitPane{
+        id: :main_split,
+        orientation: :horizontal,
+        initial_split: 55,
+        min_size: 20,
+        on_resize_change: :split_resized,
+        panes: [%Widgets.Text{content: "Left"}, %Widgets.Text{content: "Right"}]
+      }
+
+      assert {:split_pane, widget, meta} = Desktop.convert_iur(split_pane)
+      assert widget.type == :split_pane
+      assert meta.id == :main_split
+      assert meta.orientation == :horizontal
+      assert meta.initial_split == 55
+      assert meta.min_size == 20
+      assert meta.on_resize_change == :split_resized
     end
   end
 end

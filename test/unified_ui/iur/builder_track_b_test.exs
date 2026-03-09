@@ -4,6 +4,7 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedUi.IUR.Builder
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Widgets
 
   describe "Track B builder coverage" do
@@ -319,6 +320,78 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
 
       assert [%Widgets.FormField{name: :email, type: :email, required: true}] =
                form_builder.fields
+    end
+
+    test "builds container widgets with nested content and panes" do
+      viewport =
+        Builder.build_entity(
+          %{
+            name: :viewport,
+            attrs: %{
+              id: :main_viewport,
+              width: 80,
+              height: 20,
+              scroll_x: 3,
+              scroll_y: 7,
+              on_scroll: :viewport_scrolled
+            },
+            entities: [
+              %{
+                name: :content,
+                entities: [
+                  %{name: :text, attrs: %{content: "Scrollable content"}}
+                ]
+              }
+            ]
+          },
+          %{}
+        )
+
+      split_pane =
+        Builder.build_entity(
+          %{
+            name: :split_pane,
+            attrs: %{
+              id: :main_split,
+              orientation: :vertical,
+              initial_split: 60,
+              min_size: 15,
+              on_resize_change: :split_resized
+            },
+            entities: [
+              %{
+                name: :panes,
+                entities: [
+                  %{name: :text, attrs: %{content: "Left pane"}},
+                  %{name: :text, attrs: %{content: "Right pane"}}
+                ]
+              }
+            ]
+          },
+          %{}
+        )
+
+      assert %Viewport{
+               id: :main_viewport,
+               width: 80,
+               height: 20,
+               scroll_x: 3,
+               scroll_y: 7,
+               on_scroll: :viewport_scrolled
+             } = viewport
+
+      assert %Widgets.Text{content: "Scrollable content"} = viewport.content
+
+      assert %SplitPane{
+               id: :main_split,
+               orientation: :vertical,
+               initial_split: 60,
+               min_size: 15,
+               on_resize_change: :split_resized
+             } = split_pane
+
+      assert [%Widgets.Text{content: "Left pane"}, %Widgets.Text{content: "Right pane"}] =
+               split_pane.panes
     end
   end
 end

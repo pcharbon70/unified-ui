@@ -7,6 +7,7 @@ defmodule UnifiedUi.Adapters.WebTest do
 
   alias UnifiedUi.Adapters.Web
   alias UnifiedUi.Adapters.State
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -632,6 +633,52 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert tabs_html =~ "data-closable=\"true\""
       assert tree_html =~ "data-toggle-event=\"toggle-node\""
       assert tree_html =~ "tree-label"
+    end
+  end
+
+  describe "convert_iur/2 - container widgets" do
+    test "converts viewport container with dimensions and scroll metadata" do
+      viewport = %Viewport{
+        id: :main_viewport,
+        width: 640,
+        height: 360,
+        scroll_x: 8,
+        scroll_y: 14,
+        on_scroll: :viewport_scrolled,
+        border: :dashed,
+        content: %Widgets.Text{content: "Viewport content"}
+      }
+
+      html = Web.convert_iur(viewport)
+
+      assert html =~ ~s(id="main_viewport")
+      assert html =~ ~s(data-scroll-x="8")
+      assert html =~ ~s(data-scroll-y="14")
+      assert html =~ ~s(data-scroll-event="viewport-scrolled")
+      assert html =~ "width: 640px"
+      assert html =~ "height: 360px"
+      assert html =~ "Viewport content"
+    end
+
+    test "converts split pane with orientation and resize metadata" do
+      split_pane = %SplitPane{
+        id: :main_split,
+        orientation: :vertical,
+        initial_split: 62,
+        min_size: 18,
+        on_resize_change: :split_resized,
+        panes: [%Widgets.Text{content: "Top"}, %Widgets.Text{content: "Bottom"}]
+      }
+
+      html = Web.convert_iur(split_pane)
+
+      assert html =~ ~s(id="main_split")
+      assert html =~ ~s(data-initial-split="62")
+      assert html =~ ~s(data-min-size="18")
+      assert html =~ ~s(data-resize-event="split-resized")
+      assert html =~ "flex-direction: column"
+      assert html =~ "Top"
+      assert html =~ "Bottom"
     end
   end
 end
