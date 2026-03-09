@@ -16,8 +16,11 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
   use ExUnit.Case, async: false
 
+  alias UnifiedUi.Dsl.Style, as: DslStyle
+  alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedIUR.{Layouts, Widgets}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web}
+  alias UnifiedUi.IUR.Builder
 
   # ============================================================================
   # 4.3.1: Menu System Tests
@@ -944,6 +947,83 @@ defmodule UnifiedUi.Integration.Phase4Test do
   end
 
   # ============================================================================
+  # 4.11: Theming and Form Integration
+  # ============================================================================
+
+  describe "4.11 - Theming and Form Integration" do
+    test "theme switching updates themed styles and renders on all platforms" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          pick_list :theme, [{:light, "Light"}, {:dark, "Dark"}], on_select: :theme_changed
+        end
+        """)
+
+      dsl_state = themed_dsl_state()
+      light_state = module.init([]) |> Map.put(:theme, :light)
+      light_iur = Builder.build(dsl_state, light_state)
+
+      assert %Layouts.VBox{children: [%Widgets.Text{style: %UnifiedIUR.Style{fg: :black}}]} =
+               light_iur
+
+      signal = %{type: "unified.input.changed", data: %{widget_id: :theme, value: "dark"}}
+      dark_state = module.update(light_state, signal)
+
+      assert dark_state.theme == "dark"
+
+      dark_iur = Builder.build(dsl_state, dark_state)
+
+      assert %Layouts.VBox{children: [%Widgets.Text{style: %UnifiedIUR.Style{fg: :white}}]} =
+               dark_iur
+
+      assert {:ok, _} = Terminal.render(dark_iur)
+      assert {:ok, _} = Desktop.render(dark_iur)
+      assert {:ok, _} = Web.render(dark_iur)
+    end
+
+    test "form_builder submission populates validation metadata end-to-end" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          form_builder :profile_form, [
+            %{name: :email, type: :email, required: true},
+            %{name: :age, type: :number, required: true},
+            %{name: :country, type: :select, options: [{:us, "United States"}, {:ca, "Canada"}]}
+          ],
+            on_submit: :profile_saved
+        end
+        """)
+
+      state = module.init([])
+
+      invalid_signal = %{
+        type: "unified.form.submitted",
+        data: %{form_id: :profile_form, data: %{email: "bad", age: "abc", country: :xx}}
+      }
+
+      invalid_state = module.update(state, invalid_signal)
+
+      assert invalid_state.profile_form_valid == false
+      assert invalid_state.profile_form_errors.email == [:invalid_email]
+      assert invalid_state.profile_form_errors.age == [:invalid_number]
+      assert invalid_state.profile_form_errors.country == [:invalid_option]
+
+      valid_signal = %{
+        type: "unified.form.submitted",
+        data: %{
+          form_id: :profile_form,
+          data: %{email: "user@example.com", age: "42", country: :ca}
+        }
+      }
+
+      valid_state = module.update(invalid_state, valid_signal)
+
+      assert valid_state.profile_form_valid == true
+      assert valid_state.profile_form_errors == %{}
+    end
+  end
+
+  # ============================================================================
   # Cross-Platform Rendering Parity
   # ============================================================================
 
@@ -1012,5 +1092,50 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert {:ok, web_state} = Web.render(complex_ui)
       assert {:ok, _} = UnifiedUi.Adapters.State.get_root(web_state)
     end
+  end
+
+  defp compile_phase4_fixture(body) do
+    module =
+      Module.concat([
+        UnifiedUi,
+        Integration,
+        Phase4Fixture,
+        :"M#{System.unique_integer([:positive])}"
+      ])
+
+    source = """
+    defmodule #{inspect(module)} do
+      @behaviour UnifiedUi.ElmArchitecture
+      use UnifiedUi.Dsl
+
+      #{body}
+    end
+    """
+
+    Code.compile_string(source)
+    module
+  end
+
+  defp themed_dsl_state do
+    light_text = %DslStyle{name: :light_text, attributes: [fg: :black]}
+    dark_text = %DslStyle{name: :dark_text, attributes: [fg: :white]}
+    light_theme = %DslTheme{name: :light, styles: [text: :light_text]}
+    dark_theme = %DslTheme{name: :dark, styles: [text: :dark_text]}
+
+    %{
+      [:ui] => %{
+        entities: [
+          %{
+            name: :vbox,
+            attrs: %{},
+            entities: [
+              %{name: :text, attrs: %{content: "Theme Aware", style: :text}}
+            ]
+          }
+        ]
+      },
+      :styles => %{entities: [light_text, dark_text, light_theme, dark_theme]},
+      persist: %{module: __MODULE__}
+    }
   end
 end
