@@ -200,20 +200,20 @@ Create specialized input widgets for data entry.
 
 ## 4.6 Container Widgets
 
-- [ ] **Task 4.6** Implement container widgets (viewport, split_pane)
+- [x] **Task 4.6** Implement container widgets (viewport, split_pane)
 
 Create containers for scrollable content and resizable panes.
 
-- [ ] 4.6.1 Define `@viewport_entity` with schema:
+- [x] 4.6.1 Define `@viewport_entity` with schema:
   - args: `[:id, content]`
   - options: `width`, `height`, `scroll_x`, `scroll_y`, `on_scroll`, `border`
-- [ ] 4.6.2 Define `@split_pane_entity` with schema:
+- [x] 4.6.2 Define `@split_pane_entity` with schema:
   - args: `[:id, panes]`
   - options: `orientation`, `initial_split`, `min_size`, `on_resize_change`
-- [ ] 4.6.3 Create target and IUR structs
-- [ ] 4.6.4 Implement renderer converters for all platforms
-- [ ] 4.6.5 Implement viewport scrolling state
-- [ ] 4.6.6 Implement split_pane resize state
+- [x] 4.6.3 Create target and IUR structs
+- [x] 4.6.4 Implement renderer converters for all platforms
+- [x] 4.6.5 Implement viewport scrolling state
+- [x] 4.6.6 Implement split_pane resize state
 
 **Implementation Notes:**
 - Viewport clips content to dimensions
@@ -222,11 +222,11 @@ Create containers for scrollable content and resizable panes.
 - on_resize_change includes new split percentage
 
 **Unit Tests for Section 4.6:**
-- [ ] Test viewport clips content
-- [ ] Test viewport scrolling emits signal
-- [ ] Test split_pane with two panes
-- [ ] Test split_pane resize emits signal
-- [ ] Test all platforms render containers
+- [x] Test viewport clips content
+- [x] Test viewport scrolling emits signal
+- [x] Test split_pane with two panes
+- [x] Test split_pane resize emits signal
+- [x] Test all platforms render containers
 
 ---
 

@@ -71,6 +71,7 @@ defmodule UnifiedUi.IUR.Builder do
 
   alias UnifiedIUR.{Style, Widgets, Layouts}
   alias UnifiedUi.Dsl.StyleResolver
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias Spark.Dsl
 
   @doc """
@@ -139,7 +140,9 @@ defmodule UnifiedUi.IUR.Builder do
              Widgets.PickListOption,
              Widgets.PickList,
              Widgets.FormField,
-             Widgets.FormBuilder
+             Widgets.FormBuilder,
+             Viewport,
+             SplitPane
            ] do
     entity
   end
@@ -238,6 +241,14 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :form_builder} = entity, dsl_state) do
     build_form_builder(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :viewport} = entity, dsl_state) do
+    build_viewport(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :split_pane} = entity, dsl_state) do
+    build_split_pane(entity, dsl_state)
   end
 
   def build_entity(_entity, _dsl_state) do
@@ -899,6 +910,64 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  @doc """
+  Builds a Viewport struct from a viewport DSL entity.
+  """
+  @spec build_viewport(map(), Dsl.t()) :: Viewport.t()
+  def build_viewport(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    content =
+      case build_nested_entities(entity, dsl_state, :content, &build_entity/2) do
+        [single] ->
+          single
+
+        [] ->
+          normalize_viewport_content(Map.get(attrs, :content), dsl_state)
+
+        many ->
+          %Layouts.VBox{children: many}
+      end
+
+    %Viewport{
+      id: Map.get(attrs, :id),
+      content: content,
+      width: Map.get(attrs, :width),
+      height: Map.get(attrs, :height),
+      scroll_x: Map.get(attrs, :scroll_x, 0),
+      scroll_y: Map.get(attrs, :scroll_y, 0),
+      on_scroll: Map.get(attrs, :on_scroll),
+      border: Map.get(attrs, :border, :none),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a SplitPane struct from a split_pane DSL entity.
+  """
+  @spec build_split_pane(map(), Dsl.t()) :: SplitPane.t()
+  def build_split_pane(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    panes =
+      case build_nested_entities(entity, dsl_state, :panes, &build_entity/2) do
+        [] -> normalize_split_panes(Map.get(attrs, :panes), dsl_state)
+        nested -> nested
+      end
+
+    %SplitPane{
+      id: Map.get(attrs, :id),
+      panes: panes,
+      orientation: Map.get(attrs, :orientation, :horizontal),
+      initial_split: Map.get(attrs, :initial_split, 50),
+      min_size: Map.get(attrs, :min_size, 10),
+      on_resize_change: Map.get(attrs, :on_resize_change),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
   # Children building
 
   @doc """
@@ -1260,4 +1329,50 @@ defmodule UnifiedUi.IUR.Builder do
   end
 
   defp normalize_form_fields(other, _dsl_state), do: other
+
+  defp normalize_viewport_content(nil, _dsl_state), do: nil
+
+  defp normalize_viewport_content(content, dsl_state) do
+    case content do
+      %_module{} = widget ->
+        if UnifiedIUR.Element.impl_for(widget), do: widget, else: nil
+
+      %{name: _name} = entity ->
+        build_entity(entity, dsl_state)
+
+      attrs when is_map(attrs) ->
+        case Map.get(attrs, :name) do
+          nil -> nil
+          _ -> build_entity(attrs, dsl_state)
+        end
+
+      _other ->
+        nil
+    end
+  end
+
+  defp normalize_split_panes(nil, _dsl_state), do: []
+
+  defp normalize_split_panes(panes, dsl_state) when is_list(panes) do
+    panes
+    |> Enum.map(fn
+      %_module{} = pane ->
+        if UnifiedIUR.Element.impl_for(pane), do: pane, else: nil
+
+      %{name: _name} = pane_entity ->
+        build_entity(pane_entity, dsl_state)
+
+      attrs when is_map(attrs) ->
+        case Map.get(attrs, :name) do
+          nil -> nil
+          _ -> build_entity(attrs, dsl_state)
+        end
+
+      _other ->
+        nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp normalize_split_panes(_panes, _dsl_state), do: []
 end

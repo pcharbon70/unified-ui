@@ -38,6 +38,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   alias UnifiedIUR.Layouts
 
   alias UnifiedUi.Dsl.Entities.{
+    Containers,
     DataViz,
     DialogFeedback,
     InputWidgets,
@@ -64,7 +65,9 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     DialogFeedback.alert_dialog_entity(),
     DialogFeedback.toast_entity(),
     InputWidgets.pick_list_entity(),
-    InputWidgets.form_builder_entity()
+    InputWidgets.form_builder_entity(),
+    Containers.viewport_entity(),
+    Containers.split_pane_entity()
   ]
 
   @vbox_entity %Spark.Dsl.Entity{

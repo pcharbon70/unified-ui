@@ -18,6 +18,7 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.{Layouts, Widgets}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web}
   alias UnifiedUi.Agent
@@ -945,6 +946,91 @@ defmodule UnifiedUi.Integration.Phase4Test do
         assert {:ok, _} = Desktop.render(widget)
         assert {:ok, _} = Web.render(widget)
       end)
+    end
+  end
+
+  # ============================================================================
+  # 4.6: Container Widgets
+  # ============================================================================
+
+  describe "4.6 - Container Widgets" do
+    test "viewport carries clipping metadata and renders on all platforms" do
+      viewport = %Viewport{
+        id: :main_viewport,
+        width: 80,
+        height: 20,
+        scroll_x: 3,
+        scroll_y: 6,
+        border: :solid,
+        content: %Widgets.Text{content: "Scrollable content"}
+      }
+
+      assert {:viewport, _terminal_node, terminal_meta} = Terminal.convert_iur(viewport)
+      assert terminal_meta.width == 80
+      assert terminal_meta.height == 20
+      assert terminal_meta.scroll_x == 3
+      assert terminal_meta.scroll_y == 6
+
+      assert_renders_on_all_platforms(viewport)
+    end
+
+    test "viewport scrolling signal updates container state through generated update route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          viewport :main_viewport, %{name: :text, attrs: %{content: "Scrollable"}},
+            on_scroll: :viewport_scrolled
+        end
+        """)
+
+      state = module.init([])
+
+      scroll_signal = %{
+        type: "unified.input.changed",
+        data: %{widget_id: :main_viewport, value: %{scroll_x: 4, scroll_y: 12}}
+      }
+
+      updated = module.update(state, scroll_signal)
+      assert updated.main_viewport == %{scroll_x: 4, scroll_y: 12}
+    end
+
+    test "split pane holds two panes and renders on all platforms" do
+      split_pane = %SplitPane{
+        id: :main_split,
+        panes: [%Widgets.Text{content: "Left"}, %Widgets.Text{content: "Right"}],
+        orientation: :horizontal,
+        initial_split: 55,
+        min_size: 20
+      }
+
+      assert {:split_pane, _terminal_node, terminal_meta} = Terminal.convert_iur(split_pane)
+      assert terminal_meta.orientation == :horizontal
+      assert terminal_meta.initial_split == 55
+      assert terminal_meta.min_size == 20
+
+      assert_renders_on_all_platforms(split_pane)
+    end
+
+    test "split pane resize signal updates container state through generated update route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          split_pane :main_split, [
+            %{name: :text, attrs: %{content: "Left"}},
+            %{name: :text, attrs: %{content: "Right"}}
+          ], on_resize_change: :split_resized
+        end
+        """)
+
+      state = module.init([])
+
+      resize_signal = %{
+        type: "unified.input.changed",
+        data: %{widget_id: :main_split, value: %{split: 65}}
+      }
+
+      updated = module.update(state, resize_signal)
+      assert updated.main_split == %{split: 65}
     end
   end
 

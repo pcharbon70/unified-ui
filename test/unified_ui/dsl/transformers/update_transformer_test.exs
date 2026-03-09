@@ -85,6 +85,48 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert %{country_select: "ca"} = module.update(state, signal)
     end
 
+    test "viewport on_scroll routes are handled as change routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          viewport :main_viewport, %{name: :text, attrs: %{content: "Scrollable"}},
+            on_scroll: :viewport_scrolled
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{
+          widget_id: :main_viewport,
+          value: %{scroll_x: 4, scroll_y: 12}
+        })
+
+      assert %{main_viewport: %{scroll_x: 4, scroll_y: 12}} = module.update(state, signal)
+    end
+
+    test "split_pane on_resize_change routes are handled as change routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          split_pane :main_split, [
+            %{name: :text, attrs: %{content: "Left"}},
+            %{name: :text, attrs: %{content: "Right"}}
+          ], on_resize_change: :split_resized
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{
+          widget_id: :main_split,
+          value: %{split: 65}
+        })
+
+      assert %{main_split: %{split: 65}} = module.update(state, signal)
+    end
+
     test "pick_list searchable routes expose filtered options from query payload" do
       module =
         compile_fixture("""

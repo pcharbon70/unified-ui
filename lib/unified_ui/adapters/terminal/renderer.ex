@@ -50,6 +50,7 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Terminal.Style
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1213,6 +1214,61 @@ defmodule UnifiedUi.Adapters.Terminal do
        on_dismiss: toast.on_dismiss,
        auto_dismiss: not is_nil(dismiss_at),
        dismiss_at: dismiss_at
+     }}
+  end
+
+  # Container widget converters
+
+  defp convert_by_type(%Viewport{} = viewport, :viewport, state) do
+    content_node =
+      case viewport.content do
+        nil -> TermUI.Component.Helpers.empty()
+        content -> convert_iur(content, state)
+      end
+
+    viewport_node =
+      if viewport.border in [true, :solid, :dashed, :double] do
+        TermUI.Component.Helpers.stack(:vertical, [content_node], spacing: 0)
+      else
+        content_node
+      end
+
+    styled_node =
+      case Style.convert_style(viewport.style) do
+        nil -> viewport_node
+        style -> TermUI.Component.Helpers.styled(viewport_node, style)
+      end
+
+    {:viewport, styled_node,
+     %{
+       id: viewport.id,
+       width: viewport.width,
+       height: viewport.height,
+       scroll_x: viewport.scroll_x,
+       scroll_y: viewport.scroll_y,
+       on_scroll: viewport.on_scroll,
+       border: viewport.border
+     }}
+  end
+
+  defp convert_by_type(%SplitPane{} = split_pane, :split_pane, state) do
+    pane_nodes = convert_children(split_pane.panes, state)
+    direction = if split_pane.orientation == :vertical, do: :vertical, else: :horizontal
+    split_node = TermUI.Component.Helpers.stack(direction, pane_nodes, spacing: 0)
+
+    styled_node =
+      case Style.convert_style(split_pane.style) do
+        nil -> split_node
+        style -> TermUI.Component.Helpers.styled(split_node, style)
+      end
+
+    {:split_pane, styled_node,
+     %{
+       id: split_pane.id,
+       orientation: split_pane.orientation,
+       initial_split: split_pane.initial_split,
+       min_size: split_pane.min_size,
+       on_resize_change: split_pane.on_resize_change
      }}
   end
 

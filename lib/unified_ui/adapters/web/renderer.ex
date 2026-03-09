@@ -57,6 +57,7 @@ defmodule UnifiedUi.Adapters.Web do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Web.Style
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1257,6 +1258,83 @@ defmodule UnifiedUi.Adapters.Web do
     ~s(<div#{attrs}>#{escape_html(toast.message || "")}</div>)
   end
 
+  # Container widget converters
+
+  defp convert_by_type(%Viewport{} = viewport, :viewport, state) do
+    content_html =
+      case viewport.content do
+        nil -> ""
+        content -> convert_iur(content, state)
+      end
+
+    css_parts = ["overflow: auto"]
+    css_parts = maybe_add_width_css(css_parts, viewport.width)
+    css_parts = maybe_add_height_css(css_parts, viewport.height)
+
+    css_parts =
+      if viewport.border in [true, :solid, :dashed, :double] do
+        border_style =
+          case viewport.border do
+            :dashed -> "1px dashed #888"
+            :double -> "3px double #888"
+            _ -> "1px solid #888"
+          end
+
+        ["border: #{border_style}" | css_parts]
+      else
+        css_parts
+      end
+
+    style = Style.to_css(viewport.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if viewport.id, do: [{"id", viewport.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-scroll-x", viewport.scroll_x} | attrs_list]
+    attrs_list = [{"data-scroll-y", viewport.scroll_y} | attrs_list]
+
+    attrs_list =
+      if viewport.on_scroll do
+        [{"data-scroll-event", atom_to_event_name(viewport.on_scroll)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{content_html}</div>)
+  end
+
+  defp convert_by_type(%SplitPane{} = split_pane, :split_pane, state) do
+    panes_html =
+      split_pane.panes
+      |> List.wrap()
+      |> Enum.map_join(&convert_iur(&1, state))
+
+    direction = if split_pane.orientation == :vertical, do: "column", else: "row"
+    css_parts = ["display: flex", "flex-direction: #{direction}", "width: 100%"]
+    style = Style.to_css(split_pane.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if split_pane.id, do: [{"id", split_pane.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-initial-split", split_pane.initial_split} | attrs_list]
+    attrs_list = [{"data-min-size", split_pane.min_size} | attrs_list]
+
+    attrs_list =
+      if split_pane.on_resize_change do
+        [{"data-resize-event", atom_to_event_name(split_pane.on_resize_change)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{panes_html}</div>)
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
@@ -1331,6 +1409,14 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_children(_, _state), do: ""
+
+  defp maybe_add_width_css(parts, nil), do: parts
+  defp maybe_add_width_css(parts, width) when is_integer(width), do: ["width: #{width}px" | parts]
+
+  defp maybe_add_height_css(parts, nil), do: parts
+
+  defp maybe_add_height_css(parts, height) when is_integer(height),
+    do: ["height: #{height}px" | parts]
 
   defp form_field_name(nil), do: "field"
   defp form_field_name(name) when is_atom(name), do: Atom.to_string(name)

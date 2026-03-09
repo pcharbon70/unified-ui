@@ -7,6 +7,7 @@ defmodule UnifiedUi.Adapters.TerminalTest do
 
   alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Adapters.State
+  alias UnifiedUi.Widgets.{Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -1027,6 +1028,51 @@ defmodule UnifiedUi.Adapters.TerminalTest do
       assert meta.sort_direction == :desc
       assert meta.on_row_select == :select_row
       assert meta.on_sort == :sort_by
+    end
+  end
+
+  describe "convert_iur/2 - container widgets" do
+    test "converts viewport with clipping metadata" do
+      viewport = %Viewport{
+        id: :main_viewport,
+        width: 80,
+        height: 20,
+        scroll_x: 4,
+        scroll_y: 9,
+        on_scroll: :viewport_scrolled,
+        border: :solid,
+        content: %Widgets.Text{content: "Scrollable content"}
+      }
+
+      assert {:viewport, _node, meta} = Terminal.convert_iur(viewport)
+      assert meta.id == :main_viewport
+      assert meta.width == 80
+      assert meta.height == 20
+      assert meta.scroll_x == 4
+      assert meta.scroll_y == 9
+      assert meta.on_scroll == :viewport_scrolled
+      assert meta.border == :solid
+    end
+
+    test "converts split pane with pane and resize metadata" do
+      split_pane = %SplitPane{
+        id: :main_split,
+        orientation: :vertical,
+        initial_split: 60,
+        min_size: 15,
+        on_resize_change: :split_resized,
+        panes: [
+          %Widgets.Text{content: "Left"},
+          %Widgets.Text{content: "Right"}
+        ]
+      }
+
+      assert {:split_pane, _node, meta} = Terminal.convert_iur(split_pane)
+      assert meta.id == :main_split
+      assert meta.orientation == :vertical
+      assert meta.initial_split == 60
+      assert meta.min_size == 15
+      assert meta.on_resize_change == :split_resized
     end
   end
 end
