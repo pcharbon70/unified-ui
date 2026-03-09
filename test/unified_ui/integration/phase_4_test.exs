@@ -1094,6 +1094,53 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
       assert elapsed_ms < threshold_ms
     end
+
+    test "implemented advanced widgets render on all platforms" do
+      Enum.each(implemented_advanced_widgets(), fn widget ->
+        assert_renders_on_all_platforms(widget)
+      end)
+    end
+
+    test "phase 4 live-data dashboard memory usage stays bounded under sustained updates" do
+      module = compile_phase4_live_data_module()
+      component_id = :phase4_memory_stability
+      signal_count = 1_200
+      max_total_growth_bytes = 140 * 1024 * 1024
+      max_process_growth_bytes = 12 * 1024 * 1024
+
+      assert {:ok, _pid} =
+               Agent.start_component(module, component_id, platforms: [:terminal, :desktop, :web])
+
+      on_exit(fn ->
+        _ = Agent.stop_component(component_id)
+      end)
+
+      assert {:ok, pid} = Agent.whereis(component_id)
+      baseline_total_memory = :erlang.memory(:total)
+      baseline_process_memory = process_memory(pid)
+
+      last_cpu =
+        Enum.reduce(1..signal_count, nil, fn index, _acc ->
+          cpu_value = rem(index * 7, 100)
+          signal = Signals.create!("unified.telemetry.tick", telemetry_payload(index, cpu_value))
+
+          assert :ok = Agent.signal_component(component_id, signal)
+          cpu_value
+        end)
+
+      assert {:ok, %{cpu: ^last_cpu}} = Agent.current_state(component_id)
+      assert {:ok, _} = Agent.current_iur(component_id)
+      assert {:ok, _} = Agent.render_results(component_id)
+
+      :erlang.garbage_collect(pid)
+      Process.sleep(25)
+
+      total_growth = non_negative_growth(:erlang.memory(:total), baseline_total_memory)
+      process_growth = non_negative_growth(process_memory(pid), baseline_process_memory)
+
+      assert total_growth < max_total_growth_bytes
+      assert process_growth < max_process_growth_bytes
+    end
   end
 
   # ============================================================================
@@ -1440,4 +1487,89 @@ defmodule UnifiedUi.Integration.Phase4Test do
         end)
     }
   end
+
+  defp implemented_advanced_widgets do
+    [
+      %Widgets.Gauge{id: :gauge_widget, value: 55, min: 0, max: 100, label: "Gauge"},
+      %Widgets.Sparkline{id: :sparkline_widget, data: [10, 20, 30], show_dots: true},
+      %Widgets.BarChart{id: :bar_chart_widget, data: [{"A", 1}, {"B", 2}]},
+      %Widgets.LineChart{id: :line_chart_widget, data: [{"T1", 12}, {"T2", 8}]},
+      %Widgets.Table{
+        id: :table_widget,
+        data: [%{id: 1, name: "alpha"}, %{id: 2, name: "beta"}],
+        columns: [
+          %Widgets.Column{key: :id, header: "ID"},
+          %Widgets.Column{key: :name, header: "Name"}
+        ]
+      },
+      %Widgets.Menu{
+        id: :menu_widget,
+        items: [%Widgets.MenuItem{label: "Open", action: :open}]
+      },
+      %Widgets.ContextMenu{
+        id: :context_menu_widget,
+        items: [%Widgets.MenuItem{label: "Inspect", action: :inspect}]
+      },
+      %Widgets.Tabs{
+        id: :tabs_widget,
+        active_tab: :one,
+        tabs: [%Widgets.Tab{id: :one, label: "One", content: %Widgets.Text{content: "Tab One"}}]
+      },
+      %Widgets.TreeView{
+        id: :tree_view_widget,
+        root_nodes: [%Widgets.TreeNode{id: :root, label: "Root"}]
+      },
+      %Widgets.Dialog{id: :dialog_widget, title: "Dialog", content: "Body"},
+      %Widgets.AlertDialog{
+        id: :alert_dialog_widget,
+        title: "Alert",
+        message: "Warning",
+        severity: :warning
+      },
+      %Widgets.Toast{id: :toast_widget, message: "Saved", duration: 800},
+      %Widgets.PickList{
+        id: :pick_list_widget,
+        options: [%Widgets.PickListOption{value: :a, label: "A"}],
+        selected: :a
+      },
+      %Widgets.FormBuilder{
+        id: :form_builder_widget,
+        fields: [%Widgets.FormField{name: :name, type: :text, required: true}],
+        submit_label: "Submit"
+      }
+    ]
+  end
+
+  defp telemetry_payload(index, cpu_value) do
+    %{
+      cpu: cpu_value,
+      trend: [
+        cpu_value,
+        rem(cpu_value + 7, 100),
+        rem(cpu_value + 13, 100),
+        rem(cpu_value + 19, 100)
+      ],
+      throughput: [
+        {"api", rem(index * 3, 120)},
+        {"db", rem(index * 5, 120)},
+        {"worker", rem(index * 7, 120)}
+      ],
+      latency: [
+        {"09:00", 80 + rem(index, 40)},
+        {"09:01", 90 + rem(index * 2, 40)},
+        {"09:02", 100 + rem(index * 3, 40)},
+        {"09:03", 110 + rem(index * 4, 40)}
+      ]
+    }
+  end
+
+  defp process_memory(pid) do
+    case Process.info(pid, :memory) do
+      {:memory, bytes} -> bytes
+      _ -> 0
+    end
+  end
+
+  defp non_negative_growth(current, baseline) when current >= baseline, do: current - baseline
+  defp non_negative_growth(_current, _baseline), do: 0
 end
