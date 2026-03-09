@@ -113,6 +113,20 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
              ] = updated.country_select_filtered_options
     end
 
+    test "theme selector pick_list updates theme key in runtime state" do
+      module =
+        compile_fixture("""
+        vbox do
+          pick_list :theme, [{:light, "Light"}, {:dark, "Dark"}], on_select: :theme_selected
+        end
+        """)
+
+      signal = build_signal!("unified.input.changed", %{widget_id: :theme, value: "dark"})
+      updated_state = module.update(module.init([]), signal)
+
+      assert updated_state.theme == "dark"
+    end
+
     test "submit route merges static payload and submitted form data" do
       module =
         compile_fixture("""

@@ -1,6 +1,8 @@
 defmodule UnifiedUi.IUR.BuilderTrackBTest do
   use ExUnit.Case, async: true
 
+  alias UnifiedUi.Dsl.Style, as: DslStyle
+  alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedUi.IUR.Builder
   alias UnifiedIUR.Widgets
 
@@ -16,6 +18,25 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
       }
 
       assert %Widgets.Gauge{id: :cpu, value: 72} = Builder.build(dsl_state)
+    end
+
+    test "build/2 resolves theme token styles from runtime theme state" do
+      light_text = %DslStyle{name: :light_text, attributes: [fg: :black]}
+      dark_text = %DslStyle{name: :dark_text, attributes: [fg: :white]}
+      light_theme = %DslTheme{name: :light, styles: [text: :light_text]}
+      dark_theme = %DslTheme{name: :dark, styles: [text: :dark_text]}
+
+      dsl_state = %{
+        [:ui] => %{entities: [%{name: :text, attrs: %{content: "Theme Aware", style: :text}}]},
+        :styles => %{entities: [light_text, dark_text, light_theme, dark_theme]},
+        persist: %{module: __MODULE__}
+      }
+
+      assert %Widgets.Text{style: %UnifiedIUR.Style{fg: :black}} =
+               Builder.build(dsl_state, %{theme: :light})
+
+      assert %Widgets.Text{style: %UnifiedIUR.Style{fg: :white}} =
+               Builder.build(dsl_state, %{theme: "dark"})
     end
 
     test "builds data visualization entities" do
