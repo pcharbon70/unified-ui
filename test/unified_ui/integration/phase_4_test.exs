@@ -20,7 +20,9 @@ defmodule UnifiedUi.Integration.Phase4Test do
   alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedIUR.{Layouts, Widgets}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web}
+  alias UnifiedUi.Agent
   alias UnifiedUi.IUR.Builder
+  alias UnifiedUi.Signals
 
   # ============================================================================
   # 4.3.1: Menu System Tests
@@ -1021,6 +1023,77 @@ defmodule UnifiedUi.Integration.Phase4Test do
       assert valid_state.profile_form_valid == true
       assert valid_state.profile_form_errors == %{}
     end
+
+    test "complex dashboard with implemented phase 4 widgets compiles and renders on all platforms" do
+      module = compile_phase4_dashboard_module()
+      state = module.init([])
+      iur = module.view(state)
+
+      assert %Layouts.VBox{id: :phase4_dashboard, children: children} = iur
+      assert length(children) == 7
+
+      assert_renders_on_all_platforms(iur)
+    end
+
+    test "live telemetry updates refresh data visualization widgets end-to-end" do
+      module = compile_phase4_live_data_module()
+      component_id = :phase4_live_data_dashboard
+
+      assert {:ok, _pid} =
+               Agent.start_component(module, component_id, platforms: [:terminal, :desktop, :web])
+
+      on_exit(fn ->
+        _ = Agent.stop_component(component_id)
+      end)
+
+      assert {:ok, %{cpu: 35}} = Agent.current_state(component_id)
+
+      telemetry_signal =
+        Signals.create!("unified.telemetry.tick", %{
+          cpu: 82,
+          trend: [31, 45, 53, 61, 82],
+          throughput: [{"api", 74}, {"db", 63}, {"worker", 58}],
+          latency: [{"09:00", 120}, {"09:01", 108}, {"09:02", 95}, {"09:03", 88}]
+        })
+
+      assert :ok = Agent.signal_component(component_id, telemetry_signal)
+      Process.sleep(25)
+
+      assert {:ok, %{cpu: 82, trend: [31, 45, 53, 61, 82]}} = Agent.current_state(component_id)
+
+      assert {:ok,
+              %Layouts.VBox{
+                children: [
+                  %Widgets.Gauge{value: 82},
+                  %Widgets.Sparkline{data: [31, 45, 53, 61, 82]},
+                  %Widgets.BarChart{data: [{"api", 74}, {"db", 63}, {"worker", 58}]},
+                  %Widgets.LineChart{
+                    data: [{"09:00", 120}, {"09:01", 108}, {"09:02", 95}, {"09:03", 88}]
+                  }
+                ]
+              }} = Agent.current_iur(component_id)
+
+      assert {:ok, render_results} = Agent.render_results(component_id)
+
+      assert Enum.all?([:terminal, :desktop, :web], fn platform ->
+               match?({:ok, _}, Map.fetch!(render_results, platform))
+             end)
+    end
+
+    test "dashboard rendering stays responsive with 200+ elements" do
+      element_count = 240
+      threshold_ms = 8_000
+      large_ui = large_phase4_dashboard_iur(element_count)
+
+      assert %Layouts.VBox{children: children} = large_ui
+      assert length(children) == element_count
+
+      started_at_ms = System.monotonic_time(:millisecond)
+      assert_renders_on_all_platforms(large_ui)
+      elapsed_ms = System.monotonic_time(:millisecond) - started_at_ms
+
+      assert elapsed_ms < threshold_ms
+    end
   end
 
   # ============================================================================
@@ -1136,6 +1209,235 @@ defmodule UnifiedUi.Integration.Phase4Test do
       },
       :styles => %{entities: [light_text, dark_text, light_theme, dark_theme]},
       persist: %{module: __MODULE__}
+    }
+  end
+
+  defp assert_renders_on_all_platforms(iur) do
+    assert {:ok, terminal_state} = Terminal.render(iur)
+    assert {:ok, _} = UnifiedUi.Adapters.State.get_root(terminal_state)
+
+    assert {:ok, desktop_state} = Desktop.render(iur)
+    assert {:ok, _} = UnifiedUi.Adapters.State.get_root(desktop_state)
+
+    assert {:ok, web_state} = Web.render(iur)
+    assert {:ok, _} = UnifiedUi.Adapters.State.get_root(web_state)
+  end
+
+  defp compile_phase4_dashboard_module do
+    module =
+      Module.concat([
+        UnifiedUi,
+        Integration,
+        Phase4Dashboard,
+        :"M#{System.unique_integer([:positive])}"
+      ])
+
+    dashboard = phase4_dashboard_iur()
+
+    quoted =
+      quote do
+        defmodule unquote(module) do
+          @behaviour UnifiedUi.ElmArchitecture
+
+          @impl true
+          def init(_opts), do: %{loaded: true}
+
+          @impl true
+          def update(state, _signal), do: state
+
+          @impl true
+          def view(_state), do: unquote(Macro.escape(dashboard))
+        end
+      end
+
+    Code.compile_quoted(quoted)
+    module
+  end
+
+  defp compile_phase4_live_data_module do
+    module =
+      Module.concat([
+        UnifiedUi,
+        Integration,
+        Phase4LiveData,
+        :"M#{System.unique_integer([:positive])}"
+      ])
+
+    quoted =
+      quote do
+        defmodule unquote(module) do
+          @behaviour UnifiedUi.ElmArchitecture
+
+          alias UnifiedIUR.{Layouts, Widgets}
+
+          @impl true
+          def init(_opts) do
+            %{
+              cpu: 35,
+              trend: [20, 25, 29, 35],
+              throughput: [{"api", 40}, {"db", 32}, {"worker", 28}],
+              latency: [{"09:00", 170}, {"09:01", 145}, {"09:02", 132}, {"09:03", 121}]
+            }
+          end
+
+          @impl true
+          def update(state, %{type: "unified.telemetry.tick", data: data}) do
+            %{
+              state
+              | cpu: Map.get(data, :cpu, state.cpu),
+                trend: Map.get(data, :trend, state.trend),
+                throughput: Map.get(data, :throughput, state.throughput),
+                latency: Map.get(data, :latency, state.latency)
+            }
+          end
+
+          def update(state, _signal), do: state
+
+          @impl true
+          def view(state) do
+            %Layouts.VBox{
+              id: :live_data_dashboard,
+              spacing: 1,
+              children: [
+                %Widgets.Gauge{id: :cpu_live, label: "CPU", value: state.cpu, min: 0, max: 100},
+                %Widgets.Sparkline{id: :cpu_trend_live, data: state.trend, show_dots: true},
+                %Widgets.BarChart{id: :throughput_live, data: state.throughput},
+                %Widgets.LineChart{id: :latency_live, data: state.latency, show_dots: true}
+              ]
+            }
+          end
+        end
+      end
+
+    Code.compile_quoted(quoted)
+    module
+  end
+
+  defp phase4_dashboard_iur do
+    %Layouts.VBox{
+      id: :phase4_dashboard,
+      spacing: 1,
+      children: [
+        %Widgets.Menu{
+          id: :main_menu,
+          items: [
+            %Widgets.MenuItem{label: "File", action: :file_menu},
+            %Widgets.MenuItem{label: "View", action: :view_menu}
+          ]
+        },
+        %Layouts.HBox{
+          id: :metrics,
+          spacing: 2,
+          children: [
+            %Widgets.Gauge{id: :cpu, label: "CPU", value: 72, min: 0, max: 100},
+            %Widgets.Sparkline{id: :mem_trend, data: [48, 52, 57, 54, 61], show_dots: true},
+            %Widgets.BarChart{id: :requests, data: [{"api", 42}, {"db", 33}, {"jobs", 17}]},
+            %Widgets.LineChart{id: :latency, data: [{"1m", 80}, {"2m", 64}, {"3m", 59}]}
+          ]
+        },
+        %Widgets.Table{
+          id: :services_table,
+          data: [
+            %{service: "api", status: "ok", p95: 88},
+            %{service: "db", status: "ok", p95: 102},
+            %{service: "jobs", status: "warn", p95: 143}
+          ],
+          columns: [
+            %Widgets.Column{key: :service, header: "Service"},
+            %Widgets.Column{key: :status, header: "Status"},
+            %Widgets.Column{key: :p95, header: "P95"}
+          ]
+        },
+        %Layouts.HBox{
+          id: :inputs,
+          spacing: 2,
+          children: [
+            %Widgets.PickList{
+              id: :time_range,
+              options: [
+                %Widgets.PickListOption{value: :h1, label: "Last Hour"},
+                %Widgets.PickListOption{value: :h24, label: "Last 24h"}
+              ],
+              selected: :h1,
+              searchable: true
+            },
+            %Widgets.FormBuilder{
+              id: :filters_form,
+              fields: [
+                %Widgets.FormField{name: :service, type: :text, required: true},
+                %Widgets.FormField{
+                  name: :severity,
+                  type: :select,
+                  options: [{"info", "Info"}, {"warn", "Warn"}, {"error", "Error"}]
+                }
+              ],
+              submit_label: "Apply"
+            }
+          ]
+        },
+        %Widgets.Tabs{
+          id: :main_tabs,
+          active_tab: :overview,
+          tabs: [
+            %Widgets.Tab{
+              id: :overview,
+              label: "Overview",
+              content: %Widgets.Text{content: "Cluster healthy"}
+            },
+            %Widgets.Tab{
+              id: :tree,
+              label: "Services",
+              content: %Widgets.TreeView{
+                id: :service_tree,
+                root_nodes: [
+                  %Widgets.TreeNode{
+                    id: :backend,
+                    label: "backend",
+                    expanded: true,
+                    children: [
+                      %Widgets.TreeNode{id: :api_node, label: "api"},
+                      %Widgets.TreeNode{id: :jobs_node, label: "jobs"}
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        %Widgets.ContextMenu{
+          id: :dashboard_ctx,
+          items: [
+            %Widgets.MenuItem{label: "Refresh", action: :refresh},
+            %Widgets.MenuItem{label: "Inspect", action: :inspect}
+          ]
+        },
+        %Layouts.HBox{
+          id: :feedback,
+          spacing: 2,
+          children: [
+            %Widgets.Dialog{id: :settings_dialog, title: "Settings", content: "Settings panel"},
+            %Widgets.AlertDialog{
+              id: :alerts_dialog,
+              title: "Action Required",
+              message: "A service is degraded",
+              severity: :warning
+            },
+            %Widgets.Toast{id: :saved_toast, message: "Filters updated", duration: 1200}
+          ]
+        }
+      ]
+    }
+  end
+
+  defp large_phase4_dashboard_iur(element_count)
+       when is_integer(element_count) and element_count > 0 do
+    %Layouts.VBox{
+      id: :phase4_large_dashboard,
+      spacing: 1,
+      children:
+        Enum.map(1..element_count, fn index ->
+          %Widgets.Text{id: :"metric_#{index}", content: "Metric #{index}"}
+        end)
     }
   end
 end
