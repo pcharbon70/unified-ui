@@ -7,7 +7,7 @@ defmodule Mix.Tasks.UnifiedUi.Gen.Screen do
 
   - a screen module in `lib/`
   - a matching test module in `test/`
-  - a `UnifiedUi.Agent.Server` child spec entry in your application supervisor
+  - a UnifiedUi.Agent.Server child spec entry in your application supervisor
 
   ## Usage
 

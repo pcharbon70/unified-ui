@@ -286,26 +286,26 @@ Create the Info module that provides convenient functions to query the DSL state
 
 ## 1.9 Basic Documentation Setup
 
-- [ ] **Task 1.9** Set up ExDoc for API documentation generation
+- [x] **Task 1.9** Set up ExDoc for API documentation generation
 
 Configure ExDoc and add basic documentation to all public modules.
 
 - [x] 1.9.1 Add `:ex_doc` to dev dependencies in mix.exs
 - [x] 1.9.2 Configure ExDoc in mix.exs
-- [ ] 1.9.3 Add `@moduledoc` to all public modules
-- [ ] 1.9.4 Add `@doc` to all public functions
-- [ ] 1.9.5 Generate documentation with `mix docs`
-- [ ] 1.9.6 Verify documentation builds without warnings
+- [x] 1.9.3 Add `@moduledoc` to all public modules
+- [x] 1.9.4 Add `@doc` to all public functions
+- [x] 1.9.5 Generate documentation with `mix docs`
+- [x] 1.9.6 Verify documentation builds without warnings
 
 **Implementation Notes:**
 - Use proper moduledoc/doc format
 - Include examples where applicable
-- Auto-publish to HexDocs on release
+- Build docs in CI and publish to HexDocs manually when releasing
 
 **Unit Tests for Section 1.9:**
-- [ ] Test docs build without errors
-- [ ] Test all modules documented
-- [ ] Test all functions documented
+- [x] Test docs build without errors
+- [x] Test all modules documented
+- [x] Test all functions documented
 
 ---
 
