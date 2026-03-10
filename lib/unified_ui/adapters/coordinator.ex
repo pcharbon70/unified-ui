@@ -270,26 +270,17 @@ defmodule UnifiedUi.Adapters.Coordinator do
     timeout = Keyword.get(opts, :timeout, 5000)
     renderer_opts = Keyword.delete(opts, :timeout)
 
-    # Create tasks for each platform
-    tasks =
+    platform_tasks =
       Enum.map(platforms, fn platform ->
-        Task.async(fn ->
-          {platform, render_on_platform(iur_tree, platform, renderer_opts)}
-        end)
+        task =
+          Task.async(fn ->
+            render_on_platform(iur_tree, platform, renderer_opts)
+          end)
+
+        {platform, task}
       end)
 
-    # Wait for all tasks with timeout
-    results =
-      Enum.map(tasks, fn task ->
-        case Task.yield(task, timeout) do
-          {:ok, {_platform, _result} = value} -> value
-          {:exit, _reason} -> {:error, :timeout}
-          nil -> {:error, :timeout}
-        end
-      end)
-
-    # Convert results list to map
-    results_map = Map.new(results)
+    results_map = await_render_tasks(platform_tasks, timeout)
 
     # Check if at least one renderer succeeded
     if Enum.any?(results_map, fn {_platform, result} -> match?({:ok, _}, result) end) do
@@ -297,6 +288,29 @@ defmodule UnifiedUi.Adapters.Coordinator do
     else
       {:error, :all_renderers_failed_or_timeout}
     end
+  end
+
+  @doc false
+  @spec await_render_tasks([{platform(), Task.t()}], non_neg_integer()) :: multi_render_result()
+  def await_render_tasks(platform_tasks, timeout)
+      when is_list(platform_tasks) and is_integer(timeout) and timeout >= 0 do
+    Enum.reduce(platform_tasks, %{}, fn {platform, task}, acc ->
+      result =
+        case Task.yield(task, timeout) do
+          {:ok, render_result} ->
+            render_result
+
+          {:exit, reason} ->
+            _ = Task.shutdown(task, :brutal_kill)
+            {:error, {:task_exit, reason}}
+
+          nil ->
+            _ = Task.shutdown(task, :brutal_kill)
+            {:error, :timeout}
+        end
+
+      Map.put(acc, platform, result)
+    end)
   end
 
   # Renderer Selection
@@ -563,7 +577,6 @@ defmodule UnifiedUi.Adapters.Coordinator do
     case UnifiedUi.Agent.signal_component(component_id, signal) do
       :ok -> :ok
       {:error, :not_found} -> {:error, :target_not_found}
-      {:error, _reason} = error -> error
     end
   end
 

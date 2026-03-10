@@ -30,6 +30,7 @@ The main remaining work is not basic scaffolding. It is completion and hardening
 - Components expose a deterministic topic via `UnifiedUi.Agent.component_signal_topic/1`, enabling coordinator topic routing to drive component updates.
 - Coordinator dispatch contracts now include direct component targets (`{:component, component_id}`), so normalized platform events can route to agents without requiring explicit topic wiring.
 - Coordinator now also treats unmatched atom targets as component IDs, preserving process-name routing while adding zero-config component dispatch ergonomics.
+- Coordinator concurrent rendering now preserves per-platform timeout and task-exit results (`%{platform => {:error, :timeout | {:task_exit, reason}}}`) instead of collapsing failures under a generic `:error` map key.
 
 ## Audit Findings by Phase
 

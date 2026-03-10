@@ -4,6 +4,7 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   """
 
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
 
   alias UnifiedUi.Adapters.Coordinator
   alias UnifiedUi.Agent, as: UiAgent
@@ -257,6 +258,33 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
 
       assert Map.has_key?(results, :terminal)
       assert {:error, _} = results.invalid
+    end
+
+    test "await_render_tasks/2 preserves platform keys when one task times out" do
+      fast_task = Task.async(fn -> {:ok, :fast_render} end)
+      slow_task = Task.async(fn -> Process.sleep(50) end)
+
+      results = Coordinator.await_render_tasks([{:terminal, fast_task}, {:web, slow_task}], 10)
+
+      assert results.terminal == {:ok, :fast_render}
+      assert results.web == {:error, :timeout}
+      refute Map.has_key?(results, :error)
+    end
+
+    test "await_render_tasks/2 returns task_exit error when task crashes" do
+      capture_log(fn ->
+        {:ok, supervisor} = Task.Supervisor.start_link()
+
+        failing_task =
+          Task.Supervisor.async_nolink(supervisor, fn ->
+            raise "intentional task failure"
+          end)
+
+        results = Coordinator.await_render_tasks([{:desktop, failing_task}], 100)
+
+        assert {:error, {:task_exit, reason}} = results.desktop
+        assert reason != nil
+      end)
     end
   end
 
