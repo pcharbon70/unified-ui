@@ -6,9 +6,31 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Coordinator
+  alias UnifiedUi.Agent, as: UiAgent
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias Jido.Signal
+
+  defmodule RoutedCounterComponent do
+    @moduledoc false
+    @behaviour UnifiedUi.ElmArchitecture
+
+    @impl true
+    def init(_opts), do: %{count: 0}
+
+    @impl true
+    def update(state, %Signal{type: "unified.button.clicked", data: %{delta: delta}})
+        when is_integer(delta) do
+      %{state | count: state.count + delta}
+    end
+
+    def update(state, _signal), do: state
+
+    @impl true
+    def view(state) do
+      %Widgets.Text{id: :routed_counter, content: Integer.to_string(state.count)}
+    end
+  end
 
   def mfa_target(signal, parent) do
     send(parent, {:mfa_dispatched, signal})
@@ -635,6 +657,25 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert signal.type == "unified.element.focused"
     end
 
+    test "dispatches normalized signal to component target" do
+      component_id = :"coordinator_target_#{System.unique_integer([:positive])}"
+      assert {:ok, _pid} = UiAgent.start_component(RoutedCounterComponent, component_id)
+      on_exit(fn -> _ = UiAgent.stop_component(component_id) end)
+
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :web,
+                 :click,
+                 %{widget_id: :counter_button, action: :increment, delta: 4},
+                 {:component, component_id}
+               )
+
+      Process.sleep(20)
+
+      assert signal.type == "unified.button.clicked"
+      assert {:ok, %{count: 4}} = UiAgent.current_state(component_id)
+    end
+
     test "broadcasts normalized signal to multiple targets" do
       target_one = fn signal ->
         send(self(), {:target_one, signal})
@@ -692,6 +733,16 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
                )
 
       assert error == {:error, :rejected_by_mfa}
+    end
+
+    test "returns target error when component target does not exist" do
+      assert {:error, :not_found} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :save, action: :save},
+                 {:component, :missing_component_target}
+               )
     end
 
     test "returns error for invalid route target" do

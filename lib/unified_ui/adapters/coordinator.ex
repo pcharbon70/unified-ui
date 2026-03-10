@@ -68,6 +68,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
           | atom()
           | (Signal.t() -> term())
           | {module(), atom(), [term()]}
+          | {:component, UnifiedUi.Agent.component_id()}
           | {:topic, SignalBus.topic()}
   @type renderer_state :: map()
   @type render_result :: {:ok, renderer_state()} | {:error, term()}
@@ -479,6 +480,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
   * Registered process name atom
   * 1-arity function
   * MFA tuple `{Module, :function, args}` (signal is prepended to args)
+  * Component tuple `{:component, component_id}` (routes through `UnifiedUi.Agent`)
   * PubSub topic tuple `{:topic, "topic_name"}` (fanout via `UnifiedUi.SignalBus`)
 
   Returns the normalized signal on success.
@@ -545,6 +547,10 @@ defmodule UnifiedUi.Adapters.Coordinator do
   def route_signal(%Signal{} = signal, {module, function, args})
       when is_atom(module) and is_atom(function) and is_list(args) do
     run_target(fn -> apply(module, function, [signal | args]) end)
+  end
+
+  def route_signal(%Signal{} = signal, {:component, component_id}) when is_atom(component_id) do
+    UnifiedUi.Agent.signal_component(component_id, signal)
   end
 
   def route_signal(%Signal{} = signal, {:topic, topic}) when is_binary(topic) do
