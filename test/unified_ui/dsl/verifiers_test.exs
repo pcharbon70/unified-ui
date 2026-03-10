@@ -16,6 +16,7 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
     UniqueIdVerifier,
     LayoutStructureVerifier,
     SignalHandlerVerifier,
+    RequiredAttributeVerifier,
     StyleReferenceVerifier,
     StateReferenceVerifier
   }
@@ -438,6 +439,45 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
       dsl_state = create_dsl_state(entities)
 
       assert StyleReferenceVerifier.verify(dsl_state) == :ok
+    end
+  end
+
+  describe "RequiredAttributeVerifier" do
+    test "passes when required attributes are present" do
+      entities = [
+        %{__struct__: Widgets.Button, label: "Click", __meta__: [entity: "button"]},
+        %{__struct__: Widgets.Text, content: "Hello", __meta__: [entity: "text"]},
+        %{__struct__: Widgets.Label, for: :email, text: "Email", __meta__: [entity: "label"]},
+        %{__struct__: Widgets.TextInput, id: :email, __meta__: [entity: "text_input"]}
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert RequiredAttributeVerifier.verify(dsl_state) == :ok
+    end
+
+    test "detects missing required attributes" do
+      entities = [
+        %{__struct__: Widgets.Button, label: nil, __meta__: [entity: "button"]}
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Missing required attribute.*:label/s, fn ->
+        RequiredAttributeVerifier.verify(dsl_state)
+      end
+    end
+
+    test "detects invalid required attribute types" do
+      entities = [
+        %{__struct__: Widgets.TextInput, id: "email", __meta__: [entity: "text_input"]}
+      ]
+
+      dsl_state = create_dsl_state(entities)
+
+      assert_raise Spark.Error.DslError, ~r/Invalid type for required attribute.*:id/s, fn ->
+        RequiredAttributeVerifier.verify(dsl_state)
+      end
     end
   end
 
