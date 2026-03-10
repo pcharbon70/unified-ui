@@ -17,10 +17,16 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert section.entities == Layouts.entities()
     assert :vbox in entity_names
     assert :hbox in entity_names
+    assert :grid in entity_names
+    assert :stack in entity_names
+    assert :zbox in entity_names
     assert :viewport in entity_names
     assert :split_pane in entity_names
     assert :canvas in entity_names
     assert :command_palette in entity_names
+    assert :log_viewer in entity_names
+    assert :stream_widget in entity_names
+    assert :process_monitor in entity_names
   end
 
   test "styles section exposes schema and style entity" do
@@ -62,6 +68,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :button in entity_names
     assert :text in entity_names
     assert :text_input in entity_names
+    assert :grid in entity_names
+    assert :stack in entity_names
+    assert :zbox in entity_names
     assert :gauge in entity_names
     assert :tabs in entity_names
     assert :tree_view in entity_names
@@ -74,6 +83,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :split_pane in entity_names
     assert :canvas in entity_names
     assert :command_palette in entity_names
+    assert :log_viewer in entity_names
+    assert :stream_widget in entity_names
+    assert :process_monitor in entity_names
   end
 
   test "ui section is top level and includes state/layout/widget entities" do
@@ -88,6 +100,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert hd(Ui.entities()).name == :state
     assert :vbox in entity_names
     assert :hbox in entity_names
+    assert :grid in entity_names
+    assert :stack in entity_names
+    assert :zbox in entity_names
     assert :button in entity_names
     assert :line_chart in entity_names
     assert :table in entity_names

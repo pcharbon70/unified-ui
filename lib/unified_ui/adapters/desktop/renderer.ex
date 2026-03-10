@@ -61,7 +61,21 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Desktop.Style
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    Grid,
+    LogViewer,
+    ProcessMonitor,
+    Stack,
+    SplitPane,
+    StreamWidget,
+    Viewport,
+    ZBox
+  }
+
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1160,7 +1174,138 @@ defmodule UnifiedUi.Adapters.Desktop do
      }}
   end
 
+  defp convert_by_type(%LogViewer{} = log_viewer, :log_viewer, _state) do
+    props =
+      []
+      |> Style.add_props(log_viewer.style)
+      |> then(fn props -> [{:source, log_viewer.source} | props] end)
+      |> then(fn props -> [{:lines, log_viewer.lines} | props] end)
+      |> then(fn props -> [{:auto_scroll, log_viewer.auto_scroll} | props] end)
+      |> then(fn props -> [{:filter, log_viewer.filter} | props] end)
+      |> then(fn props -> [{:refresh_interval, log_viewer.refresh_interval} | props] end)
+
+    widget = %{type: :log_viewer, id: log_viewer.id, props: props, children: []}
+
+    {:log_viewer, widget,
+     %{
+       id: log_viewer.id,
+       source: log_viewer.source,
+       lines: log_viewer.lines,
+       auto_scroll: log_viewer.auto_scroll,
+       filter: log_viewer.filter,
+       refresh_interval: log_viewer.refresh_interval,
+       auto_refresh: log_viewer.refresh_interval > 0
+     }}
+  end
+
+  defp convert_by_type(%StreamWidget{} = stream_widget, :stream_widget, _state) do
+    props =
+      []
+      |> Style.add_props(stream_widget.style)
+      |> then(fn props -> [{:producer, stream_widget.producer} | props] end)
+      |> then(fn props -> [{:buffer_size, stream_widget.buffer_size} | props] end)
+      |> then(fn props -> [{:refresh_interval, stream_widget.refresh_interval} | props] end)
+
+    widget = %{type: :stream_widget, id: stream_widget.id, props: props, children: []}
+
+    {:stream_widget, widget,
+     %{
+       id: stream_widget.id,
+       producer: stream_widget.producer,
+       transform: stream_widget.transform,
+       buffer_size: stream_widget.buffer_size,
+       refresh_interval: stream_widget.refresh_interval,
+       auto_refresh: stream_widget.refresh_interval > 0,
+       on_item: stream_widget.on_item
+     }}
+  end
+
+  defp convert_by_type(%ProcessMonitor{} = process_monitor, :process_monitor, _state) do
+    props =
+      []
+      |> Style.add_props(process_monitor.style)
+      |> then(fn props -> [{:node, process_monitor.node || node()} | props] end)
+      |> then(fn props -> [{:sort_by, process_monitor.sort_by} | props] end)
+      |> then(fn props -> [{:refresh_interval, process_monitor.refresh_interval} | props] end)
+
+    widget = %{type: :process_monitor, id: process_monitor.id, props: props, children: []}
+
+    {:process_monitor, widget,
+     %{
+       id: process_monitor.id,
+       node: process_monitor.node || node(),
+       refresh_interval: process_monitor.refresh_interval,
+       auto_refresh: process_monitor.refresh_interval > 0,
+       sort_by: process_monitor.sort_by,
+       on_process_select: process_monitor.on_process_select
+     }}
+  end
+
   # Layout converters
+
+  defp convert_by_type(%Grid{} = grid, :grid, state) do
+    children = convert_children(grid.children, state)
+    columns = normalize_grid_tracks(grid.columns)
+    rows = normalize_grid_tracks(grid.rows)
+
+    props =
+      []
+      |> then(fn props -> [{:columns, columns} | props] end)
+      |> then(fn props -> [{:rows, rows} | props] end)
+      |> then(fn props -> [{:gap, grid.gap} | props] end)
+      |> Style.add_props(grid.style)
+
+    widget = %{type: :grid, id: grid.id, props: props, children: children}
+
+    {:grid, widget,
+     %{
+       id: grid.id,
+       columns: columns,
+       rows: rows,
+       gap: grid.gap
+     }}
+  end
+
+  defp convert_by_type(%Stack{} = stack, :stack, state) do
+    all_children = convert_children(stack.children, state)
+    active_index = normalize_active_index(stack.active_index, length(all_children))
+    active_children = [Enum.at(all_children, active_index)] |> Enum.reject(&is_nil/1)
+
+    props =
+      []
+      |> then(fn props -> [{:active_index, active_index} | props] end)
+      |> then(fn props -> [{:transition, stack.transition} | props] end)
+      |> Style.add_props(stack.style)
+
+    widget = %{type: :stack, id: stack.id, props: props, children: active_children}
+
+    {:stack, widget,
+     %{
+       id: stack.id,
+       active_index: active_index,
+       child_count: length(all_children),
+       transition: stack.transition
+     }}
+  end
+
+  defp convert_by_type(%ZBox{} = zbox, :zbox, state) do
+    children = convert_children(zbox.children, state)
+    positions = normalize_zbox_positions(zbox.positions)
+
+    props =
+      []
+      |> then(fn props -> [{:positions, positions} | props] end)
+      |> Style.add_props(zbox.style)
+
+    widget = %{type: :zbox, id: zbox.id, props: props, children: children}
+
+    {:zbox, widget,
+     %{
+       id: zbox.id,
+       positions: positions,
+       child_count: length(children)
+     }}
+  end
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
     children = convert_children(vbox.children, state)
@@ -1285,6 +1430,47 @@ defmodule UnifiedUi.Adapters.Desktop do
   defp maybe_add_justify_content(props, :center), do: [{:justify, :center} | props]
   defp maybe_add_justify_content(props, :end), do: [{:justify, :bottom} | props]
   defp maybe_add_justify_content(props, justify), do: [{:justify, justify} | props]
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track) and track > 0,
+    do: "#{track}fr"
+
+  defp normalize_grid_track(track) when is_integer(track), do: "#{track}"
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: inspect(track)
+
+  defp normalize_active_index(index, child_count)
+       when is_integer(index) and is_integer(child_count) and child_count > 0 do
+    index
+    |> max(0)
+    |> min(child_count - 1)
+  end
+
+  defp normalize_active_index(_index, _child_count), do: 0
+
+  defp normalize_zbox_positions(nil), do: %{}
+  defp normalize_zbox_positions(positions) when is_map(positions), do: positions
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      Enum.into(positions, %{})
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {position, index} -> {index, position} end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
 
   defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
     System.monotonic_time(:millisecond) + duration

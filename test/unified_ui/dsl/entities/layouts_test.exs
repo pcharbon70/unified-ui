@@ -13,6 +13,7 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
 
   alias UnifiedUi.Dsl.Entities.Layouts, as: LayoutEntities
   alias UnifiedIUR.Layouts
+  alias UnifiedUi.Widgets.{Grid, Stack, ZBox}
 
   describe "vbox_entity/0" do
     test "returns a valid Spark.Dsl.Entity" do
@@ -160,6 +161,54 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
     end
   end
 
+  describe "grid_entity/0" do
+    test "returns a valid Spark.Dsl.Entity" do
+      entity = LayoutEntities.grid_entity()
+
+      assert %Spark.Dsl.Entity{name: :grid} = entity
+      assert entity.target == Grid
+      assert entity.args == [:children]
+      assert Keyword.has_key?(entity.schema, :children)
+      assert Keyword.has_key?(entity.schema, :id)
+      assert Keyword.has_key?(entity.schema, :columns)
+      assert Keyword.has_key?(entity.schema, :rows)
+      assert Keyword.has_key?(entity.schema, :gap)
+      assert Keyword.has_key?(entity.schema, :style)
+      assert Keyword.has_key?(entity.schema, :visible)
+    end
+  end
+
+  describe "stack_entity/0" do
+    test "returns a valid Spark.Dsl.Entity" do
+      entity = LayoutEntities.stack_entity()
+
+      assert %Spark.Dsl.Entity{name: :stack} = entity
+      assert entity.target == Stack
+      assert entity.args == [:id, :children]
+      assert Keyword.has_key?(entity.schema, :id)
+      assert Keyword.has_key?(entity.schema, :children)
+      assert Keyword.has_key?(entity.schema, :active_index)
+      assert Keyword.has_key?(entity.schema, :transition)
+      assert Keyword.has_key?(entity.schema, :style)
+      assert Keyword.has_key?(entity.schema, :visible)
+    end
+  end
+
+  describe "zbox_entity/0" do
+    test "returns a valid Spark.Dsl.Entity" do
+      entity = LayoutEntities.zbox_entity()
+
+      assert %Spark.Dsl.Entity{name: :zbox} = entity
+      assert entity.target == ZBox
+      assert entity.args == [:id, :children]
+      assert Keyword.has_key?(entity.schema, :id)
+      assert Keyword.has_key?(entity.schema, :children)
+      assert Keyword.has_key?(entity.schema, :positions)
+      assert Keyword.has_key?(entity.schema, :style)
+      assert Keyword.has_key?(entity.schema, :visible)
+    end
+  end
+
   describe "IUR Layout Structs" do
     test "VBox struct can be created with all fields" do
       vbox = %Layouts.VBox{
@@ -256,6 +305,56 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
         assert hbox.justify_content == justify
       end
     end
+
+    test "Grid struct exposes metadata and children" do
+      child = %UnifiedIUR.Widgets.Text{content: "A"}
+
+      grid = %Grid{
+        id: :grid_main,
+        columns: [1, "2fr", "auto"],
+        rows: [1, 1],
+        gap: 2,
+        children: [child]
+      }
+
+      assert [^child] = UnifiedIUR.Element.children(grid)
+
+      assert %{
+               type: :grid,
+               id: :grid_main,
+               columns: [1, "2fr", "auto"],
+               rows: [1, 1],
+               gap: 2
+             } = UnifiedIUR.Element.metadata(grid)
+    end
+
+    test "Stack struct exposes active_index metadata" do
+      child = %UnifiedIUR.Widgets.Text{content: "Active"}
+
+      stack = %Stack{
+        id: :main_stack,
+        children: [child],
+        active_index: 0,
+        transition: :fade
+      }
+
+      assert [^child] = UnifiedIUR.Element.children(stack)
+
+      assert %{type: :stack, id: :main_stack, active_index: 0, transition: :fade} =
+               UnifiedIUR.Element.metadata(stack)
+    end
+
+    test "ZBox struct exposes positioning metadata" do
+      child = %UnifiedIUR.Widgets.Text{content: "Layer"}
+      positions = %{0 => %{x: 4, y: 2, z: 3}}
+
+      zbox = %ZBox{id: :overlay, children: [child], positions: positions}
+
+      assert [^child] = UnifiedIUR.Element.children(zbox)
+
+      assert %{type: :zbox, id: :overlay, positions: ^positions} =
+               UnifiedIUR.Element.metadata(zbox)
+    end
   end
 
   describe "Entity Descriptions" do
@@ -270,6 +369,24 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert is_binary(entity.describe)
       assert String.length(entity.describe) > 0
     end
+
+    test "grid_entity has a description" do
+      entity = LayoutEntities.grid_entity()
+      assert is_binary(entity.describe)
+      assert String.length(entity.describe) > 0
+    end
+
+    test "stack_entity has a description" do
+      entity = LayoutEntities.stack_entity()
+      assert is_binary(entity.describe)
+      assert String.length(entity.describe) > 0
+    end
+
+    test "zbox_entity has a description" do
+      entity = LayoutEntities.zbox_entity()
+      assert is_binary(entity.describe)
+      assert String.length(entity.describe) > 0
+    end
   end
 
   describe "Entity Args" do
@@ -281,6 +398,21 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
     test "hbox_entity has no positional args" do
       entity = LayoutEntities.hbox_entity()
       assert entity.args == []
+    end
+
+    test "grid_entity has children positional args" do
+      entity = LayoutEntities.grid_entity()
+      assert entity.args == [:children]
+    end
+
+    test "stack_entity has id and children positional args" do
+      entity = LayoutEntities.stack_entity()
+      assert entity.args == [:id, :children]
+    end
+
+    test "zbox_entity has id and children positional args" do
+      entity = LayoutEntities.zbox_entity()
+      assert entity.args == [:id, :children]
     end
   end
 end

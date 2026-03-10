@@ -50,7 +50,21 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Terminal.Style
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    Grid,
+    LogViewer,
+    ProcessMonitor,
+    Stack,
+    SplitPane,
+    StreamWidget,
+    Viewport,
+    ZBox
+  }
+
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1318,7 +1332,146 @@ defmodule UnifiedUi.Adapters.Terminal do
      }}
   end
 
+  defp convert_by_type(%LogViewer{} = log_viewer, :log_viewer, _state) do
+    label = "Log Viewer (#{log_viewer.lines} lines)"
+    text_node = TermUI.Component.Helpers.text(label)
+
+    styled_node =
+      case Style.convert_style(log_viewer.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:log_viewer, styled_node,
+     %{
+       id: log_viewer.id,
+       source: log_viewer.source,
+       lines: log_viewer.lines,
+       auto_scroll: log_viewer.auto_scroll,
+       filter: log_viewer.filter,
+       refresh_interval: log_viewer.refresh_interval,
+       auto_refresh: log_viewer.refresh_interval > 0
+     }}
+  end
+
+  defp convert_by_type(%StreamWidget{} = stream_widget, :stream_widget, _state) do
+    text_node = TermUI.Component.Helpers.text("Stream Widget")
+
+    styled_node =
+      case Style.convert_style(stream_widget.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:stream_widget, styled_node,
+     %{
+       id: stream_widget.id,
+       producer: stream_widget.producer,
+       transform: stream_widget.transform,
+       buffer_size: stream_widget.buffer_size,
+       refresh_interval: stream_widget.refresh_interval,
+       auto_refresh: stream_widget.refresh_interval > 0,
+       on_item: stream_widget.on_item
+     }}
+  end
+
+  defp convert_by_type(%ProcessMonitor{} = process_monitor, :process_monitor, _state) do
+    node_label = if process_monitor.node, do: process_monitor.node, else: node()
+    text_node = TermUI.Component.Helpers.text("Process Monitor (#{node_label})")
+
+    styled_node =
+      case Style.convert_style(process_monitor.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:process_monitor, styled_node,
+     %{
+       id: process_monitor.id,
+       node: process_monitor.node || node(),
+       refresh_interval: process_monitor.refresh_interval,
+       auto_refresh: process_monitor.refresh_interval > 0,
+       sort_by: process_monitor.sort_by,
+       on_process_select: process_monitor.on_process_select
+     }}
+  end
+
   # Layout converters
+
+  defp convert_by_type(%Grid{} = grid, :grid, state) do
+    children = convert_children(grid.children, state)
+    tracks = normalize_grid_tracks(grid.columns)
+    column_count = max(length(tracks), 1)
+
+    row_nodes =
+      children
+      |> Enum.chunk_every(column_count)
+      |> Enum.map(fn row ->
+        TermUI.Component.Helpers.stack(:horizontal, row, spacing: grid.gap)
+      end)
+
+    grid_node = TermUI.Component.Helpers.stack(:vertical, row_nodes, spacing: grid.gap)
+
+    styled_node =
+      case Style.convert_style(grid.style) do
+        nil -> grid_node
+        style -> TermUI.Component.Helpers.styled(grid_node, style)
+      end
+
+    {:grid, styled_node,
+     %{
+       id: grid.id,
+       columns: tracks,
+       rows: normalize_grid_tracks(grid.rows),
+       gap: grid.gap,
+       column_count: column_count
+     }}
+  end
+
+  defp convert_by_type(%Stack{} = stack, :stack, state) do
+    children = convert_children(stack.children, state)
+    active_index = normalize_active_index(stack.active_index, length(children))
+
+    active_child =
+      case Enum.at(children, active_index) do
+        nil -> TermUI.Component.Helpers.empty()
+        child -> child
+      end
+
+    stack_node = TermUI.Component.Helpers.stack(:vertical, [active_child], spacing: 0)
+
+    styled_node =
+      case Style.convert_style(stack.style) do
+        nil -> stack_node
+        style -> TermUI.Component.Helpers.styled(stack_node, style)
+      end
+
+    {:stack, styled_node,
+     %{
+       id: stack.id,
+       active_index: active_index,
+       child_count: length(children),
+       transition: stack.transition
+     }}
+  end
+
+  defp convert_by_type(%ZBox{} = zbox, :zbox, state) do
+    children = convert_children(zbox.children, state)
+    stacked = TermUI.Component.Helpers.stack(:vertical, children, spacing: 0)
+
+    styled_node =
+      case Style.convert_style(zbox.style) do
+        nil -> stacked
+        style -> TermUI.Component.Helpers.styled(stacked, style)
+      end
+
+    {:zbox, styled_node,
+     %{
+       id: zbox.id,
+       positions: normalize_zbox_positions(zbox.positions),
+       child_count: length(children)
+     }}
+  end
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
     children = convert_children(vbox.children, state)
@@ -1442,6 +1595,48 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   defp maybe_add_justify(opts, nil), do: opts
   defp maybe_add_justify(opts, justify), do: Keyword.put(opts, :justify, justify)
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track) and track > 0,
+    do: "#{track}fr"
+
+  defp normalize_grid_track(track) when is_integer(track), do: "#{track}"
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: inspect(track)
+
+  defp normalize_active_index(index, child_count)
+       when is_integer(index) and is_integer(child_count) and child_count > 0 do
+    index
+    |> max(0)
+    |> min(child_count - 1)
+  end
+
+  defp normalize_active_index(_index, _child_count), do: 0
+
+  defp normalize_zbox_positions(nil), do: %{}
+
+  defp normalize_zbox_positions(positions) when is_map(positions), do: positions
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      Enum.into(positions, %{})
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {position, index} -> {index, position} end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
 
   defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
     System.monotonic_time(:millisecond) + duration

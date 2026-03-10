@@ -7,7 +7,21 @@ defmodule UnifiedUi.Adapters.WebTest do
 
   alias UnifiedUi.Adapters.Web
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    Grid,
+    LogViewer,
+    ProcessMonitor,
+    Stack,
+    StreamWidget,
+    Viewport,
+    SplitPane,
+    ZBox
+  }
+
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -408,6 +422,74 @@ defmodule UnifiedUi.Adapters.WebTest do
     end
   end
 
+  describe "convert_iur/2 - advanced layouts" do
+    test "converts grid with CSS track definitions" do
+      grid = %Grid{
+        id: :grid_main,
+        columns: [1, "2fr", "auto"],
+        rows: [1, 1],
+        gap: 12,
+        children: [
+          %Widgets.Text{content: "A"},
+          %Widgets.Text{content: "B"}
+        ]
+      }
+
+      html = Web.convert_iur(grid)
+
+      assert html =~ ~s(id="grid_main")
+      assert html =~ "display: grid"
+      assert html =~ "grid-template-columns: 1fr 2fr auto"
+      assert html =~ "grid-template-rows: 1fr 1fr"
+      assert html =~ "gap: 12px"
+      assert html =~ "A"
+      assert html =~ "B"
+    end
+
+    test "converts stack with active index and single active child" do
+      stack = %Stack{
+        id: :panel_stack,
+        active_index: 1,
+        transition: :fade,
+        children: [
+          %Widgets.Text{content: "First"},
+          %Widgets.Text{content: "Second"}
+        ]
+      }
+
+      html = Web.convert_iur(stack)
+
+      assert html =~ ~s(id="panel_stack")
+      assert html =~ ~s(data-active-index="1")
+      assert html =~ ~s(data-transition="fade")
+      refute html =~ "First"
+      assert html =~ "Second"
+    end
+
+    test "converts zbox with absolute positioned children" do
+      zbox = %ZBox{
+        id: :overlay,
+        positions: %{0 => %{x: 0, y: 0}, panel: %{x: 8, y: 3, z: 4}},
+        children: [
+          %Widgets.Text{content: "Base"},
+          %Widgets.Text{id: :panel, content: "Panel"}
+        ]
+      }
+
+      html = Web.convert_iur(zbox)
+
+      assert html =~ ~s(id="overlay")
+      assert html =~ "position: relative"
+      assert html =~ "position: absolute"
+      assert html =~ "left: 0px"
+      assert html =~ "left: 8px"
+      assert html =~ "top: 3px"
+      assert html =~ "z-index: 4"
+      assert html =~ "Base"
+      assert html =~ "Panel"
+    end
+  end
+
   describe "nested layouts" do
     test "converts nested vbox and hbox" do
       iur = %Layouts.VBox{
@@ -721,6 +803,65 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert html =~ ~s(data-command-id="open")
       assert html =~ "Open File"
       assert html =~ "Save File"
+    end
+
+    test "converts log_viewer with auto-refresh and filter attributes" do
+      log_viewer = %LogViewer{
+        id: :logs,
+        source: "/tmp/app.log",
+        lines: 180,
+        auto_scroll: true,
+        filter: "error",
+        refresh_interval: 500
+      }
+
+      html = Web.convert_iur(log_viewer)
+
+      assert html =~ ~s(id="logs")
+      assert html =~ ~s(data-source="/tmp/app.log")
+      assert html =~ ~s(data-lines="180")
+      assert html =~ ~s(data-auto-scroll="true")
+      assert html =~ ~s(data-filter="error")
+      assert html =~ ~s(data-refresh-interval="500")
+      assert html =~ ~s(data-auto-refresh="true")
+    end
+
+    test "converts stream_widget with producer and refresh attributes" do
+      stream_widget = %StreamWidget{
+        id: :events,
+        producer: :event_source,
+        buffer_size: 40,
+        refresh_interval: 250,
+        on_item: :stream_item
+      }
+
+      html = Web.convert_iur(stream_widget)
+
+      assert html =~ ~s(id="events")
+      assert html =~ ~s(data-producer="event_source")
+      assert html =~ ~s(data-buffer-size="40")
+      assert html =~ ~s(data-refresh-interval="250")
+      assert html =~ ~s(data-auto-refresh="true")
+      assert html =~ ~s(data-on-item="stream-item")
+    end
+
+    test "converts process_monitor with node and polling attributes" do
+      process_monitor = %ProcessMonitor{
+        id: :processes,
+        node: :nonode@nohost,
+        sort_by: :reductions,
+        refresh_interval: 1_200,
+        on_process_select: :process_selected
+      }
+
+      html = Web.convert_iur(process_monitor)
+
+      assert html =~ ~s(id="processes")
+      assert html =~ ~s(data-node="nonode@nohost")
+      assert html =~ ~s(data-sort-by="reductions")
+      assert html =~ ~s(data-refresh-interval="1200")
+      assert html =~ ~s(data-auto-refresh="true")
+      assert html =~ ~s(data-select-event="process-selected")
     end
   end
 end

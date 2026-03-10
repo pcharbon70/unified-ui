@@ -199,6 +199,44 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformerTest do
       assert [%{id: :save, label: "Save File"}] = updated.main_commands_filtered_commands
     end
 
+    test "stream_widget on_item routes are handled as change routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          stream_widget :event_stream, :producer_ref, on_item: :stream_item
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.input.changed", %{
+          widget_id: :event_stream,
+          value: %{event: "updated"}
+        })
+
+      assert %{event_stream: %{event: "updated"}} = module.update(state, signal)
+    end
+
+    test "process_monitor on_process_select routes are handled as click routes" do
+      module =
+        compile_fixture("""
+        vbox do
+          process_monitor :proc_monitor, on_process_select: {:process_selected, %{selected: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      signal =
+        build_signal!("unified.button.clicked", %{
+          widget_id: :proc_monitor,
+          action: :process_selected
+        })
+
+      assert %{selected: true} = module.update(state, signal)
+    end
+
     test "theme selector pick_list updates theme key in runtime state" do
       module =
         compile_fixture("""

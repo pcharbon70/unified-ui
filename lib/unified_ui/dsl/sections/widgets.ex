@@ -14,6 +14,9 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
       UnifiedUi.Dsl.Entities.Widgets.text_entity(),
       UnifiedUi.Dsl.Entities.Widgets.label_entity(),
       UnifiedUi.Dsl.Entities.Widgets.text_input_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.grid_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.stack_entity(),
+      UnifiedUi.Dsl.Entities.Layouts.zbox_entity(),
       UnifiedUi.Dsl.Entities.DataViz.gauge_entity(),
       UnifiedUi.Dsl.Entities.DataViz.sparkline_entity(),
       UnifiedUi.Dsl.Entities.DataViz.bar_chart_entity(),
@@ -31,7 +34,10 @@ defmodule UnifiedUi.Dsl.Sections.Widgets do
       UnifiedUi.Dsl.Entities.Containers.viewport_entity(),
       UnifiedUi.Dsl.Entities.Containers.split_pane_entity(),
       UnifiedUi.Dsl.Entities.Specialized.canvas_entity(),
-      UnifiedUi.Dsl.Entities.Specialized.command_palette_entity()
+      UnifiedUi.Dsl.Entities.Specialized.command_palette_entity(),
+      UnifiedUi.Dsl.Entities.Monitoring.log_viewer_entity(),
+      UnifiedUi.Dsl.Entities.Monitoring.stream_widget_entity(),
+      UnifiedUi.Dsl.Entities.Monitoring.process_monitor_entity()
     ]
   }
 
