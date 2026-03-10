@@ -275,8 +275,6 @@ defmodule UnifiedUi.Agent.Server do
     end)
   end
 
-  defp subscribe_signal_topics(_topics), do: {:error, :invalid_signal_topic}
-
   defp via_tuple(component_id) do
     {:via, Registry, {@registry, component_id}}
   end
