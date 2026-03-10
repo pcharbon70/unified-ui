@@ -306,24 +306,24 @@ Create widgets for system monitoring and inspection.
 
 ## 4.9 Advanced Layout System
 
-- [ ] **Task 4.9** Implement advanced layout containers (grid, stack, zbox)
+- [x] **Task 4.9** Implement advanced layout containers (grid, stack, zbox)
 
 Create advanced layout containers for complex UI arrangements.
 
-- [ ] 4.9.1 Define `@grid_entity` with schema:
+- [x] 4.9.1 Define `@grid_entity` with schema:
   - args: `[:children]`
   - options: `id`, `columns`, `rows`, `gap`
-- [ ] 4.9.2 Define `@stack_entity` with schema:
+- [x] 4.9.2 Define `@stack_entity` with schema:
   - args: `[:id, children]`
   - options: `active_index`, `transition`
-- [ ] 4.9.3 Define `@zbox_entity` with schema:
+- [x] 4.9.3 Define `@zbox_entity` with schema:
   - args: `[:id, children]`
   - options: `positions`
-- [ ] 4.9.4 Create target and IUR structs
-- [ ] 4.9.5 Implement renderer converters for all platforms
-- [ ] 4.9.6 Implement grid sizing (flexible units)
-- [ ] 4.9.7 Implement stack tab switching
-- [ ] 4.9.8 Implement zbox absolute positioning
+- [x] 4.9.4 Create target and IUR structs
+- [x] 4.9.5 Implement renderer converters for all platforms
+- [x] 4.9.6 Implement grid sizing (flexible units)
+- [x] 4.9.7 Implement stack tab switching
+- [x] 4.9.8 Implement zbox absolute positioning
 
 **Implementation Notes:**
 - Grid columns/rows use: integer, "1fr", "auto"
@@ -332,11 +332,11 @@ Create advanced layout containers for complex UI arrangements.
 - Terminal approximates with character cells
 
 **Unit Tests for Section 4.9:**
-- [ ] Test grid with flexible sizing
-- [ ] Test stack active_index switching
-- [ ] Test zbox absolute positioning
-- [ ] Test nested advanced layouts
-- [ ] Test all platforms render advanced layouts
+- [x] Test grid with flexible sizing
+- [x] Test stack active_index switching
+- [x] Test zbox absolute positioning
+- [x] Test nested advanced layouts
+- [x] Test all platforms render advanced layouts
 
 ---
 
@@ -389,7 +389,7 @@ Create a complete theming system with named styles, themes, and platform adaptat
 Comprehensive integration tests to verify all advanced widgets and features work correctly.
 
 - [x] 4.11.1 Test all advanced widgets on all platforms
-- [ ] 4.11.2 Test all advanced layouts on all platforms
+- [x] 4.11.2 Test all advanced layouts on all platforms
 - [x] 4.11.3 Test theming system on all platforms
 - [x] 4.11.4 Test theme switching works
 - [x] 4.11.5 Test complex dashboard with all widget types

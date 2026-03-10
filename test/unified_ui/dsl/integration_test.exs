@@ -384,9 +384,8 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       widgets_section = Enum.find(sections, fn %{name: name} -> name == :widgets end)
 
       assert widgets_section != nil
-      # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback +
-      # 2 input widgets + 2 container widgets = 20
-      assert length(widgets_section.entities) == 25
+      # Includes core widgets plus advanced layout/container/specialized/monitoring entities.
+      assert length(widgets_section.entities) == 28
     end
 
     test "widget entities are accessible from extension" do
@@ -438,6 +437,10 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
     end
 
     test "container widget entities are accessible from extension" do
+      assert %Spark.Dsl.Entity{name: :grid} = UnifiedUi.Dsl.Entities.Layouts.grid_entity()
+      assert %Spark.Dsl.Entity{name: :stack} = UnifiedUi.Dsl.Entities.Layouts.stack_entity()
+      assert %Spark.Dsl.Entity{name: :zbox} = UnifiedUi.Dsl.Entities.Layouts.zbox_entity()
+
       assert %Spark.Dsl.Entity{name: :viewport} =
                UnifiedUi.Dsl.Entities.Containers.viewport_entity()
 
@@ -493,6 +496,30 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       assert Keyword.has_key?(entity.schema, :justify_content)
       assert Keyword.has_key?(entity.schema, :style)
       assert Keyword.has_key?(entity.schema, :visible)
+    end
+
+    test "Advanced layout entities create correct target structs" do
+      grid_entity = LayoutEntities.grid_entity()
+      stack_entity = LayoutEntities.stack_entity()
+      zbox_entity = LayoutEntities.zbox_entity()
+
+      assert grid_entity.name == :grid
+      assert grid_entity.target == UnifiedUi.Widgets.Grid
+      assert grid_entity.args == [:children]
+      assert Keyword.has_key?(grid_entity.schema, :columns)
+      assert Keyword.has_key?(grid_entity.schema, :rows)
+      assert Keyword.has_key?(grid_entity.schema, :gap)
+
+      assert stack_entity.name == :stack
+      assert stack_entity.target == UnifiedUi.Widgets.Stack
+      assert stack_entity.args == [:id, :children]
+      assert Keyword.has_key?(stack_entity.schema, :active_index)
+      assert Keyword.has_key?(stack_entity.schema, :transition)
+
+      assert zbox_entity.name == :zbox
+      assert zbox_entity.target == UnifiedUi.Widgets.ZBox
+      assert zbox_entity.args == [:id, :children]
+      assert Keyword.has_key?(zbox_entity.schema, :positions)
     end
 
     test "VBox IUR struct integrates with Element protocol" do
@@ -600,13 +627,16 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       layouts_section = Enum.find(sections, fn %{name: name} -> name == :layouts end)
 
       assert layouts_section != nil
-      assert length(layouts_section.entities) == 9
+      assert length(layouts_section.entities) == 12
     end
 
     test "layout entities are accessible from extension" do
       # All layout entity functions should be callable
       assert %Spark.Dsl.Entity{name: :vbox} = UnifiedUi.Dsl.Entities.Layouts.vbox_entity()
       assert %Spark.Dsl.Entity{name: :hbox} = UnifiedUi.Dsl.Entities.Layouts.hbox_entity()
+      assert %Spark.Dsl.Entity{name: :grid} = UnifiedUi.Dsl.Entities.Layouts.grid_entity()
+      assert %Spark.Dsl.Entity{name: :stack} = UnifiedUi.Dsl.Entities.Layouts.stack_entity()
+      assert %Spark.Dsl.Entity{name: :zbox} = UnifiedUi.Dsl.Entities.Layouts.zbox_entity()
 
       assert %Spark.Dsl.Entity{name: :viewport} =
                UnifiedUi.Dsl.Entities.Containers.viewport_entity()

@@ -55,11 +55,14 @@ defmodule UnifiedUi.Adapters.Terminal do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias UnifiedIUR.Element
@@ -1395,6 +1398,81 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   # Layout converters
 
+  defp convert_by_type(%Grid{} = grid, :grid, state) do
+    children = convert_children(grid.children, state)
+    tracks = normalize_grid_tracks(grid.columns)
+    column_count = max(length(tracks), 1)
+
+    row_nodes =
+      children
+      |> Enum.chunk_every(column_count)
+      |> Enum.map(fn row ->
+        TermUI.Component.Helpers.stack(:horizontal, row, spacing: grid.gap)
+      end)
+
+    grid_node = TermUI.Component.Helpers.stack(:vertical, row_nodes, spacing: grid.gap)
+
+    styled_node =
+      case Style.convert_style(grid.style) do
+        nil -> grid_node
+        style -> TermUI.Component.Helpers.styled(grid_node, style)
+      end
+
+    {:grid, styled_node,
+     %{
+       id: grid.id,
+       columns: tracks,
+       rows: normalize_grid_tracks(grid.rows),
+       gap: grid.gap,
+       column_count: column_count
+     }}
+  end
+
+  defp convert_by_type(%Stack{} = stack, :stack, state) do
+    children = convert_children(stack.children, state)
+    active_index = normalize_active_index(stack.active_index, length(children))
+
+    active_child =
+      case Enum.at(children, active_index) do
+        nil -> TermUI.Component.Helpers.empty()
+        child -> child
+      end
+
+    stack_node = TermUI.Component.Helpers.stack(:vertical, [active_child], spacing: 0)
+
+    styled_node =
+      case Style.convert_style(stack.style) do
+        nil -> stack_node
+        style -> TermUI.Component.Helpers.styled(stack_node, style)
+      end
+
+    {:stack, styled_node,
+     %{
+       id: stack.id,
+       active_index: active_index,
+       child_count: length(children),
+       transition: stack.transition
+     }}
+  end
+
+  defp convert_by_type(%ZBox{} = zbox, :zbox, state) do
+    children = convert_children(zbox.children, state)
+    stacked = TermUI.Component.Helpers.stack(:vertical, children, spacing: 0)
+
+    styled_node =
+      case Style.convert_style(zbox.style) do
+        nil -> stacked
+        style -> TermUI.Component.Helpers.styled(stacked, style)
+      end
+
+    {:zbox, styled_node,
+     %{
+       id: zbox.id,
+       positions: normalize_zbox_positions(zbox.positions),
+       child_count: length(children)
+     }}
+  end
+
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
     children = convert_children(vbox.children, state)
 
@@ -1517,6 +1595,48 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   defp maybe_add_justify(opts, nil), do: opts
   defp maybe_add_justify(opts, justify), do: Keyword.put(opts, :justify, justify)
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track) and track > 0,
+    do: "#{track}fr"
+
+  defp normalize_grid_track(track) when is_integer(track), do: "#{track}"
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: inspect(track)
+
+  defp normalize_active_index(index, child_count)
+       when is_integer(index) and is_integer(child_count) and child_count > 0 do
+    index
+    |> max(0)
+    |> min(child_count - 1)
+  end
+
+  defp normalize_active_index(_index, _child_count), do: 0
+
+  defp normalize_zbox_positions(nil), do: %{}
+
+  defp normalize_zbox_positions(positions) when is_map(positions), do: positions
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      Enum.into(positions, %{})
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {position, index} -> {index, position} end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
 
   defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
     System.monotonic_time(:millisecond) + duration

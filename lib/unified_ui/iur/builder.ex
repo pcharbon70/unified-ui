@@ -76,11 +76,14 @@ defmodule UnifiedUi.IUR.Builder do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias Spark.Dsl
@@ -127,6 +130,9 @@ defmodule UnifiedUi.IUR.Builder do
       when module in [
              Layouts.VBox,
              Layouts.HBox,
+             Grid,
+             Stack,
+             ZBox,
              Widgets.Button,
              Widgets.Text,
              Widgets.Label,
@@ -186,6 +192,18 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :hbox} = entity, dsl_state) do
     build_hbox(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :grid} = entity, dsl_state) do
+    build_grid(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :stack} = entity, dsl_state) do
+    build_stack(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :zbox} = entity, dsl_state) do
+    build_zbox(entity, dsl_state)
   end
 
   def build_entity(%{name: :gauge} = entity, dsl_state) do
@@ -541,6 +559,66 @@ defmodule UnifiedUi.IUR.Builder do
       visible: Map.get(attrs, :visible, true),
       style: build_style(Map.get(attrs, :style), dsl_state),
       children: children
+    }
+  end
+
+  @doc """
+  Builds a Grid layout struct from a grid DSL entity.
+
+  Supports children provided through nested entities and/or `children` args.
+  """
+  @spec build_grid(map(), Dsl.t()) :: Grid.t()
+  def build_grid(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    children = resolve_advanced_layout_children(entity, dsl_state)
+
+    %Grid{
+      id: Map.get(attrs, :id),
+      children: children,
+      columns: normalize_grid_tracks(Map.get(attrs, :columns, [1])),
+      rows: normalize_grid_tracks(Map.get(attrs, :rows, [])),
+      gap: normalize_non_negative_integer(Map.get(attrs, :gap, 0), 0),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a Stack layout struct from a stack DSL entity.
+
+  Supports children provided through nested entities and/or `children` args.
+  """
+  @spec build_stack(map(), Dsl.t()) :: Stack.t()
+  def build_stack(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    children = resolve_advanced_layout_children(entity, dsl_state)
+
+    %Stack{
+      id: Map.get(attrs, :id),
+      children: children,
+      active_index: normalize_non_negative_integer(Map.get(attrs, :active_index, 0), 0),
+      transition: Map.get(attrs, :transition),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a ZBox layout struct from a zbox DSL entity.
+
+  Supports children provided through nested entities and/or `children` args.
+  """
+  @spec build_zbox(map(), Dsl.t()) :: ZBox.t()
+  def build_zbox(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+    children = resolve_advanced_layout_children(entity, dsl_state)
+
+    %ZBox{
+      id: Map.get(attrs, :id),
+      children: children,
+      positions: normalize_zbox_positions(Map.get(attrs, :positions, %{})),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
     }
   end
 
@@ -1354,6 +1432,9 @@ defmodule UnifiedUi.IUR.Builder do
 
   def validate(%Layouts.VBox{children: children}), do: validate_children(children)
   def validate(%Layouts.HBox{children: children}), do: validate_children(children)
+  def validate(%Grid{children: children}), do: validate_children(children)
+  def validate(%Stack{children: children}), do: validate_children(children)
+  def validate(%ZBox{children: children}), do: validate_children(children)
 
   def validate(_), do: {:error, :unknown_type}
 
@@ -1579,4 +1660,143 @@ defmodule UnifiedUi.IUR.Builder do
   end
 
   defp normalize_split_panes(_panes, _dsl_state), do: []
+
+  defp resolve_advanced_layout_children(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    nested_children =
+      case build_nested_entities(entity, dsl_state, :children, &build_entity/2) do
+        [] -> build_children(entity, dsl_state)
+        nested -> nested
+      end
+
+    arg_children = normalize_layout_children(Map.get(attrs, :children), dsl_state)
+
+    case {nested_children, arg_children} do
+      {[], children} -> children
+      {children, []} -> children
+      {nested, arg} -> nested ++ arg
+    end
+  end
+
+  defp normalize_layout_children(nil, _dsl_state), do: []
+
+  defp normalize_layout_children(children, dsl_state) when is_list(children) do
+    children
+    |> Enum.map(fn
+      %_module{} = child ->
+        if UnifiedIUR.Element.impl_for(child), do: child, else: nil
+
+      %{name: _name} = child_entity ->
+        build_entity(child_entity, dsl_state)
+
+      attrs when is_map(attrs) ->
+        case Map.get(attrs, :name) do
+          nil -> nil
+          _ -> build_entity(attrs, dsl_state)
+        end
+
+      attrs when is_list(attrs) ->
+        attrs
+        |> Enum.into(%{})
+        |> then(fn map ->
+          case Map.get(map, :name) do
+            nil -> nil
+            _ -> build_entity(map, dsl_state)
+          end
+        end)
+
+      _other ->
+        nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp normalize_layout_children(_children, _dsl_state), do: []
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track), do: track
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: track
+
+  defp normalize_non_negative_integer(value, _default) when is_integer(value) and value >= 0,
+    do: value
+
+  defp normalize_non_negative_integer(_value, default), do: default
+
+  @position_keys [:x, :y, :z, :z_index, :width, :height]
+
+  defp normalize_zbox_positions(nil), do: %{}
+
+  defp normalize_zbox_positions(positions) when is_map(positions) do
+    Enum.reduce(positions, %{}, fn {key, value}, acc ->
+      case normalize_zbox_position(value) do
+        nil ->
+          acc
+
+        position ->
+          Map.put(acc, normalize_zbox_position_key(key), position)
+      end
+    end)
+  end
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      positions
+      |> Enum.into(%{})
+      |> normalize_zbox_positions()
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.reduce(%{}, fn {value, index}, acc ->
+        case normalize_zbox_position(value) do
+          nil -> acc
+          position -> Map.put(acc, index, position)
+        end
+      end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
+
+  defp normalize_zbox_position(position) when is_map(position) do
+    Enum.reduce(@position_keys, %{}, fn key, acc ->
+      value = Map.get(position, key) || Map.get(position, Atom.to_string(key))
+
+      if is_integer(value) do
+        Map.put(acc, key, value)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp normalize_zbox_position(position) when is_list(position) do
+    position
+    |> Enum.into(%{})
+    |> normalize_zbox_position()
+  end
+
+  defp normalize_zbox_position(_position), do: nil
+
+  defp normalize_zbox_position_key(key) when is_integer(key), do: key
+  defp normalize_zbox_position_key(key) when is_atom(key), do: key
+
+  defp normalize_zbox_position_key(key) when is_binary(key) do
+    case Integer.parse(key) do
+      {int, ""} -> int
+      _ -> key
+    end
+  end
+
+  defp normalize_zbox_position_key(key), do: key
 end

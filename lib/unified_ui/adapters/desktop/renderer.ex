@@ -66,11 +66,14 @@ defmodule UnifiedUi.Adapters.Desktop do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias UnifiedIUR.Element
@@ -1240,6 +1243,70 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   # Layout converters
 
+  defp convert_by_type(%Grid{} = grid, :grid, state) do
+    children = convert_children(grid.children, state)
+    columns = normalize_grid_tracks(grid.columns)
+    rows = normalize_grid_tracks(grid.rows)
+
+    props =
+      []
+      |> then(fn props -> [{:columns, columns} | props] end)
+      |> then(fn props -> [{:rows, rows} | props] end)
+      |> then(fn props -> [{:gap, grid.gap} | props] end)
+      |> Style.add_props(grid.style)
+
+    widget = %{type: :grid, id: grid.id, props: props, children: children}
+
+    {:grid, widget,
+     %{
+       id: grid.id,
+       columns: columns,
+       rows: rows,
+       gap: grid.gap
+     }}
+  end
+
+  defp convert_by_type(%Stack{} = stack, :stack, state) do
+    all_children = convert_children(stack.children, state)
+    active_index = normalize_active_index(stack.active_index, length(all_children))
+    active_children = [Enum.at(all_children, active_index)] |> Enum.reject(&is_nil/1)
+
+    props =
+      []
+      |> then(fn props -> [{:active_index, active_index} | props] end)
+      |> then(fn props -> [{:transition, stack.transition} | props] end)
+      |> Style.add_props(stack.style)
+
+    widget = %{type: :stack, id: stack.id, props: props, children: active_children}
+
+    {:stack, widget,
+     %{
+       id: stack.id,
+       active_index: active_index,
+       child_count: length(all_children),
+       transition: stack.transition
+     }}
+  end
+
+  defp convert_by_type(%ZBox{} = zbox, :zbox, state) do
+    children = convert_children(zbox.children, state)
+    positions = normalize_zbox_positions(zbox.positions)
+
+    props =
+      []
+      |> then(fn props -> [{:positions, positions} | props] end)
+      |> Style.add_props(zbox.style)
+
+    widget = %{type: :zbox, id: zbox.id, props: props, children: children}
+
+    {:zbox, widget,
+     %{
+       id: zbox.id,
+       positions: positions,
+       child_count: length(children)
+     }}
+  end
+
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
     children = convert_children(vbox.children, state)
 
@@ -1363,6 +1430,47 @@ defmodule UnifiedUi.Adapters.Desktop do
   defp maybe_add_justify_content(props, :center), do: [{:justify, :center} | props]
   defp maybe_add_justify_content(props, :end), do: [{:justify, :bottom} | props]
   defp maybe_add_justify_content(props, justify), do: [{:justify, justify} | props]
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track) and track > 0,
+    do: "#{track}fr"
+
+  defp normalize_grid_track(track) when is_integer(track), do: "#{track}"
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: inspect(track)
+
+  defp normalize_active_index(index, child_count)
+       when is_integer(index) and is_integer(child_count) and child_count > 0 do
+    index
+    |> max(0)
+    |> min(child_count - 1)
+  end
+
+  defp normalize_active_index(_index, _child_count), do: 0
+
+  defp normalize_zbox_positions(nil), do: %{}
+  defp normalize_zbox_positions(positions) when is_map(positions), do: positions
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      Enum.into(positions, %{})
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {position, index} -> {index, position} end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
 
   defp toast_dismiss_at(duration) when is_integer(duration) and duration > 0 do
     System.monotonic_time(:millisecond) + duration

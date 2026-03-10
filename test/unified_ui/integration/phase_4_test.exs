@@ -23,11 +23,14 @@ defmodule UnifiedUi.Integration.Phase4Test do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias UnifiedIUR.{Layouts, Widgets}
@@ -1231,6 +1234,105 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
       assert_renders_on_all_platforms(stream_widget)
       assert_renders_on_all_platforms(process_monitor)
+    end
+  end
+
+  # ============================================================================
+  # 4.9: Advanced Layout System
+  # ============================================================================
+
+  describe "4.9 - Advanced Layout System" do
+    test "grid layout preserves flexible track sizing and renders on all platforms" do
+      grid = %Grid{
+        id: :main_grid,
+        columns: [1, "2fr", "auto"],
+        rows: [1, 1],
+        gap: 2,
+        children: [
+          %Widgets.Text{content: "A"},
+          %Widgets.Text{content: "B"},
+          %Widgets.Text{content: "C"}
+        ]
+      }
+
+      assert {:grid, _node, terminal_meta} = Terminal.convert_iur(grid)
+      assert terminal_meta.columns == ["1fr", "2fr", "auto"]
+      assert terminal_meta.rows == ["1fr", "1fr"]
+      assert terminal_meta.gap == 2
+
+      assert {:grid, desktop_widget, desktop_meta} = Desktop.convert_iur(grid)
+      assert desktop_widget.type == :grid
+      assert desktop_meta.columns == ["1fr", "2fr", "auto"]
+
+      web_html = Web.convert_iur(grid)
+      assert web_html =~ "grid-template-columns: 1fr 2fr auto"
+      assert web_html =~ "grid-template-rows: 1fr 1fr"
+      assert web_html =~ "gap: 2px"
+
+      assert_renders_on_all_platforms(grid)
+    end
+
+    test "stack layout switches active child via active_index" do
+      stack = %Stack{
+        id: :main_stack,
+        active_index: 1,
+        transition: :fade,
+        children: [
+          %Widgets.Text{content: "First Panel"},
+          %Widgets.Text{content: "Second Panel"}
+        ]
+      }
+
+      assert {:stack, _node, terminal_meta} = Terminal.convert_iur(stack)
+      assert terminal_meta.active_index == 1
+
+      assert {:stack, desktop_widget, desktop_meta} = Desktop.convert_iur(stack)
+      assert desktop_widget.type == :stack
+      assert length(desktop_widget.children) == 1
+      assert desktop_meta.active_index == 1
+
+      web_html = Web.convert_iur(stack)
+      assert web_html =~ ~s(data-active-index="1")
+      refute web_html =~ "First Panel"
+      assert web_html =~ "Second Panel"
+
+      assert_renders_on_all_platforms(stack)
+    end
+
+    test "zbox layout preserves absolute positioning metadata and nested advanced layouts render" do
+      nested = %Grid{
+        id: :nested_grid,
+        columns: [1, 1],
+        children: [%Widgets.Text{content: "Nested A"}, %Widgets.Text{content: "Nested B"}]
+      }
+
+      zbox = %ZBox{
+        id: :overlay,
+        positions: %{0 => %{x: 0, y: 0, z: 0}, content: %{x: 8, y: 3, z_index: 4}},
+        children: [
+          %Widgets.Text{content: "Base Layer"},
+          %Layouts.VBox{id: :content, children: [nested]}
+        ]
+      }
+
+      assert {:zbox, _node, terminal_meta} = Terminal.convert_iur(zbox)
+      assert terminal_meta.positions[0] == %{x: 0, y: 0, z: 0}
+      assert terminal_meta.positions[:content] == %{x: 8, y: 3, z_index: 4}
+
+      assert {:zbox, desktop_widget, desktop_meta} = Desktop.convert_iur(zbox)
+      assert desktop_widget.type == :zbox
+      assert desktop_meta.child_count == 2
+
+      web_html = Web.convert_iur(zbox)
+      assert web_html =~ "position: relative"
+      assert web_html =~ "position: absolute"
+      assert web_html =~ "left: 8px"
+      assert web_html =~ "top: 3px"
+      assert web_html =~ "z-index: 4"
+      assert web_html =~ "Nested A"
+      assert web_html =~ "Nested B"
+
+      assert_renders_on_all_platforms(zbox)
     end
   end
 

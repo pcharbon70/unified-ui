@@ -62,11 +62,14 @@ defmodule UnifiedUi.Adapters.Web do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias UnifiedIUR.Element
@@ -1495,6 +1498,83 @@ defmodule UnifiedUi.Adapters.Web do
 
   # Layout converters
 
+  defp convert_by_type(%Grid{} = grid, :grid, state) do
+    children_html = convert_children(grid.children, state)
+    columns = normalize_grid_tracks(grid.columns)
+    rows = normalize_grid_tracks(grid.rows)
+
+    css_parts = ["display: grid"]
+    css_parts = maybe_add_grid_columns_css(css_parts, columns)
+    css_parts = maybe_add_grid_rows_css(css_parts, rows)
+    css_parts = maybe_add_spacing_css(css_parts, grid.gap)
+
+    style = Style.to_css(grid.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if grid.id, do: [{"id", grid.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-columns", Enum.join(columns, ",")} | attrs_list]
+    attrs_list = [{"data-rows", Enum.join(rows, ",")} | attrs_list]
+    attrs_list = [{"data-gap", grid.gap} | attrs_list]
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{children_html}</div>)
+  end
+
+  defp convert_by_type(%Stack{} = stack, :stack, state) do
+    children = convert_children_list(stack.children, state)
+    active_index = normalize_active_index(stack.active_index, length(children))
+    active_child_html = Enum.at(children, active_index, "")
+
+    css_parts = ["display: block", "position: relative"]
+    css_parts = maybe_add_transition_css(css_parts, stack.transition)
+
+    style = Style.to_css(stack.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if stack.id, do: [{"id", stack.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-active-index", active_index} | attrs_list]
+    attrs_list = [{"data-transition", stack.transition} | attrs_list]
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{active_child_html}</div>)
+  end
+
+  defp convert_by_type(%ZBox{} = zbox, :zbox, state) do
+    children_html = convert_children_list(zbox.children, state)
+    positions = normalize_zbox_positions(zbox.positions)
+
+    layered_children =
+      children_html
+      |> Enum.with_index()
+      |> Enum.map_join(fn {child_html, index} ->
+        source_child = Enum.at(zbox.children, index)
+        child_id = child_element_id(source_child)
+        position = zbox_child_position(positions, index, child_id)
+        position_css = zbox_position_css(position)
+        child_attrs = build_attributes([{"style", position_css}, {"data-index", index}])
+        ~s(<div#{child_attrs}>#{child_html}</div>)
+      end)
+
+    css_parts = ["position: relative", "display: block"]
+    style = Style.to_css(zbox.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if zbox.id, do: [{"id", zbox.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-positioned-children", length(children_html)} | attrs_list]
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>#{layered_children}</div>)
+  end
+
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
     children_html = convert_children(vbox.children, state)
 
@@ -1567,6 +1647,14 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_children(_, _state), do: ""
+
+  defp convert_children_list(children, state) when is_list(children) do
+    children
+    |> Enum.map(fn child -> convert_iur(child, state) end)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp convert_children_list(_children, _state), do: []
 
   defp command_palette_command_html(command) do
     command = command_palette_command_map(command)
@@ -1653,6 +1741,119 @@ defmodule UnifiedUi.Adapters.Web do
 
   defp maybe_add_height_css(parts, height) when is_integer(height),
     do: ["height: #{height}px" | parts]
+
+  defp normalize_grid_tracks(nil), do: []
+  defp normalize_grid_tracks([]), do: []
+
+  defp normalize_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, &normalize_grid_track/1)
+  end
+
+  defp normalize_grid_tracks(track), do: [normalize_grid_track(track)]
+
+  defp normalize_grid_track(track) when is_integer(track) and track > 0,
+    do: "#{track}fr"
+
+  defp normalize_grid_track(track) when is_integer(track), do: "#{track}"
+  defp normalize_grid_track(:auto), do: "auto"
+  defp normalize_grid_track(track) when is_binary(track), do: track
+  defp normalize_grid_track(track), do: inspect(track)
+
+  defp maybe_add_grid_columns_css(css_parts, []), do: css_parts
+
+  defp maybe_add_grid_columns_css(css_parts, columns) do
+    ["grid-template-columns: #{Enum.join(columns, " ")}" | css_parts]
+  end
+
+  defp maybe_add_grid_rows_css(css_parts, []), do: css_parts
+
+  defp maybe_add_grid_rows_css(css_parts, rows) do
+    ["grid-template-rows: #{Enum.join(rows, " ")}" | css_parts]
+  end
+
+  defp normalize_active_index(index, child_count)
+       when is_integer(index) and is_integer(child_count) and child_count > 0 do
+    index
+    |> max(0)
+    |> min(child_count - 1)
+  end
+
+  defp normalize_active_index(_index, _child_count), do: 0
+
+  defp maybe_add_transition_css(css_parts, nil), do: css_parts
+
+  defp maybe_add_transition_css(css_parts, :fade),
+    do: ["transition: opacity 150ms ease" | css_parts]
+
+  defp maybe_add_transition_css(css_parts, :slide),
+    do: ["transition: transform 150ms ease" | css_parts]
+
+  defp maybe_add_transition_css(css_parts, transition) when is_atom(transition),
+    do: ["transition: #{transition}" | css_parts]
+
+  defp maybe_add_transition_css(css_parts, transition) when is_binary(transition),
+    do: ["transition: #{transition}" | css_parts]
+
+  defp maybe_add_transition_css(css_parts, _transition), do: css_parts
+
+  defp normalize_zbox_positions(nil), do: %{}
+  defp normalize_zbox_positions(positions) when is_map(positions), do: positions
+
+  defp normalize_zbox_positions(positions) when is_list(positions) do
+    if Keyword.keyword?(positions) do
+      Enum.into(positions, %{})
+    else
+      positions
+      |> Enum.with_index()
+      |> Enum.into(%{}, fn {position, index} -> {index, position} end)
+    end
+  end
+
+  defp normalize_zbox_positions(_positions), do: %{}
+
+  defp zbox_child_position(positions, index, child_id) do
+    Map.get(positions, index) ||
+      Map.get(positions, Integer.to_string(index)) ||
+      if(is_atom(child_id), do: Map.get(positions, child_id), else: nil) ||
+      if(is_atom(child_id), do: Map.get(positions, Atom.to_string(child_id)), else: nil) ||
+      %{}
+  end
+
+  defp zbox_position_css(position) when is_map(position) do
+    x = map_get_integer(position, :x, 0)
+    y = map_get_integer(position, :y, 0)
+    z = map_get_integer(position, :z, map_get_integer(position, :z_index, 0))
+    width = map_get_integer(position, :width, nil)
+    height = map_get_integer(position, :height, nil)
+
+    css_parts = ["position: absolute", "left: #{x}px", "top: #{y}px", "z-index: #{z}"]
+
+    css_parts =
+      if is_integer(width), do: ["width: #{width}px" | css_parts], else: css_parts
+
+    css_parts =
+      if is_integer(height), do: ["height: #{height}px" | css_parts], else: css_parts
+
+    Enum.reverse(css_parts) |> Enum.join("; ")
+  end
+
+  defp zbox_position_css(_position), do: "position: absolute; left: 0px; top: 0px; z-index: 0"
+
+  defp child_element_id(nil), do: nil
+
+  defp child_element_id(child) do
+    case Element.metadata(child) do
+      %{id: id} -> id
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp map_get_integer(map, key, default) when is_map(map) do
+    value = Map.get(map, key) || Map.get(map, Atom.to_string(key))
+    if is_integer(value), do: value, else: default
+  end
 
   defp form_field_name(nil), do: "field"
   defp form_field_name(name) when is_atom(name), do: Atom.to_string(name)

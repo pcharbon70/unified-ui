@@ -9,11 +9,14 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     SplitPane,
     StreamWidget,
-    Viewport
+    Viewport,
+    ZBox
   }
 
   alias UnifiedIUR.Widgets
@@ -527,6 +530,73 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
                sort_by: :reductions,
                on_process_select: :process_selected
              } = process_monitor
+    end
+
+    test "builds advanced layouts with normalized children and positioning" do
+      grid =
+        Builder.build_entity(
+          %{
+            name: :grid,
+            attrs: %{
+              id: :dashboard_grid,
+              columns: [1, "2fr", "auto"],
+              rows: [1, 2],
+              gap: 3,
+              children: [
+                %{name: :text, attrs: %{content: "Cell A"}},
+                %{name: :button, attrs: %{label: "Cell B", on_click: :noop}}
+              ]
+            }
+          },
+          %{}
+        )
+
+      stack =
+        Builder.build_entity(
+          %{
+            name: :stack,
+            attrs: %{id: :panel_stack, active_index: 1, transition: :fade},
+            entities: [
+              %{
+                name: :children,
+                entities: [
+                  %{name: :text, attrs: %{content: "First"}},
+                  %{name: :text, attrs: %{content: "Second"}}
+                ]
+              }
+            ]
+          },
+          %{}
+        )
+
+      zbox =
+        Builder.build_entity(
+          %{
+            name: :zbox,
+            attrs: %{
+              id: :overlay,
+              positions: %{0 => %{x: 2, y: 1, z: 1}, panel: %{x: 10, y: 4, z_index: 5}},
+              children: [
+                %{name: :text, attrs: %{content: "Base"}},
+                %{name: :text, attrs: %{id: :panel, content: "Panel"}}
+              ]
+            }
+          },
+          %{}
+        )
+
+      assert %Grid{id: :dashboard_grid, columns: [1, "2fr", "auto"], rows: [1, 2], gap: 3} = grid
+      assert [%Widgets.Text{content: "Cell A"}, %Widgets.Button{label: "Cell B"}] = grid.children
+
+      assert %Stack{id: :panel_stack, active_index: 1, transition: :fade} = stack
+      assert [%Widgets.Text{content: "First"}, %Widgets.Text{content: "Second"}] = stack.children
+
+      assert %ZBox{id: :overlay} = zbox
+      assert zbox.positions[0] == %{x: 2, y: 1, z: 1}
+      assert zbox.positions[:panel] == %{x: 10, y: 4, z_index: 5}
+
+      assert [%Widgets.Text{content: "Base"}, %Widgets.Text{id: :panel, content: "Panel"}] =
+               zbox.children
     end
   end
 end

@@ -12,11 +12,14 @@ defmodule UnifiedUi.Adapters.DesktopTest do
     Canvas,
     Command,
     CommandPalette,
+    Grid,
     LogViewer,
     ProcessMonitor,
+    Stack,
     StreamWidget,
     Viewport,
-    SplitPane
+    SplitPane,
+    ZBox
   }
 
   alias UnifiedIUR.Widgets
@@ -405,6 +408,66 @@ defmodule UnifiedUi.Adapters.DesktopTest do
 
       assert result.type == :container
       assert result.props[:background] == :blue
+    end
+  end
+
+  describe "convert_iur/2 - advanced layouts" do
+    test "converts grid with track metadata" do
+      grid = %Grid{
+        id: :grid_main,
+        columns: [1, "2fr", "auto"],
+        rows: [1, 1],
+        gap: 8,
+        children: [
+          %Widgets.Text{content: "A"},
+          %Widgets.Text{content: "B"}
+        ]
+      }
+
+      assert {:grid, widget, meta} = Desktop.convert_iur(grid)
+      assert widget.type == :grid
+      assert widget.id == :grid_main
+      assert meta.columns == ["1fr", "2fr", "auto"]
+      assert meta.rows == ["1fr", "1fr"]
+      assert meta.gap == 8
+    end
+
+    test "converts stack and renders active child only" do
+      stack = %Stack{
+        id: :panel_stack,
+        active_index: 1,
+        transition: :fade,
+        children: [
+          %Widgets.Text{content: "First"},
+          %Widgets.Text{content: "Second"}
+        ]
+      }
+
+      assert {:stack, widget, meta} = Desktop.convert_iur(stack)
+      assert widget.type == :stack
+      assert widget.id == :panel_stack
+      assert length(widget.children) == 1
+      assert meta.active_index == 1
+      assert meta.child_count == 2
+      assert meta.transition == :fade
+    end
+
+    test "converts zbox and keeps positioning metadata" do
+      zbox = %ZBox{
+        id: :overlay,
+        positions: %{0 => %{x: 1, y: 2}, panel: %{x: 8, y: 4, z_index: 6}},
+        children: [
+          %Widgets.Text{content: "Base"},
+          %Widgets.Text{id: :panel, content: "Panel"}
+        ]
+      }
+
+      assert {:zbox, widget, meta} = Desktop.convert_iur(zbox)
+      assert widget.type == :zbox
+      assert widget.id == :overlay
+      assert meta.positions[0] == %{x: 1, y: 2}
+      assert meta.positions[:panel] == %{x: 8, y: 4, z_index: 6}
+      assert meta.child_count == 2
     end
   end
 
