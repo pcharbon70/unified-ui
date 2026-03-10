@@ -221,7 +221,7 @@ Create transformers that automatically generate the boilerplate for integrating 
 
 ## 1.7 Verifiers and Validation
 
-- [ ] **Task 1.7** Implement Spark verifiers for compile-time DSL validation
+- [x] **Task 1.7** Implement Spark verifiers for compile-time DSL validation
 
 Create verifiers that perform semantic validation of DSL definitions, catching errors at compile time.
 
@@ -232,7 +232,7 @@ Create verifiers that perform semantic validation of DSL definitions, catching e
 - [x] 1.7.3 Define `signal_reference_verifier` that:
   - Checks all `on_click`, `on_change`, etc. handlers
   - Verifies referenced signals are defined
-- [ ] 1.7.4 Define `required_attribute_verifier` that:
+- [x] 1.7.4 Define `required_attribute_verifier` that:
   - Checks all required options are provided
   - Validates option types match schema
 - [x] 1.7.5 Register all verifiers in DSL extension
@@ -249,7 +249,7 @@ Create verifiers that perform semantic validation of DSL definitions, catching e
 - [x] Test unique_id_verifier fails with duplicate IDs
 - [x] Test signal_reference_verifier passes with defined signals
 - [x] Test signal_reference_verifier fails with undefined signals
-- [ ] Test required_attribute_verifier passes with all required
+- [x] Test required_attribute_verifier passes with all required
 - [x] Test error messages include correct locations
 
 ---

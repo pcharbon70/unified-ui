@@ -52,6 +52,7 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
                UnifiedUi.Dsl.Verifiers.UniqueIdVerifier,
                UnifiedUi.Dsl.Verifiers.LayoutStructureVerifier,
                UnifiedUi.Dsl.Verifiers.SignalHandlerVerifier,
+               UnifiedUi.Dsl.Verifiers.RequiredAttributeVerifier,
                UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier,
                UnifiedUi.Dsl.Verifiers.StateReferenceVerifier
              ]
