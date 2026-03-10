@@ -106,6 +106,13 @@ defmodule UnifiedUi.Dsl.Entities.Styles do
         * `:height` - Height constraint (integer, :auto, or :fill)
         * `:align` - Alignment (:left, :center, :right, :top, :bottom, etc.)
         * `:spacing` - Spacing between children for layouts (integer)
+        * `:font_family` - Font family (string)
+        * `:font_size` - Font size (integer px or CSS size string)
+        * `:font_weight` - Font weight (:normal, :bold, :bolder, :lighter, or integer)
+        * `:border` - Border shorthand (string/integer) or descriptor map/keyword
+        * `:border_width` - Border width (integer)
+        * `:border_color` - Border color (atom, RGB tuple, or hex string)
+        * `:border_style` - Border style (:none, :solid, :dashed, :dotted, :double)
         """,
         required: false,
         default: []

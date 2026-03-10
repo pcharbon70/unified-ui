@@ -44,6 +44,13 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert Keyword.has_key?(section.schema, :bg)
     assert Keyword.has_key?(section.schema, :attrs)
     assert Keyword.has_key?(section.schema, :spacing)
+    assert Keyword.has_key?(section.schema, :font_family)
+    assert Keyword.has_key?(section.schema, :font_size)
+    assert Keyword.has_key?(section.schema, :font_weight)
+    assert Keyword.has_key?(section.schema, :border)
+    assert Keyword.has_key?(section.schema, :border_width)
+    assert Keyword.has_key?(section.schema, :border_color)
+    assert Keyword.has_key?(section.schema, :border_style)
   end
 
   test "signals section delegates standard signal list" do

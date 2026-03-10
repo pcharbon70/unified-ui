@@ -275,7 +275,14 @@ defmodule UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier do
     :width,
     :height,
     :align,
-    :spacing
+    :spacing,
+    :font_family,
+    :font_size,
+    :font_weight,
+    :border,
+    :border_width,
+    :border_color,
+    :border_style
   ]
 
   # Valid text attributes for the :attrs key
@@ -285,6 +292,7 @@ defmodule UnifiedUi.Dsl.Verifiers.StyleReferenceVerifier do
     :underline,
     :reverse,
     :blink,
+    :dim,
     :strikethrough
   ]
 

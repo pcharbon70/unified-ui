@@ -91,6 +91,19 @@ defmodule UnifiedUi.Dsl.StyleResolver do
     }
   }
 
+  @style_struct_keys [:fg, :bg, :attrs, :padding, :margin, :width, :height, :align]
+  @extended_style_keys [
+    :spacing,
+    :font_family,
+    :font_size,
+    :font_weight,
+    :border,
+    :border_width,
+    :border_color,
+    :border_style
+  ]
+  @style_keys @style_struct_keys ++ @extended_style_keys
+
   @doc """
   Resolves a named style to an IUR.Style struct.
 
@@ -128,7 +141,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
       resolve_with_inheritance(dsl_state, style_entity, overrides, MapSet.new())
     else
       # Style not found, return empty style with overrides
-      Style.new(overrides)
+      new_style(overrides)
     end
   end
 
@@ -180,7 +193,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
 
       _ ->
         # Pure inline styles (keyword list)
-        Style.new(style_ref)
+        new_style(style_ref)
     end
   end
 
@@ -205,11 +218,9 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   defp resolve_or_inline(dsl_state, style_name, overrides) do
     # Check if this is a valid style name or just inline attributes
     # If the first element is a known style attribute key, treat as pure inline
-    style_keys = [:fg, :bg, :attrs, :padding, :margin, :width, :height, :align, :spacing]
-
-    if style_name in style_keys do
+    if style_name in @style_keys do
       # This is actually inline styles starting with a keyword
-      Style.new([style_name | overrides])
+      new_style([style_name | overrides])
     else
       # This is a named style reference with overrides
       resolve(dsl_state, style_name, overrides)
@@ -241,7 +252,7 @@ defmodule UnifiedUi.Dsl.StyleResolver do
          _seen
        ) do
     base_attrs = style_entity.attributes || []
-    Style.merge(Style.new(base_attrs), Style.new(overrides))
+    Style.merge(new_style(base_attrs), new_style(overrides))
   end
 
   defp resolve_with_inheritance(
@@ -279,12 +290,12 @@ defmodule UnifiedUi.Dsl.StyleResolver do
       parent_resolved = resolve_with_inheritance(dsl_state, parent_style, [], seen)
       current_attrs = style_entity.attributes || []
 
-      Style.merge(parent_resolved, Style.new(current_attrs))
-      |> Style.merge(Style.new(overrides))
+      Style.merge(parent_resolved, new_style(current_attrs))
+      |> Style.merge(new_style(overrides))
     else
       # Parent style not found, just use current style
       base_attrs = style_entity.attributes || []
-      Style.merge(Style.new(base_attrs), Style.new(overrides))
+      Style.merge(new_style(base_attrs), new_style(overrides))
     end
   end
 
@@ -431,6 +442,162 @@ defmodule UnifiedUi.Dsl.StyleResolver do
   defp load_standard_theme(theme_name) when is_atom(theme_name) do
     @standard_theme_attrs
     |> Map.get(theme_name, %{})
-    |> Enum.into(%{}, fn {token, attrs} -> {token, Style.new(attrs)} end)
+    |> Enum.into(%{}, fn {token, attrs} -> {token, new_style(attrs)} end)
   end
+
+  defp new_style(attrs) when is_list(attrs) do
+    attrs = normalize_style_keyword(attrs)
+    Style.new(attrs)
+  end
+
+  defp new_style(_attrs), do: Style.new([])
+
+  defp normalize_style_keyword(attrs) when is_list(attrs) do
+    attrs = if Keyword.keyword?(attrs), do: attrs, else: []
+    known = Keyword.take(attrs, @style_struct_keys)
+
+    merged_attrs =
+      known
+      |> Keyword.get(:attrs, [])
+      |> normalize_text_attrs()
+      |> Kernel.++(encode_extended_attrs(attrs))
+      |> Enum.uniq()
+
+    known
+    |> Keyword.put(:attrs, merged_attrs)
+  end
+
+  defp normalize_style_keyword(_attrs), do: [attrs: []]
+
+  defp normalize_text_attrs(attrs) when is_list(attrs), do: attrs
+  defp normalize_text_attrs(_attrs), do: []
+
+  defp encode_extended_attrs(attrs) do
+    attrs
+    |> Enum.reduce([], fn
+      {:spacing, value}, acc ->
+        maybe_add_extended(acc, :spacing, normalize_non_negative_integer(value))
+
+      {:font_family, value}, acc when is_binary(value) ->
+        maybe_add_extended(acc, :font_family, value)
+
+      {:font_size, value}, acc ->
+        maybe_add_extended(acc, :font_size, normalize_font_size(value))
+
+      {:font_weight, value}, acc ->
+        acc
+        |> maybe_add_extended(:font_weight, normalize_font_weight(value))
+        |> maybe_add_bold_attr(value)
+
+      {:border, value}, acc ->
+        maybe_add_extended(acc, :border, normalize_border(value))
+
+      {:border_width, value}, acc ->
+        maybe_add_extended(acc, :border_width, normalize_non_negative_integer(value))
+
+      {:border_color, value}, acc ->
+        maybe_add_extended(acc, :border_color, normalize_color(value))
+
+      {:border_style, value}, acc ->
+        maybe_add_extended(acc, :border_style, normalize_border_style(value))
+
+      {_key, _value}, acc ->
+        acc
+    end)
+    |> Enum.reverse()
+  end
+
+  defp maybe_add_extended(acc, _key, nil), do: acc
+  defp maybe_add_extended(acc, key, value), do: [{key, value} | acc]
+
+  defp maybe_add_bold_attr(acc, value) do
+    if bold_weight?(value), do: [:bold | acc], else: acc
+  end
+
+  defp bold_weight?(:bold), do: true
+  defp bold_weight?(value) when is_integer(value) and value >= 600, do: true
+  defp bold_weight?(_value), do: false
+
+  defp normalize_non_negative_integer(value) when is_integer(value) and value >= 0, do: value
+  defp normalize_non_negative_integer(_value), do: nil
+
+  defp normalize_font_size(value) when is_integer(value) and value > 0, do: value
+
+  defp normalize_font_size(value) when is_binary(value) and byte_size(value) > 0,
+    do: value
+
+  defp normalize_font_size(_value), do: nil
+
+  defp normalize_font_weight(value)
+       when value in [:normal, :bold, :bolder, :lighter] do
+    value
+  end
+
+  defp normalize_font_weight(value) when is_integer(value) and value >= 100 and value <= 900,
+    do: value
+
+  defp normalize_font_weight(_value), do: nil
+
+  defp normalize_border(value) when is_binary(value) and byte_size(value) > 0, do: value
+  defp normalize_border(value) when is_integer(value) and value >= 0, do: %{width: value}
+  defp normalize_border(value) when is_map(value), do: normalize_border_map(value)
+
+  defp normalize_border(value) when is_list(value) do
+    if Keyword.keyword?(value) do
+      value
+      |> Enum.into(%{})
+      |> normalize_border_map()
+    else
+      nil
+    end
+  end
+
+  defp normalize_border(_value), do: nil
+
+  defp normalize_border_map(border) do
+    width =
+      map_get(border, :width)
+      |> normalize_non_negative_integer()
+
+    color =
+      border
+      |> map_get(:color)
+      |> normalize_color()
+
+    style =
+      border
+      |> map_get(:style)
+      |> normalize_border_style()
+
+    %{}
+    |> maybe_put(:width, width)
+    |> maybe_put(:color, color)
+    |> maybe_put(:style, style)
+    |> case do
+      map when map_size(map) == 0 -> nil
+      map -> map
+    end
+  end
+
+  defp normalize_color(value) when is_atom(value), do: value
+  defp normalize_color(value) when is_binary(value), do: value
+
+  defp normalize_color({r, g, b}) when is_integer(r) and is_integer(g) and is_integer(b),
+    do: {r, g, b}
+
+  defp normalize_color({r, g, b, a})
+       when is_integer(r) and is_integer(g) and is_integer(b) and is_integer(a), do: {r, g, b, a}
+
+  defp normalize_color(_value), do: nil
+
+  defp normalize_border_style(value) when value in [:none, :solid, :dashed, :dotted, :double],
+    do: value
+
+  defp normalize_border_style(_value), do: nil
+
+  defp map_get(map, key) when is_map(map),
+    do: Map.get(map, key) || Map.get(map, Atom.to_string(key))
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end
