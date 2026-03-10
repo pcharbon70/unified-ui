@@ -70,6 +70,7 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
 
   """
 
+  alias UnifiedUi.Agent, as: UiAgent
   alias UnifiedUi.Signals
   alias UnifiedUi.Adapters.Security
 
@@ -248,7 +249,8 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
 
   * `event_type` - The type of desktop event
   * `data` - Event payload data
-  * `opts` - Options passed to signal creation
+  * `opts` - Options passed to signal creation. Supports `:component_id` for
+    direct dispatch to a running `UnifiedUi.Agent` component.
 
   ## Returns
 
@@ -265,8 +267,23 @@ defmodule UnifiedUi.Adapters.Desktop.Events do
   @spec dispatch(event_type(), event_data(), keyword()) ::
           {:ok, Jido.Signal.t()} | {:error, term()}
   def dispatch(event_type, data, opts \\ []) do
-    # In a full implementation, this would dispatch to a signal bus.
-    to_signal(event_type, data, opts)
+    with {:ok, signal} <- to_signal(event_type, data, opts),
+         :ok <- maybe_dispatch_to_component(signal, opts) do
+      {:ok, signal}
+    end
+  end
+
+  defp maybe_dispatch_to_component(signal, opts) do
+    case Keyword.get(opts, :component_id) do
+      nil ->
+        :ok
+
+      component_id when is_atom(component_id) ->
+        UiAgent.signal_component(component_id, signal)
+
+      _other ->
+        {:error, :invalid_component_id}
+    end
   end
 
   # Widget-Specific Event Helpers

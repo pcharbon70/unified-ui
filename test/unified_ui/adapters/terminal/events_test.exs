@@ -6,6 +6,23 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Terminal.Events
+  alias UnifiedUi.Agent, as: UiAgent
+
+  defmodule DispatchComponent do
+    @behaviour UnifiedUi.ElmArchitecture
+
+    @impl true
+    def init(opts), do: %{observer: Keyword.get(opts, :observer)}
+
+    @impl true
+    def update(state, signal) do
+      if is_pid(state.observer), do: send(state.observer, {:terminal_dispatch_signal, signal})
+      state
+    end
+
+    @impl true
+    def view(_state), do: %UnifiedIUR.Widgets.Text{id: :terminal_dispatch_probe, content: "ok"}
+  end
 
   describe "event_types/0" do
     test "returns list of supported event types" do
@@ -55,10 +72,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts click event with action to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :click,
-        %{widget_id: :submit, action: :submit_form}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :click,
+                 %{widget_id: :submit, action: :submit_form}
+               )
 
       assert signal.type == "unified.button.clicked"
       assert signal.data.widget_id == :submit
@@ -66,10 +84,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts change event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :change,
-        %{widget_id: :email, value: "test@example.com"}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :change,
+                 %{widget_id: :email, value: "test@example.com"}
+               )
 
       assert signal.type == "unified.input.changed"
       assert signal.data.widget_id == :email
@@ -78,10 +97,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts submit event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :submit,
-        %{form_id: :login, data: %{email: "user@example.com"}}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :submit,
+                 %{form_id: :login, data: %{email: "user@example.com"}}
+               )
 
       assert signal.type == "unified.form.submitted"
       assert signal.data.form_id == :login
@@ -89,10 +109,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts key_press event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :key_press,
-        %{key: :enter, modifiers: []}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :key_press,
+                 %{key: :enter, modifiers: []}
+               )
 
       assert signal.type == "unified.key.pressed"
       assert signal.data.key == :enter
@@ -100,10 +121,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts mouse event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :mouse,
-        %{action: :click, x: 10, y: 20}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :mouse,
+                 %{action: :click, x: 10, y: 20}
+               )
 
       assert signal.type == "unified.mouse.click"
       assert signal.data.action == :click
@@ -111,31 +133,34 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "converts focus event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :focus,
-        %{widget_id: :input}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :focus,
+                 %{widget_id: :input}
+               )
 
       assert signal.type == "unified.element.focused"
       assert signal.data.widget_id == :input
     end
 
     test "converts blur event to JidoSignal" do
-      assert {:ok, signal} = Events.to_signal(
-        :blur,
-        %{widget_id: :input}
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :blur,
+                 %{widget_id: :input}
+               )
 
       assert signal.type == "unified.element.blurred"
       assert signal.data.widget_id == :input
     end
 
     test "accepts custom source option" do
-      assert {:ok, signal} = Events.to_signal(
-        :click,
-        %{widget_id: :btn},
-        source: "/custom/source"
-      )
+      assert {:ok, signal} =
+               Events.to_signal(
+                 :click,
+                 %{widget_id: :btn},
+                 source: "/custom/source"
+               )
 
       assert signal.source == "/custom/source"
     end
@@ -143,23 +168,67 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
 
   describe "dispatch/3" do
     test "creates and dispatches a click signal" do
-      assert {:ok, signal} = Events.dispatch(
-        :click,
-        %{widget_id: :my_button, action: :clicked}
-      )
+      assert {:ok, signal} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked}
+               )
 
       assert signal.type == "unified.button.clicked"
       assert signal.data.widget_id == :my_button
     end
 
     test "creates and dispatches a change signal" do
-      assert {:ok, signal} = Events.dispatch(
-        :change,
-        %{widget_id: :input, value: "new value"}
-      )
+      assert {:ok, signal} =
+               Events.dispatch(
+                 :change,
+                 %{widget_id: :input, value: "new value"}
+               )
 
       assert signal.type == "unified.input.changed"
       assert signal.data.value == "new value"
+    end
+
+    test "dispatches signal to a running component when component_id is provided" do
+      component_id = :"terminal_dispatch_#{System.unique_integer([:positive])}"
+
+      assert {:ok, _pid} =
+               UiAgent.start_component(DispatchComponent, component_id, observer: self())
+
+      on_exit(fn -> UiAgent.stop_component(component_id) end)
+
+      assert {:ok, signal} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: component_id
+               )
+
+      assert signal.type == "unified.button.clicked"
+
+      assert_receive {:terminal_dispatch_signal, delivered_signal}
+      assert delivered_signal.type == "unified.button.clicked"
+      assert delivered_signal.data.widget_id == :my_button
+    end
+
+    test "returns not_found when component_id is unknown" do
+      missing_component_id = :"terminal_missing_#{System.unique_integer([:positive])}"
+
+      assert {:error, :not_found} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: missing_component_id
+               )
+    end
+
+    test "returns invalid_component_id when component_id is not an atom" do
+      assert {:error, :invalid_component_id} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: "not_an_atom"
+               )
     end
   end
 
@@ -173,11 +242,12 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "creates button click signal with options" do
-      assert {:ok, signal} = Events.button_click(
-        :save,
-        :save_data,
-        source: "/app/save"
-      )
+      assert {:ok, signal} =
+               Events.button_click(
+                 :save,
+                 :save_data,
+                 source: "/app/save"
+               )
 
       assert signal.source == "/app/save"
     end
@@ -193,11 +263,12 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "creates input change signal with options" do
-      assert {:ok, signal} = Events.input_change(
-        :query,
-        "search term",
-        source: "/custom"
-      )
+      assert {:ok, signal} =
+               Events.input_change(
+                 :query,
+                 "search term",
+                 source: "/custom"
+               )
 
       assert signal.source == "/custom"
     end
@@ -205,10 +276,11 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
 
   describe "form_submit/3" do
     test "creates form submit signal" do
-      assert {:ok, signal} = Events.form_submit(
-        :login,
-        %{email: "user@example.com", password: "secret"}
-      )
+      assert {:ok, signal} =
+               Events.form_submit(
+                 :login,
+                 %{email: "user@example.com", password: "secret"}
+               )
 
       assert signal.type == "unified.form.submitted"
       assert signal.data.form_id == :login
@@ -266,11 +338,13 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
 
   describe "extract_handlers/1" do
     test "extracts button click handlers from render tree" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        id: :submit_button,
-        disabled: false
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           id: :submit_button,
+           disabled: false
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -278,16 +352,18 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "extracts text input change handlers from render tree" do
-      render_tree = {:text_input, nil, %{
-        id: :email,
-        value: nil,
-        placeholder: "user@example.com",
-        type: nil,
-        on_change: :update_email,
-        on_submit: nil,
-        disabled: nil,
-        form_id: nil
-      }}
+      render_tree =
+        {:text_input, nil,
+         %{
+           id: :email,
+           value: nil,
+           placeholder: "user@example.com",
+           type: nil,
+           on_change: :update_email,
+           on_submit: nil,
+           disabled: nil,
+           form_id: nil
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -295,11 +371,13 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "extracts text input submit handlers from render tree" do
-      render_tree = {:text_input, nil, %{
-        id: :password,
-        type: :password,
-        on_submit: :submit_login
-      }}
+      render_tree =
+        {:text_input, nil,
+         %{
+           id: :password,
+           type: :password,
+           on_submit: :submit_login
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -355,11 +433,13 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "skips button without ID" do
-      render_tree = {:button, nil, %{
-        on_click: :submit,
-        disabled: false
-        # No id
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           on_click: :submit,
+           disabled: false
+           # No id
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -367,11 +447,13 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
     end
 
     test "skips button without on_click" do
-      render_tree = {:button, nil, %{
-        id: :button,
-        disabled: false
-        # No on_click
-      }}
+      render_tree =
+        {:button, nil,
+         %{
+           id: :button,
+           disabled: false
+           # No on_click
+         }}
 
       handlers = Events.extract_handlers(render_tree)
 
@@ -386,18 +468,20 @@ defmodule UnifiedUi.Adapters.Terminal.EventsTest do
       render_tree = %{
         type: :stack,
         children: [
-          {:text_input, nil, %{
-            id: :email_input,
-            type: :email,
-            placeholder: "user@example.com",
-            on_change: :validate_email,
-            on_submit: nil
-          }},
-          {:button, nil, %{
-            on_click: :submit_form,
-            id: :submit_button,
-            disabled: false
-          }}
+          {:text_input, nil,
+           %{
+             id: :email_input,
+             type: :email,
+             placeholder: "user@example.com",
+             on_change: :validate_email,
+             on_submit: nil
+           }},
+          {:button, nil,
+           %{
+             on_click: :submit_form,
+             id: :submit_button,
+             disabled: false
+           }}
         ]
       }
 
