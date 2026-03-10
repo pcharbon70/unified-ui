@@ -42,7 +42,7 @@ Create the common architecture that all renderers follow, including protocols an
 
 ## 3.2 Terminal Renderer - Core
 
-- [ ] **Task 3.2** Implement the Terminal renderer for basic widgets and layouts
+- [x] **Task 3.2** Implement the Terminal renderer for basic widgets and layouts
 
 Create the UnifiedUi.Adapters.Terminal module that converts IUR to TermUi widgets.
 
@@ -58,7 +58,7 @@ Create the UnifiedUi.Adapters.Terminal module that converts IUR to TermUi widget
   - `convert_hbox/2` - IUR.HBox → TermUi stack(:horizontal)
 - [x] 3.2.5 Implement style converter:
   - `convert_style/1` - IUR.Style → TermUi.Style
-- [ ] 3.2.6 Create Terminal.Server GenServer for terminal lifecycle
+- [x] 3.2.6 Create Terminal.Server GenServer for terminal lifecycle
 
 **Implementation Notes:**
 - Uses TermUi.Widget.* constructors
@@ -80,7 +80,7 @@ Create the UnifiedUi.Adapters.Terminal module that converts IUR to TermUi widget
 
 ## 3.3 Desktop Renderer - Core
 
-- [ ] **Task 3.3** Implement the Desktop renderer for basic widgets and layouts
+- [x] **Task 3.3** Implement the Desktop renderer for basic widgets and layouts
 
 Create the UnifiedUi.Adapters.Desktop module that converts IUR to DesktopUi widgets.
 
@@ -95,7 +95,7 @@ Create the UnifiedUi.Adapters.Desktop module that converts IUR to DesktopUi widg
   - `convert_vbox/2` - IUR.VBox → DesktopUi vbox
   - `convert_hbox/2` - IUR.HBox → DesktopUi hbox
 - [x] 3.3.5 Implement style converter for DesktopUi
-- [ ] 3.3.6 Create Desktop.Server GenServer for desktop window lifecycle
+- [x] 3.3.6 Create Desktop.Server GenServer for desktop window lifecycle
 
 **Implementation Notes:**
 - DesktopUi is consumed as a dependency
@@ -134,7 +134,7 @@ Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveV
 - [x] 3.4.5 Implement style converter:
   - `convert_style/1` - IUR.Style → CSS
 - [ ] 3.4.6 Add HEEx template support
-- [ ] 3.4.7 Create Web.Server for LiveView integration
+- [x] 3.4.7 Create Web.Server for LiveView integration
 
 **Implementation Notes:**
 - WebUi is consumed as a dependency
@@ -218,7 +218,7 @@ Capture DesktopUi events and convert them to JidoSignal messages.
 
 ## 3.7 Web Event Handling
 
-- [ ] **Task 3.7** Implement event capture and signal dispatch for Web
+- [x] **Task 3.7** Implement event capture and signal dispatch for Web
 
 Capture browser events and convert them to JidoSignal messages.
 
@@ -228,7 +228,7 @@ Capture browser events and convert them to JidoSignal messages.
 - [x] 3.7.4 Implement event-to-signal converter
 - [x] 3.7.5 Implement signal dispatch to agents
 - [x] 3.7.6 Add phx-event bindings
-- [ ] 3.7.7 Add WebSocket communication
+- [x] 3.7.7 Add WebSocket communication
 - [x] 3.7.8 Add reconnection handling
 
 **Implementation Notes:**
