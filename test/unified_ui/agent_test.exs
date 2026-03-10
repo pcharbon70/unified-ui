@@ -1,6 +1,8 @@
 defmodule UnifiedUi.AgentTest do
   use ExUnit.Case, async: false
 
+  alias Jido.Signal
+  alias UnifiedUi.Adapters.Coordinator
   alias UnifiedUi.Agent
 
   defmodule CounterComponent do
@@ -98,6 +100,23 @@ defmodule UnifiedUi.AgentTest do
       assert :ok = Agent.stop_component(component_id)
       assert_component_stopped(component_id)
     end
+
+    test "component receives bus-routed signal on default component topic" do
+      component_id = :counter_component_topic_route
+      assert {:ok, _pid} = Agent.start_component(CounterComponent, component_id)
+
+      on_exit(fn ->
+        Agent.stop_component(component_id)
+      end)
+
+      topic = Agent.component_signal_topic(component_id)
+      {:ok, signal} = Signal.new(type: "inc", data: %{delta: 2}, source: "/unified_ui/test")
+
+      assert :ok = Coordinator.route_signal(signal, {:topic, topic})
+      Process.sleep(20)
+
+      assert {:ok, %{count: 2}} = Agent.current_state(component_id)
+    end
   end
 
   describe "error paths" do
@@ -135,6 +154,13 @@ defmodule UnifiedUi.AgentTest do
       with_runtime_child_stopped(UnifiedUi.AgentRegistry, fn ->
         assert {:error, :agent_runtime_not_started} = Agent.stop_component(:runtime_down_stop)
       end)
+    end
+
+    test "start_component/3 rejects non-binary signal topics" do
+      assert {:error, :invalid_signal_topic} =
+               Agent.start_component(CounterComponent, :counter_component_invalid_topic,
+                 signal_topics: [:invalid]
+               )
     end
   end
 

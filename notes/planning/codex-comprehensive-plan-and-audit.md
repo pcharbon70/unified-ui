@@ -24,6 +24,11 @@ The main remaining work is not basic scaffolding. It is completion and hardening
 - Track C.2 complete: coordinator now supports platform event normalization and explicit target routing contracts.
 - Track C.3 in progress: planning/architecture docs are being updated to consistently use `adapters/*` naming.
 
+## Progress Update (2026-03-10)
+
+- Track C.2 completed end-to-end agent integration: `UnifiedUi.Agent.Server` now subscribes to component signal topics and processes `{:unified_ui_signal, %Jido.Signal{}}` bus messages.
+- Components expose a deterministic topic via `UnifiedUi.Agent.component_signal_topic/1`, enabling coordinator topic routing to drive component updates.
+
 ## Audit Findings by Phase
 
 ### Phase 1 (Foundation) - Mostly complete
