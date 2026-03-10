@@ -44,6 +44,7 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
                UnifiedUi.Dsl.Transformers.PrecomputeTransformer,
                UnifiedUi.Dsl.Transformers.InitTransformer,
                UnifiedUi.Dsl.Transformers.UpdateTransformer,
+               UnifiedUi.Dsl.Transformers.JidoAgentTransformer,
                UnifiedUi.Dsl.Transformers.ViewTransformer
              ]
 
