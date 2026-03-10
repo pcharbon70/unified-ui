@@ -477,7 +477,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   Supported targets:
   * PID
-  * Registered process name atom
+  * Registered process name atom (or component id atom routed via `UnifiedUi.Agent`)
   * 1-arity function
   * MFA tuple `{Module, :function, args}` (signal is prepended to args)
   * Component tuple `{:component, component_id}` (routes through `UnifiedUi.Agent`)
@@ -535,7 +535,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   def route_signal(%Signal{} = signal, target) when is_atom(target) do
     case Process.whereis(target) do
-      nil -> {:error, :target_not_found}
+      nil -> route_component_atom_target(signal, target)
       pid -> route_signal(signal, pid)
     end
   end
@@ -558,6 +558,14 @@ defmodule UnifiedUi.Adapters.Coordinator do
   end
 
   def route_signal(%Signal{}, _target), do: {:error, :invalid_target}
+
+  defp route_component_atom_target(%Signal{} = signal, component_id) when is_atom(component_id) do
+    case UnifiedUi.Agent.signal_component(component_id, signal) do
+      :ok -> :ok
+      {:error, :not_found} -> {:error, :target_not_found}
+      {:error, _reason} = error -> error
+    end
+  end
 
   # State Synchronization
 

@@ -676,6 +676,25 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert {:ok, %{count: 4}} = UiAgent.current_state(component_id)
     end
 
+    test "dispatches normalized signal to component when atom target matches component id" do
+      component_id = :"coordinator_atom_target_#{System.unique_integer([:positive])}"
+      assert {:ok, _pid} = UiAgent.start_component(RoutedCounterComponent, component_id)
+      on_exit(fn -> _ = UiAgent.stop_component(component_id) end)
+
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :counter_button, action: :increment, delta: 3},
+                 component_id
+               )
+
+      Process.sleep(20)
+
+      assert signal.type == "unified.button.clicked"
+      assert {:ok, %{count: 3}} = UiAgent.current_state(component_id)
+    end
+
     test "broadcasts normalized signal to multiple targets" do
       target_one = fn signal ->
         send(self(), {:target_one, signal})
@@ -742,6 +761,16 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
                  :click,
                  %{widget_id: :save, action: :save},
                  {:component, :missing_component_target}
+               )
+    end
+
+    test "returns target_not_found for missing atom target when no process or component exists" do
+      assert {:error, :target_not_found} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :save, action: :save},
+                 :missing_atom_target
                )
     end
 
