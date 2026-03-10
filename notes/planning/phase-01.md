@@ -187,15 +187,15 @@ Create transformers that automatically generate the `init/1`, `update/2`, and `v
 
 ## 1.6 Jido Agent Integration Transformers
 
-- [ ] **Task 1.6** Implement Spark transformers for Jido.Agent.Server integration
+- [x] **Task 1.6** Implement Spark transformers for Jido.Agent.Server integration
 
 Create transformers that automatically generate the boilerplate for integrating UI components as Jido.Agent.Server processes.
 
-- [ ] 1.6.1 Create `lib/unified_ui/dsl/transformers/jido_agent.ex`
-- [ ] 1.6.2 Define `agent_transformer` that:
+- [x] 1.6.1 Create `lib/unified_ui/dsl/transformers/jido_agent.ex`
+- [x] 1.6.2 Define `agent_transformer` that:
   - Wraps generated Elm Architecture in Jido.Agent.Server
   - Implements `c:Jido.Agent.Server.init/1`
-- [ ] 1.6.3 Define `signal_handler_transformer` that:
+- [x] 1.6.3 Define `signal_handler_transformer` that:
   - Implements `c:Jido.Agent.Server.handle_signal/2`
   - Routes incoming JidoSignal to update/2
 - [x] 1.6.4 Create `UnifiedUi.Agent` helper module with:
@@ -211,7 +211,7 @@ Create transformers that automatically generate the boilerplate for integrating 
 - Supervision strategy: `:one_for_one`
 
 **Unit Tests for Section 1.6:**
-- [ ] Test agent_transformer generates Jido.Agent.Server compliant module
+- [x] Test agent_transformer generates Jido.Agent.Server compliant module
 - [x] Test component starts as an agent
 - [x] Test component stops cleanly
 - [x] Test signal routing to update function
