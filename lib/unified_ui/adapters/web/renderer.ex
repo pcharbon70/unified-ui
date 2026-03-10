@@ -113,11 +113,8 @@ defmodule UnifiedUi.Adapters.Web do
           {:ok, String.t()} | {:error, term()}
   def render_heex(iur_tree, opts \\ []) do
     opts = Keyword.put(opts, :format, :heex)
-
-    case render(iur_tree, opts) do
-      {:ok, state} -> State.get_root(state)
-      {:error, reason} -> {:error, reason}
-    end
+    {:ok, state} = render(iur_tree, opts)
+    State.get_root(state)
   end
 
   @impl true
