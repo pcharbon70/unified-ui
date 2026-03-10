@@ -28,6 +28,7 @@ The main remaining work is not basic scaffolding. It is completion and hardening
 
 - Track C.2 completed end-to-end agent integration: `UnifiedUi.Agent.Server` now subscribes to component signal topics and processes `{:unified_ui_signal, %Jido.Signal{}}` bus messages.
 - Components expose a deterministic topic via `UnifiedUi.Agent.component_signal_topic/1`, enabling coordinator topic routing to drive component updates.
+- Coordinator dispatch contracts now include direct component targets (`{:component, component_id}`), so normalized platform events can route to agents without requiring explicit topic wiring.
 
 ## Audit Findings by Phase
 
