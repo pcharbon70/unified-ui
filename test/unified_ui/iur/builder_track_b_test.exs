@@ -54,6 +54,60 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
                Builder.build(dsl_state, %{theme: "dark"})
     end
 
+    test "build/2 interpolates state references in widget and layout attributes" do
+      dsl_state = %{
+        [:ui] => %{
+          entities: [
+            %{
+              name: :vbox,
+              attrs: %{id: :root, visible: {:state, :show_root}},
+              entities: [
+                %{
+                  name: :text,
+                  attrs: %{
+                    id: :status_text,
+                    content: {:state, :message},
+                    visible: {:state, :show_status}
+                  }
+                },
+                %{
+                  name: :text_input,
+                  attrs: %{
+                    id: :email,
+                    value: {:state, :email},
+                    disabled: {:state, :submitting}
+                  }
+                },
+                %{
+                  name: :button,
+                  attrs: %{
+                    id: :save_btn,
+                    label: "Save",
+                    disabled: {:state, :submitting}
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+
+      runtime_state = %{
+        show_root: true,
+        show_status: false,
+        message: "Pending",
+        email: "user@example.com",
+        submitting: true
+      }
+
+      assert %UnifiedIUR.Layouts.VBox{visible: true, children: [text, input, button]} =
+               Builder.build(dsl_state, runtime_state)
+
+      assert %Widgets.Text{id: :status_text, content: "Pending", visible: false} = text
+      assert %Widgets.TextInput{id: :email, value: "user@example.com", disabled: true} = input
+      assert %Widgets.Button{id: :save_btn, disabled: true} = button
+    end
+
     test "builds data visualization entities" do
       gauge =
         Builder.build_entity(

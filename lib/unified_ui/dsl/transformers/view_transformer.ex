@@ -7,8 +7,9 @@ defmodule UnifiedUi.Dsl.Transformers.ViewTransformer do
 
   ## State Interpolation
 
-  The view function accepts the state parameter. State interpolation is handled
-  at the IUR level by the renderer, which can access state values when needed.
+  The generated `view/1` passes runtime state into `UnifiedUi.IUR.Builder.build/2`.
+  The builder resolves DSL state references like `{:state, :key}` against the
+  current runtime state map.
 
   ## Example
 

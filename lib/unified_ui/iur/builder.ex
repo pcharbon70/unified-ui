@@ -118,6 +118,7 @@ defmodule UnifiedUi.IUR.Builder do
     dsl_state_with_runtime
     |> collect_root_entities()
     |> Enum.find_value(fn entity -> build_entity(entity, dsl_state_with_runtime) end)
+    |> resolve_state_refs(runtime_state)
   end
 
   @doc """
@@ -322,7 +323,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_button(map(), Dsl.t()) :: Widgets.Button.t()
   def build_button(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Button{
       label: Map.get(attrs, :label),
@@ -339,7 +340,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_text(map(), Dsl.t()) :: Widgets.Text.t()
   def build_text(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Text{
       content: Map.get(attrs, :content),
@@ -354,7 +355,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_label(map(), Dsl.t()) :: Widgets.Label.t()
   def build_label(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Label{
       for: Map.get(attrs, :for),
@@ -370,7 +371,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_text_input(map(), Dsl.t()) :: Widgets.TextInput.t()
   def build_text_input(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.TextInput{
       id: Map.get(attrs, :id),
@@ -393,7 +394,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_gauge(map(), Dsl.t()) :: Widgets.Gauge.t()
   def build_gauge(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Gauge{
       id: Map.get(attrs, :id),
@@ -414,7 +415,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_sparkline(map(), Dsl.t()) :: Widgets.Sparkline.t()
   def build_sparkline(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Sparkline{
       id: Map.get(attrs, :id),
@@ -434,7 +435,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_bar_chart(map(), Dsl.t()) :: Widgets.BarChart.t()
   def build_bar_chart(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.BarChart{
       id: Map.get(attrs, :id),
@@ -453,7 +454,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_line_chart(map(), Dsl.t()) :: Widgets.LineChart.t()
   def build_line_chart(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.LineChart{
       id: Map.get(attrs, :id),
@@ -474,7 +475,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_table(map(), Dsl.t()) :: Widgets.Table.t()
   def build_table(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     columns =
       case build_nested_entities(entity, dsl_state, :columns, &build_column/2,
@@ -503,8 +504,8 @@ defmodule UnifiedUi.IUR.Builder do
   Builds a Column IUR struct from a column DSL entity.
   """
   @spec build_column(map(), Dsl.t()) :: Widgets.Column.t()
-  def build_column(entity, _dsl_state) do
-    attrs = get_entity_attrs(entity)
+  def build_column(entity, dsl_state) do
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Column{
       key: Map.get(attrs, :key),
@@ -525,7 +526,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_vbox(map(), Dsl.t()) :: Layouts.VBox.t()
   def build_vbox(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     children = build_children(entity, dsl_state)
 
     %Layouts.VBox{
@@ -547,7 +548,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_hbox(map(), Dsl.t()) :: Layouts.HBox.t()
   def build_hbox(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     children = build_children(entity, dsl_state)
 
     %Layouts.HBox{
@@ -569,7 +570,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_grid(map(), Dsl.t()) :: Grid.t()
   def build_grid(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     children = resolve_advanced_layout_children(entity, dsl_state)
 
     %Grid{
@@ -590,7 +591,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_stack(map(), Dsl.t()) :: Stack.t()
   def build_stack(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     children = resolve_advanced_layout_children(entity, dsl_state)
 
     %Stack{
@@ -610,7 +611,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_zbox(map(), Dsl.t()) :: ZBox.t()
   def build_zbox(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     children = resolve_advanced_layout_children(entity, dsl_state)
 
     %ZBox{
@@ -631,7 +632,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_menu(map(), Dsl.t()) :: Widgets.Menu.t()
   def build_menu(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     items =
       case build_nested_entities(entity, dsl_state, :items, &build_menu_item/2,
@@ -662,7 +663,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_menu_item(map(), Dsl.t()) :: Widgets.MenuItem.t()
   def build_menu_item(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     # Menu items can have submenus - check for nested entities
     submenu =
       build_nested_entities(entity, dsl_state, :submenu, &build_menu_item/2,
@@ -690,7 +691,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_context_menu(map(), Dsl.t()) :: Widgets.ContextMenu.t()
   def build_context_menu(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     items =
       build_nested_entities(entity, dsl_state, :items, &build_menu_item/2, child_name: :menu_item)
@@ -711,7 +712,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_tabs(map(), Dsl.t()) :: Widgets.Tabs.t()
   def build_tabs(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     tabs = build_nested_entities(entity, dsl_state, :tabs, &build_tab/2, child_name: :tab)
 
     %Widgets.Tabs{
@@ -730,7 +731,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_tab(map(), Dsl.t()) :: Widgets.Tab.t()
   def build_tab(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     # Tab content is nested children
     content = build_children(entity, dsl_state)
 
@@ -757,7 +758,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_tree_view(map(), Dsl.t()) :: Widgets.TreeView.t()
   def build_tree_view(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     root_nodes =
       build_nested_entities(entity, dsl_state, :root_nodes, &build_tree_node/2,
@@ -782,7 +783,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_tree_node(map(), Dsl.t()) :: Widgets.TreeNode.t()
   def build_tree_node(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
     # Tree nodes can have child nodes
     children =
       build_nested_entities(entity, dsl_state, :children, &build_tree_node/2,
@@ -813,7 +814,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_dialog_button(map(), Dsl.t()) :: Widgets.DialogButton.t()
   def build_dialog_button(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.DialogButton{
       label: Map.get(attrs, :label),
@@ -831,7 +832,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_dialog(map(), Dsl.t()) :: Widgets.Dialog.t()
   def build_dialog(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     content =
       case build_nested_entities(entity, dsl_state, :content, &build_entity/2) do
@@ -872,7 +873,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_alert_dialog(map(), Dsl.t()) :: Widgets.AlertDialog.t()
   def build_alert_dialog(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.AlertDialog{
       id: Map.get(attrs, :id),
@@ -891,7 +892,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_toast(map(), Dsl.t()) :: Widgets.Toast.t()
   def build_toast(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.Toast{
       id: Map.get(attrs, :id),
@@ -910,8 +911,8 @@ defmodule UnifiedUi.IUR.Builder do
   Builds a PickListOption IUR struct from a pick_list_option DSL entity.
   """
   @spec build_pick_list_option(map(), Dsl.t()) :: Widgets.PickListOption.t()
-  def build_pick_list_option(entity, _dsl_state) do
-    attrs = get_entity_attrs(entity)
+  def build_pick_list_option(entity, dsl_state) do
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.PickListOption{
       value: Map.get(attrs, :value),
@@ -927,7 +928,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_pick_list(map(), Dsl.t()) :: Widgets.PickList.t()
   def build_pick_list(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     options =
       case build_nested_entities(entity, dsl_state, :opts, &build_pick_list_option/2,
@@ -971,7 +972,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_form_field(map(), Dsl.t()) :: Widgets.FormField.t()
   def build_form_field(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Widgets.FormField{
       name: Map.get(attrs, :name),
@@ -992,7 +993,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_form_builder(map(), Dsl.t()) :: Widgets.FormBuilder.t()
   def build_form_builder(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     fields =
       case build_nested_entities(entity, dsl_state, :flds, &build_form_field/2,
@@ -1034,7 +1035,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_viewport(map(), Dsl.t()) :: Viewport.t()
   def build_viewport(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     content =
       case build_nested_entities(entity, dsl_state, :content, &build_entity/2) do
@@ -1067,7 +1068,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_split_pane(map(), Dsl.t()) :: SplitPane.t()
   def build_split_pane(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     panes =
       case build_nested_entities(entity, dsl_state, :panes, &build_entity/2) do
@@ -1092,7 +1093,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_canvas(map(), Dsl.t()) :: Canvas.t()
   def build_canvas(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Canvas{
       id: Map.get(attrs, :id),
@@ -1110,8 +1111,8 @@ defmodule UnifiedUi.IUR.Builder do
   Builds a Command struct from a command DSL entity.
   """
   @spec build_command(map(), Dsl.t()) :: Command.t()
-  def build_command(entity, _dsl_state) do
-    attrs = get_entity_attrs(entity)
+  def build_command(entity, dsl_state) do
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %Command{
       id: Map.get(attrs, :id),
@@ -1129,7 +1130,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_command_palette(map(), Dsl.t()) :: CommandPalette.t()
   def build_command_palette(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     commands =
       case build_nested_entities(entity, dsl_state, :cmds, &build_command/2, child_name: :command) do
@@ -1161,7 +1162,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_log_viewer(map(), Dsl.t()) :: LogViewer.t()
   def build_log_viewer(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %LogViewer{
       id: Map.get(attrs, :id),
@@ -1180,7 +1181,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_stream_widget(map(), Dsl.t()) :: StreamWidget.t()
   def build_stream_widget(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %StreamWidget{
       id: Map.get(attrs, :id),
@@ -1199,7 +1200,7 @@ defmodule UnifiedUi.IUR.Builder do
   """
   @spec build_process_monitor(map(), Dsl.t()) :: ProcessMonitor.t()
   def build_process_monitor(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     %ProcessMonitor{
       id: Map.get(attrs, :id),
@@ -1355,16 +1356,60 @@ defmodule UnifiedUi.IUR.Builder do
 
   Handles different ways Spark stores entity attributes.
   """
-  @spec get_entity_attrs(map()) :: map()
-  def get_entity_attrs(entity) do
+  @spec get_entity_attrs(map(), Dsl.t() | map() | term()) :: map()
+  def get_entity_attrs(entity, dsl_state \\ %{}) do
     # Spark stores entity attrs in the :attrs field
-    case Map.get(entity, :attrs) do
-      nil -> %{}
-      attrs when is_map(attrs) -> attrs
-      attrs when is_list(attrs) -> Enum.into(attrs, %{})
-      _ -> %{}
+    attrs =
+      case Map.get(entity, :attrs) do
+        nil -> %{}
+        attrs when is_map(attrs) -> attrs
+        attrs when is_list(attrs) -> Enum.into(attrs, %{})
+        _ -> %{}
+      end
+
+    runtime_state =
+      case dsl_state do
+        %{} = state -> Map.get(state, :__runtime_state__, %{})
+        _ -> %{}
+      end
+
+    resolve_state_refs(attrs, runtime_state)
+  end
+
+  defp resolve_state_refs({:state, key}, runtime_state)
+       when is_atom(key) and is_map(runtime_state) do
+    Map.get(runtime_state, key, Map.get(runtime_state, Atom.to_string(key)))
+  end
+
+  defp resolve_state_refs(list, runtime_state) when is_list(list) do
+    if Keyword.keyword?(list) do
+      Enum.map(list, fn {key, value} -> {key, resolve_state_refs(value, runtime_state)} end)
+    else
+      Enum.map(list, &resolve_state_refs(&1, runtime_state))
     end
   end
+
+  defp resolve_state_refs(%module{} = struct, runtime_state) do
+    resolved_map =
+      struct
+      |> Map.from_struct()
+      |> resolve_state_refs(runtime_state)
+
+    struct(module, resolved_map)
+  end
+
+  defp resolve_state_refs(map, runtime_state) when is_map(map) do
+    Map.new(map, fn {key, value} -> {key, resolve_state_refs(value, runtime_state)} end)
+  end
+
+  defp resolve_state_refs(tuple, runtime_state) when is_tuple(tuple) do
+    tuple
+    |> Tuple.to_list()
+    |> Enum.map(&resolve_state_refs(&1, runtime_state))
+    |> List.to_tuple()
+  end
+
+  defp resolve_state_refs(value, _runtime_state), do: value
 
   @doc """
   Validates an IUR tree structure.
@@ -1662,7 +1707,7 @@ defmodule UnifiedUi.IUR.Builder do
   defp normalize_split_panes(_panes, _dsl_state), do: []
 
   defp resolve_advanced_layout_children(entity, dsl_state) do
-    attrs = get_entity_attrs(entity)
+    attrs = get_entity_attrs(entity, dsl_state)
 
     nested_children =
       case build_nested_entities(entity, dsl_state, :children, &build_entity/2) do

@@ -69,6 +69,19 @@ defmodule UnifiedUi.Dsl.Entities.WidgetsTest do
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
     end
+
+    test "supports state references for label, disabled, and visible" do
+      entity = WidgetEntities.button_entity()
+
+      assert {:or, [:string, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:label) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:disabled) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
+    end
   end
 
   describe "text_entity/0" do
@@ -109,6 +122,16 @@ defmodule UnifiedUi.Dsl.Entities.WidgetsTest do
       visible_schema = Keyword.get(entity.schema, :visible)
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
+    end
+
+    test "supports state references for content and visible" do
+      entity = WidgetEntities.text_entity()
+
+      assert {:or, [:string, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:content) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
     end
   end
 
@@ -154,6 +177,16 @@ defmodule UnifiedUi.Dsl.Entities.WidgetsTest do
       visible_schema = Keyword.get(entity.schema, :visible)
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
+    end
+
+    test "supports state references for text and visible" do
+      entity = WidgetEntities.label_entity()
+
+      assert {:or, [:string, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:text) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
     end
   end
 
@@ -238,6 +271,19 @@ defmodule UnifiedUi.Dsl.Entities.WidgetsTest do
       visible_schema = Keyword.get(entity.schema, :visible)
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
+    end
+
+    test "supports state references for value, disabled, and visible" do
+      entity = WidgetEntities.text_input_entity()
+
+      assert {:or, [:string, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:value) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:disabled) |> Keyword.fetch!(:type)
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
     end
   end
 

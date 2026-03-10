@@ -55,6 +55,20 @@ defmodule UnifiedUi.Dsl.CompileIndexTest do
       assert index.state == [state]
       assert [%{name: :vbox}] = index.ui
     end
+
+    test "collects state entities embedded directly in ui entities" do
+      state_entity = %UnifiedUi.Dsl.State{attrs: [count: 2, ready: false]}
+      layout = %{name: :vbox, attrs: %{id: :root}}
+
+      dsl_state = %{
+        [:ui] => %{entities: [state_entity, layout]}
+      }
+
+      index = CompileIndex.build(dsl_state)
+
+      assert index.state == [state_entity]
+      assert index.ui == [state_entity, layout]
+    end
   end
 
   describe "persist/1 and get/1" do

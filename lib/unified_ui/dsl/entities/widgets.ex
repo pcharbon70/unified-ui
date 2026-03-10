@@ -26,14 +26,16 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
 
   alias UnifiedIUR.Widgets
 
+  @state_ref_type {:tuple, [:atom, :atom]}
+
   @button_entity %Spark.Dsl.Entity{
     name: :button,
     target: Widgets.Button,
     args: [:label],
     schema: [
       label: [
-        type: :string,
-        doc: "The text to display on the button.",
+        type: {:or, [:string, @state_ref_type]},
+        doc: "The text to display on the button, or `{:state, :key}`.",
         required: true
       ],
       id: [
@@ -50,8 +52,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       disabled: [
-        type: :boolean,
-        doc: "Whether the button is disabled.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the button is disabled, or `{:state, :key}`.",
         required: false,
         default: false
       ],
@@ -61,8 +63,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the button is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the button is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -81,8 +83,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
     args: [:content],
     schema: [
       content: [
-        type: :string,
-        doc: "The text content to display.",
+        type: {:or, [:string, @state_ref_type]},
+        doc: "The text content to display, or `{:state, :key}`.",
         required: true
       ],
       id: [
@@ -96,8 +98,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the text is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the text is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -121,8 +123,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: true
       ],
       text: [
-        type: :string,
-        doc: "The label text to display.",
+        type: {:or, [:string, @state_ref_type]},
+        doc: "The label text to display, or `{:state, :key}`.",
         required: true
       ],
       id: [
@@ -136,8 +138,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the label is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the label is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -162,8 +164,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: true
       ],
       value: [
-        type: :string,
-        doc: "Initial value for the input.",
+        type: {:or, [:string, @state_ref_type]},
+        doc: "Initial value for the input, or `{:state, :key}`.",
         required: false
       ],
       placeholder: [
@@ -205,8 +207,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       disabled: [
-        type: :boolean,
-        doc: "Whether the input is disabled.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the input is disabled, or `{:state, :key}`.",
         required: false,
         default: false
       ],
@@ -216,8 +218,8 @@ defmodule UnifiedUi.Dsl.Entities.Widgets do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the input is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the input is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]

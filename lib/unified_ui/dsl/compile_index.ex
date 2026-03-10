@@ -72,7 +72,7 @@ defmodule UnifiedUi.Dsl.CompileIndex do
     layouts = safe_get_entities(dsl_state, :layouts)
     ui_entities = collect_ui_entities(dsl_state)
     styles_entities = collect_styles_entities(dsl_state)
-    state_entities = collect_state_entities(dsl_state)
+    state_entities = collect_state_entities(dsl_state, ui_entities)
 
     roots =
       [widgets, layouts, ui_entities]
@@ -109,20 +109,31 @@ defmodule UnifiedUi.Dsl.CompileIndex do
     end
   end
 
-  defp collect_state_entities(dsl_state) do
+  defp collect_state_entities(dsl_state, ui_entities) do
     entities = safe_get_entities(dsl_state, [:ui, :state])
 
     if entities == [] do
-      dsl_state
-      |> Map.get(:ui, %{})
-      |> Map.get(:state, %{})
-      |> Map.get(:entities, [])
-      |> List.wrap()
-      |> Enum.reject(&is_nil/1)
+      nested_state_entities =
+        dsl_state
+        |> Map.get(:ui, %{})
+        |> Map.get(:state, %{})
+        |> Map.get(:entities, [])
+        |> List.wrap()
+        |> Enum.reject(&is_nil/1)
+
+      if nested_state_entities == [] do
+        Enum.filter(ui_entities, &state_entity?/1)
+      else
+        nested_state_entities
+      end
     else
       entities
     end
   end
+
+  defp state_entity?(%UnifiedUi.Dsl.State{}), do: true
+  defp state_entity?(%{name: :state}), do: true
+  defp state_entity?(_), do: false
 
   defp build_runtime_view_state(module) do
     ui_entities =
