@@ -239,11 +239,65 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   end
 
   describe "state synchronization" do
-    test "sync_state/2 returns :ok" do
-      state = %{count: 1}
-      renderer_states = %{terminal: %{platform: :terminal}}
+    test "sync_state/2 broadcasts global and platform synchronization signals" do
+      state = %{count: 1, session: %{user: "alice"}}
+
+      renderer_states = %{
+        terminal: %{platform: :terminal, state: %{count: 0, previous: true}},
+        web: %{platform: :web, model_state: %{session: %{locale: "en-US"}}}
+      }
+
+      global_topic = Coordinator.state_sync_topic()
+      terminal_topic = Coordinator.state_sync_topic(:terminal)
+      web_topic = Coordinator.state_sync_topic(:web)
+
+      assert :ok = Coordinator.subscribe_state_sync(global_topic)
+      assert :ok = Coordinator.subscribe_state_sync(terminal_topic)
+      assert :ok = Coordinator.subscribe_state_sync(web_topic)
+
+      on_exit(fn ->
+        _ = Coordinator.unsubscribe_state_sync(global_topic)
+        _ = Coordinator.unsubscribe_state_sync(terminal_topic)
+        _ = Coordinator.unsubscribe_state_sync(web_topic)
+      end)
 
       assert :ok = Coordinator.sync_state(state, renderer_states)
+
+      assert_receive {:unified_ui_signal,
+                      %Signal{
+                        type: "unified.state.synchronized",
+                        subject: "global",
+                        data: global_data
+                      }}
+
+      assert global_data.state == state
+      assert Enum.sort(global_data.platforms) == [:terminal, :web]
+      assert Map.has_key?(global_data, :synced_states)
+      assert Map.has_key?(global_data, :synchronized_at)
+
+      assert_receive {:unified_ui_signal,
+                      %Signal{
+                        type: "unified.state.synchronized",
+                        subject: "terminal",
+                        data: terminal_data
+                      }}
+
+      assert terminal_data.platform == :terminal
+      assert terminal_data.state.count == 1
+      assert terminal_data.state.previous == true
+      assert terminal_data.state.session.user == "alice"
+
+      assert_receive {:unified_ui_signal,
+                      %Signal{
+                        type: "unified.state.synchronized",
+                        subject: "web",
+                        data: web_data
+                      }}
+
+      assert web_data.platform == :web
+      assert web_data.state.count == 1
+      assert web_data.state.session.user == "alice"
+      assert web_data.state.session.locale == "en-US"
     end
 
     test "merge_states/1 merges empty list to empty map" do
@@ -307,11 +361,28 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert result.data.value == "new"
     end
 
-    test "broadcast_state/2 returns :ok" do
-      state = %{count: 1}
-      renderer_states = %{terminal: %{platform: :terminal}}
+    test "broadcast_state/2 routes platform synchronization to sync_target" do
+      state = %{count: 5}
+
+      renderer_states = %{
+        terminal: %{
+          platform: :terminal,
+          state: %{count: 1},
+          sync_target: fn signal ->
+            send(self(), {:sync_target_signal, signal})
+            :ok
+          end
+        }
+      }
 
       assert :ok = Coordinator.broadcast_state(state, renderer_states)
+
+      assert_receive {:sync_target_signal,
+                      %Signal{
+                        type: "unified.state.synchronized",
+                        subject: "terminal",
+                        data: %{platform: :terminal, state: %{count: 5}}
+                      }}
     end
 
     test "broadcast_state/2 works with multiple renderers" do
@@ -323,6 +394,13 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       }
 
       assert :ok = Coordinator.broadcast_state(state, renderer_states)
+    end
+
+    test "state_sync_topic helpers return expected topic names" do
+      assert Coordinator.state_sync_topic() == "unified_ui:state_sync"
+      assert Coordinator.state_sync_topic(:terminal) == "unified_ui:state_sync:terminal"
+      assert Coordinator.state_sync_topic(:desktop) == "unified_ui:state_sync:desktop"
+      assert Coordinator.state_sync_topic(:web) == "unified_ui:state_sync:web"
     end
   end
 

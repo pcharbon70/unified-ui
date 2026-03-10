@@ -56,6 +56,7 @@ defmodule UnifiedUi.Adapters.Coordinator do
   alias UnifiedUi.Adapters.Desktop.Events, as: DesktopEvents
   alias UnifiedUi.Adapters.Web.Events, as: WebEvents
   alias UnifiedUi.SignalBus
+  alias UnifiedUi.Signals
   alias Jido.Signal
 
   @type platform :: :terminal | :desktop | :web
@@ -79,6 +80,8 @@ defmodule UnifiedUi.Adapters.Coordinator do
     desktop: Desktop,
     web: Web
   }
+
+  @state_sync_topic "unified_ui:state_sync"
 
   # Platform event module mapping
   @event_modules %{
@@ -411,6 +414,36 @@ defmodule UnifiedUi.Adapters.Coordinator do
   end
 
   @doc """
+  Returns the default state synchronization topic.
+  """
+  @spec state_sync_topic() :: SignalBus.topic()
+  def state_sync_topic, do: @state_sync_topic
+
+  @doc """
+  Returns the state synchronization topic for a specific platform.
+  """
+  @spec state_sync_topic(platform()) :: SignalBus.topic()
+  def state_sync_topic(platform) when platform in [:terminal, :desktop, :web] do
+    "#{@state_sync_topic}:#{platform}"
+  end
+
+  @doc """
+  Subscribes the current process to state synchronization signals.
+  """
+  @spec subscribe_state_sync(SignalBus.topic()) :: :ok | {:error, term()}
+  def subscribe_state_sync(topic \\ @state_sync_topic) do
+    SignalBus.subscribe(topic)
+  end
+
+  @doc """
+  Unsubscribes the current process from state synchronization signals.
+  """
+  @spec unsubscribe_state_sync(SignalBus.topic()) :: :ok | {:error, term()}
+  def unsubscribe_state_sync(topic \\ @state_sync_topic) do
+    SignalBus.unsubscribe(topic)
+  end
+
+  @doc """
   Normalizes a platform event into a unified signal.
 
   ## Parameters
@@ -540,9 +573,11 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   """
   @spec sync_state(map(), %{platform() => renderer_state()}) :: :ok
+  def sync_state(new_state, renderer_states) when is_map(new_state) and is_map(renderer_states) do
+    broadcast_state(new_state, renderer_states)
+  end
+
   def sync_state(_new_state, _renderer_states) do
-    # For synchronous coordination, this is a no-op
-    # In a GenServer implementation, this would broadcast state to all renderers
     :ok
   end
 
@@ -626,9 +661,36 @@ defmodule UnifiedUi.Adapters.Coordinator do
 
   """
   @spec broadcast_state(map(), %{platform() => renderer_state()}) :: :ok
+  def broadcast_state(state, renderer_states) when is_map(state) and is_map(renderer_states) do
+    synced_states = synchronize_platform_states(state, renderer_states)
+    synchronized_at = DateTime.utc_now() |> DateTime.to_iso8601()
+
+    global_payload = %{
+      state: state,
+      synced_states: synced_states,
+      platforms: Map.keys(synced_states),
+      synchronized_at: synchronized_at
+    }
+
+    global_signal = build_state_sync_signal(global_payload, "global")
+    maybe_broadcast_state_signal(global_signal, @state_sync_topic)
+
+    Enum.each(synced_states, fn {platform, platform_state} ->
+      payload = %{
+        platform: platform,
+        state: platform_state,
+        synchronized_at: synchronized_at
+      }
+
+      platform_signal = build_state_sync_signal(payload, Atom.to_string(platform))
+      maybe_broadcast_state_signal(platform_signal, state_sync_topic(platform))
+      maybe_route_state_signal(platform_signal, Map.get(renderer_states, platform))
+    end)
+
+    :ok
+  end
+
   def broadcast_state(_state, _renderer_states) do
-    # For synchronous coordination, this is a no-op
-    # In a GenServer implementation, this would broadcast to all subscribers
     :ok
   end
 
@@ -732,6 +794,58 @@ defmodule UnifiedUi.Adapters.Coordinator do
   end
 
   defp deep_merge(_left, right), do: right
+
+  defp synchronize_platform_states(new_state, renderer_states) do
+    Enum.reduce(renderer_states, %{}, fn {platform, renderer_state}, acc ->
+      if platform in [:terminal, :desktop, :web] and is_map(renderer_state) do
+        existing_state = extract_renderer_sync_state(renderer_state)
+        merged_state = merge_states([existing_state, new_state])
+        resolved_state = conflict_resolution(existing_state, merged_state)
+        Map.put(acc, platform, resolved_state)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp extract_renderer_sync_state(renderer_state) when is_map(renderer_state) do
+    cond do
+      is_map(Map.get(renderer_state, :synced_state)) -> Map.get(renderer_state, :synced_state)
+      is_map(Map.get(renderer_state, :state)) -> Map.get(renderer_state, :state)
+      is_map(Map.get(renderer_state, :model_state)) -> Map.get(renderer_state, :model_state)
+      true -> %{}
+    end
+  end
+
+  defp build_state_sync_signal(payload, subject) do
+    case Signals.create(
+           "unified.state.synchronized",
+           payload,
+           source: "/unified_ui/coordinator",
+           subject: subject
+         ) do
+      {:ok, signal} -> signal
+      {:error, _reason} -> nil
+    end
+  end
+
+  defp maybe_broadcast_state_signal(nil, _topic), do: :ok
+
+  defp maybe_broadcast_state_signal(%Signal{} = signal, topic) do
+    _ = SignalBus.broadcast(signal, topic)
+    :ok
+  end
+
+  defp maybe_route_state_signal(nil, _renderer_state), do: :ok
+
+  defp maybe_route_state_signal(%Signal{} = signal, renderer_state) when is_map(renderer_state) do
+    case Map.get(renderer_state, :sync_target) do
+      nil -> :ok
+      target -> route_signal(signal, target)
+    end
+  end
+
+  defp maybe_route_state_signal(_signal, _renderer_state), do: :ok
 
   defp run_target(callback) when is_function(callback, 0) do
     case callback.() do
