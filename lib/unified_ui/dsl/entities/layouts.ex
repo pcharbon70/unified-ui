@@ -42,6 +42,7 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     DataViz,
     DialogFeedback,
     InputWidgets,
+    Monitoring,
     Navigation,
     Specialized,
     Tables,
@@ -70,7 +71,10 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
     Containers.viewport_entity(),
     Containers.split_pane_entity(),
     Specialized.canvas_entity(),
-    Specialized.command_palette_entity()
+    Specialized.command_palette_entity(),
+    Monitoring.log_viewer_entity(),
+    Monitoring.stream_widget_entity(),
+    Monitoring.process_monitor_entity()
   ]
 
   @vbox_entity %Spark.Dsl.Entity{

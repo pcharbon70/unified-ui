@@ -21,6 +21,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :split_pane in entity_names
     assert :canvas in entity_names
     assert :command_palette in entity_names
+    assert :log_viewer in entity_names
+    assert :stream_widget in entity_names
+    assert :process_monitor in entity_names
   end
 
   test "styles section exposes schema and style entity" do
@@ -74,6 +77,9 @@ defmodule UnifiedUi.Dsl.SectionsTest do
     assert :split_pane in entity_names
     assert :canvas in entity_names
     assert :command_palette in entity_names
+    assert :log_viewer in entity_names
+    assert :stream_widget in entity_names
+    assert :process_monitor in entity_names
   end
 
   test "ui section is top level and includes state/layout/widget entities" do

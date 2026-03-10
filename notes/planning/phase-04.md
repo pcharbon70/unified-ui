@@ -269,24 +269,24 @@ Create widgets for custom drawing and command discovery.
 
 ## 4.8 Monitoring Widgets
 
-- [ ] **Task 4.8** Implement monitoring widgets (log_viewer, process_monitor)
+- [x] **Task 4.8** Implement monitoring widgets (log_viewer, process_monitor)
 
 Create widgets for system monitoring and inspection.
 
-- [ ] 4.8.1 Define `@log_viewer_entity` with schema:
+- [x] 4.8.1 Define `@log_viewer_entity` with schema:
   - args: `[:id]`
   - options: `source`, `lines`, `auto_scroll`, `filter`
-- [ ] 4.8.2 Define `@stream_widget_entity` with schema:
+- [x] 4.8.2 Define `@stream_widget_entity` with schema:
   - args: `[:id, producer]`
   - options: `transform`, `buffer_size`, `on_item`
-- [ ] 4.8.3 Define `@process_monitor_entity` with schema:
+- [x] 4.8.3 Define `@process_monitor_entity` with schema:
   - args: `[:id]`
   - options: `node`, `refresh_interval`, `sort_by`, `on_process_select`
-- [ ] 4.8.4 Create target and IUR structs
-- [ ] 4.8.5 Implement renderer converters for terminal
-- [ ] 4.8.6 Implement renderer converters for desktop
-- [ ] 4.8.7 Implement renderer converters for web
-- [ ] 4.8.8 Implement auto-refresh
+- [x] 4.8.4 Create target and IUR structs
+- [x] 4.8.5 Implement renderer converters for terminal
+- [x] 4.8.6 Implement renderer converters for desktop
+- [x] 4.8.7 Implement renderer converters for web
+- [x] 4.8.8 Implement auto-refresh
 
 **Implementation Notes:**
 - LogViewer: tails a log source (file or GenServer)
@@ -295,12 +295,12 @@ Create widgets for system monitoring and inspection.
 - All support auto-refresh intervals
 
 **Unit Tests for Section 4.8:**
-- [ ] Test log_viewer with test source
-- [ ] Test log_viewer auto-scroll
-- [ ] Test stream_widget with producer
-- [ ] Test process_monitor returns data
-- [ ] Test auto-refresh works
-- [ ] Test all platforms render monitoring widgets
+- [x] Test log_viewer with test source
+- [x] Test log_viewer auto-scroll
+- [x] Test stream_widget with producer
+- [x] Test process_monitor returns data
+- [x] Test auto-refresh works
+- [x] Test all platforms render monitoring widgets
 
 ---
 
@@ -396,7 +396,7 @@ Comprehensive integration tests to verify all advanced widgets and features work
 - [x] 4.11.6 Test data visualization with live data
 - [x] 4.11.7 Test form validation and submission
 - [x] 4.11.8 Test navigation widget interactions
-- [ ] 4.11.9 Test monitoring widgets with live data
+- [x] 4.11.9 Test monitoring widgets with live data
 - [x] 4.11.10 Test performance with 200+ element UI
 
 **Implementation Notes:**

@@ -4,7 +4,18 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
   alias UnifiedUi.IUR.Builder
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias UnifiedIUR.Widgets
 
   describe "Track B builder coverage" do
@@ -450,6 +461,72 @@ defmodule UnifiedUi.IUR.BuilderTrackBTest do
 
       assert [%Command{id: :open, label: "Open File"}, %Command{id: :save, label: "Save File"}] =
                command_palette.commands
+    end
+
+    test "builds monitoring widgets with refresh metadata" do
+      log_viewer =
+        Builder.build_entity(
+          %{
+            name: :log_viewer,
+            attrs: %{
+              id: :logs,
+              source: "/tmp/app.log",
+              lines: 250,
+              auto_scroll: true,
+              refresh_interval: 750
+            }
+          },
+          %{}
+        )
+
+      stream_widget =
+        Builder.build_entity(
+          %{
+            name: :stream_widget,
+            attrs: %{
+              id: :events,
+              producer: :event_stream,
+              buffer_size: 50,
+              refresh_interval: 500,
+              on_item: :stream_item
+            }
+          },
+          %{}
+        )
+
+      process_monitor =
+        Builder.build_entity(
+          %{
+            name: :process_monitor,
+            attrs: %{
+              id: :procs,
+              node: :nonode@nohost,
+              refresh_interval: 1_500,
+              sort_by: :reductions,
+              on_process_select: :process_selected
+            }
+          },
+          %{}
+        )
+
+      assert %LogViewer{id: :logs, source: "/tmp/app.log", lines: 250, refresh_interval: 750} =
+               log_viewer
+
+      assert %StreamWidget{
+               id: :events,
+               producer: :event_stream,
+               buffer_size: 50,
+               refresh_interval: 500,
+               on_item: :stream_item
+             } = stream_widget
+
+      assert %ProcessMonitor{
+               id: :procs,
+               node: :nonode@nohost,
+               refresh_interval: 1_500,
+               sort_by: :reductions,
+               on_process_select: :process_selected
+             } = process_monitor
     end
   end
 end

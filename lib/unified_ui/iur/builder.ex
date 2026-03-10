@@ -71,7 +71,18 @@ defmodule UnifiedUi.IUR.Builder do
 
   alias UnifiedIUR.{Style, Widgets, Layouts}
   alias UnifiedUi.Dsl.StyleResolver
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias Spark.Dsl
 
   @doc """
@@ -144,6 +155,9 @@ defmodule UnifiedUi.IUR.Builder do
              Canvas,
              Command,
              CommandPalette,
+             LogViewer,
+             StreamWidget,
+             ProcessMonitor,
              Viewport,
              SplitPane
            ] do
@@ -264,6 +278,18 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :command_palette} = entity, dsl_state) do
     build_command_palette(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :log_viewer} = entity, dsl_state) do
+    build_log_viewer(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :stream_widget} = entity, dsl_state) do
+    build_stream_widget(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :process_monitor} = entity, dsl_state) do
+    build_process_monitor(entity, dsl_state)
   end
 
   def build_entity(_entity, _dsl_state) do
@@ -1052,6 +1078,62 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  @doc """
+  Builds a LogViewer struct from a log_viewer DSL entity.
+  """
+  @spec build_log_viewer(map(), Dsl.t()) :: LogViewer.t()
+  def build_log_viewer(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %LogViewer{
+      id: Map.get(attrs, :id),
+      source: Map.get(attrs, :source),
+      lines: Map.get(attrs, :lines, 100),
+      auto_scroll: Map.get(attrs, :auto_scroll, true),
+      filter: Map.get(attrs, :filter),
+      refresh_interval: Map.get(attrs, :refresh_interval, 1_000),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a StreamWidget struct from a stream_widget DSL entity.
+  """
+  @spec build_stream_widget(map(), Dsl.t()) :: StreamWidget.t()
+  def build_stream_widget(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %StreamWidget{
+      id: Map.get(attrs, :id),
+      producer: Map.get(attrs, :producer),
+      transform: Map.get(attrs, :transform),
+      buffer_size: Map.get(attrs, :buffer_size, 100),
+      refresh_interval: Map.get(attrs, :refresh_interval, 1_000),
+      on_item: Map.get(attrs, :on_item),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a ProcessMonitor struct from a process_monitor DSL entity.
+  """
+  @spec build_process_monitor(map(), Dsl.t()) :: ProcessMonitor.t()
+  def build_process_monitor(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %ProcessMonitor{
+      id: Map.get(attrs, :id),
+      node: Map.get(attrs, :node),
+      refresh_interval: Map.get(attrs, :refresh_interval, 1_000),
+      sort_by: Map.get(attrs, :sort_by, :memory),
+      on_process_select: Map.get(attrs, :on_process_select),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
   # Children building
 
   @doc """
@@ -1266,6 +1348,9 @@ defmodule UnifiedUi.IUR.Builder do
     do: validate_children(commands)
 
   def validate(%CommandPalette{}), do: :ok
+  def validate(%LogViewer{}), do: :ok
+  def validate(%StreamWidget{}), do: :ok
+  def validate(%ProcessMonitor{}), do: :ok
 
   def validate(%Layouts.VBox{children: children}), do: validate_children(children)
   def validate(%Layouts.HBox{children: children}), do: validate_children(children)

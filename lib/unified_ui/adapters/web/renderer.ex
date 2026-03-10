@@ -57,7 +57,18 @@ defmodule UnifiedUi.Adapters.Web do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Web.Style
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1397,6 +1408,89 @@ defmodule UnifiedUi.Adapters.Web do
     placeholder = escape_html(palette.placeholder || "Type a command...")
 
     ~s(<div#{attrs}><input type="text" placeholder="#{placeholder}" /><ul>#{commands_html}</ul></div>)
+  end
+
+  defp convert_by_type(%LogViewer{} = log_viewer, :log_viewer, _state) do
+    css_parts = ["display: block", "overflow: auto", "white-space: pre-wrap"]
+    style = Style.to_css(log_viewer.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+    attrs_list = if log_viewer.id, do: [{"id", log_viewer.id} | attrs_list], else: attrs_list
+    attrs_list = [{"data-lines", log_viewer.lines} | attrs_list]
+    attrs_list = [{"data-auto-scroll", log_viewer.auto_scroll} | attrs_list]
+    attrs_list = [{"data-filter", log_viewer.filter} | attrs_list]
+    attrs_list = [{"data-refresh-interval", log_viewer.refresh_interval} | attrs_list]
+    attrs_list = [{"data-auto-refresh", log_viewer.refresh_interval > 0} | attrs_list]
+    attrs_list = [{"data-source", serialize_option_value(log_viewer.source)} | attrs_list]
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>Log Viewer</div>)
+  end
+
+  defp convert_by_type(%StreamWidget{} = stream_widget, :stream_widget, _state) do
+    css_parts = ["display: block"]
+    style = Style.to_css(stream_widget.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+
+    attrs_list =
+      if stream_widget.id, do: [{"id", stream_widget.id} | attrs_list], else: attrs_list
+
+    attrs_list = [{"data-buffer-size", stream_widget.buffer_size} | attrs_list]
+    attrs_list = [{"data-refresh-interval", stream_widget.refresh_interval} | attrs_list]
+    attrs_list = [{"data-auto-refresh", stream_widget.refresh_interval > 0} | attrs_list]
+    attrs_list = [{"data-producer", serialize_option_value(stream_widget.producer)} | attrs_list]
+
+    attrs_list =
+      if stream_widget.on_item do
+        [{"data-on-item", atom_to_event_name(stream_widget.on_item)} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>Stream Widget</div>)
+  end
+
+  defp convert_by_type(%ProcessMonitor{} = process_monitor, :process_monitor, _state) do
+    css_parts = ["display: block"]
+    style = Style.to_css(process_monitor.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+
+    attrs_list = [{"style", css}]
+
+    attrs_list =
+      if process_monitor.id do
+        [{"id", process_monitor.id} | attrs_list]
+      else
+        attrs_list
+      end
+
+    attrs_list = [{"data-node", process_monitor.node || node()} | attrs_list]
+    attrs_list = [{"data-sort-by", process_monitor.sort_by} | attrs_list]
+    attrs_list = [{"data-refresh-interval", process_monitor.refresh_interval} | attrs_list]
+    attrs_list = [{"data-auto-refresh", process_monitor.refresh_interval > 0} | attrs_list]
+
+    attrs_list =
+      if process_monitor.on_process_select do
+        [
+          {"data-select-event", atom_to_event_name(process_monitor.on_process_select)}
+          | attrs_list
+        ]
+      else
+        attrs_list
+      end
+
+    attrs = build_attributes(attrs_list)
+
+    ~s(<div#{attrs}>Process Monitor</div>)
   end
 
   # Layout converters

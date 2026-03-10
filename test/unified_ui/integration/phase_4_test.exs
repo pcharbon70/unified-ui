@@ -18,7 +18,18 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
   alias UnifiedUi.Dsl.Style, as: DslStyle
   alias UnifiedUi.Dsl.Theme, as: DslTheme
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias UnifiedIUR.{Layouts, Widgets}
   alias UnifiedUi.Adapters.{Terminal, Desktop, Web}
   alias UnifiedUi.Agent
@@ -1124,6 +1135,102 @@ defmodule UnifiedUi.Integration.Phase4Test do
 
       assert updated.main_commands_search_query == "sav"
       assert [%{id: :save, label: "Save File"}] = updated.main_commands_filtered_commands
+    end
+  end
+
+  # ============================================================================
+  # 4.8: Monitoring Widgets
+  # ============================================================================
+
+  describe "4.8 - Monitoring Widgets" do
+    test "log viewer carries source and auto-scroll metadata and renders on all platforms" do
+      log_viewer = %LogViewer{
+        id: :app_logs,
+        source: "/tmp/app.log",
+        lines: 200,
+        auto_scroll: true,
+        filter: "error",
+        refresh_interval: 500
+      }
+
+      assert {:log_viewer, _terminal_node, terminal_meta} = Terminal.convert_iur(log_viewer)
+      assert terminal_meta.id == :app_logs
+      assert terminal_meta.source == "/tmp/app.log"
+      assert terminal_meta.lines == 200
+      assert terminal_meta.auto_scroll == true
+      assert terminal_meta.filter == "error"
+      assert terminal_meta.auto_refresh == true
+
+      assert_renders_on_all_platforms(log_viewer)
+    end
+
+    test "stream widget on_item signal updates state through generated change route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          stream_widget :events, :event_source, on_item: :stream_item
+        end
+        """)
+
+      state = module.init([])
+
+      item_signal = %{
+        type: "unified.input.changed",
+        data: %{widget_id: :events, value: %{event: "updated"}}
+      }
+
+      updated = module.update(state, item_signal)
+      assert updated.events == %{event: "updated"}
+    end
+
+    test "process monitor selection signal updates state through generated click route" do
+      module =
+        compile_phase4_fixture("""
+        vbox do
+          process_monitor :processes, on_process_select: {:process_selected, %{selected: true}}
+        end
+        """)
+
+      state = module.init([])
+
+      select_signal = %{
+        type: "unified.button.clicked",
+        data: %{widget_id: :processes, action: :process_selected}
+      }
+
+      updated = module.update(state, select_signal)
+      assert updated.selected == true
+    end
+
+    test "monitoring widgets expose refresh metadata across renderers" do
+      stream_widget = %StreamWidget{
+        id: :events,
+        producer: :event_source,
+        buffer_size: 50,
+        refresh_interval: 250,
+        on_item: :stream_item
+      }
+
+      process_monitor = %ProcessMonitor{
+        id: :processes,
+        node: :nonode@nohost,
+        refresh_interval: 1_250,
+        sort_by: :memory,
+        on_process_select: :process_selected
+      }
+
+      assert {:stream_widget, _terminal_node, stream_meta} = Terminal.convert_iur(stream_widget)
+      assert stream_meta.auto_refresh == true
+      assert stream_meta.refresh_interval == 250
+
+      assert {:process_monitor, _terminal_node, process_meta} =
+               Terminal.convert_iur(process_monitor)
+
+      assert process_meta.auto_refresh == true
+      assert process_meta.refresh_interval == 1_250
+
+      assert_renders_on_all_platforms(stream_widget)
+      assert_renders_on_all_platforms(process_monitor)
     end
   end
 

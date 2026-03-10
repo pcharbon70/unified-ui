@@ -7,7 +7,18 @@ defmodule UnifiedUi.Adapters.DesktopTest do
 
   alias UnifiedUi.Adapters.Desktop
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    StreamWidget,
+    Viewport,
+    SplitPane
+  }
+
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -703,6 +714,64 @@ defmodule UnifiedUi.Adapters.DesktopTest do
       assert meta.trigger_shortcut == "ctrl+k"
       assert meta.on_select == :command_selected
       assert [%{id: :open, label: "Open File"}, %{id: :save, label: "Save File"}] = meta.commands
+    end
+
+    test "converts log_viewer with auto-refresh metadata" do
+      log_viewer = %LogViewer{
+        id: :logs,
+        source: "/tmp/app.log",
+        lines: 250,
+        auto_scroll: true,
+        filter: "warn",
+        refresh_interval: 600
+      }
+
+      assert {:log_viewer, widget, meta} = Desktop.convert_iur(log_viewer)
+      assert widget.type == :log_viewer
+      assert meta.id == :logs
+      assert meta.lines == 250
+      assert meta.auto_scroll == true
+      assert meta.filter == "warn"
+      assert meta.refresh_interval == 600
+      assert meta.auto_refresh == true
+    end
+
+    test "converts stream_widget with producer and refresh metadata" do
+      stream_widget = %StreamWidget{
+        id: :events,
+        producer: :event_source,
+        buffer_size: 32,
+        refresh_interval: 300,
+        on_item: :stream_item
+      }
+
+      assert {:stream_widget, widget, meta} = Desktop.convert_iur(stream_widget)
+      assert widget.type == :stream_widget
+      assert meta.id == :events
+      assert meta.producer == :event_source
+      assert meta.buffer_size == 32
+      assert meta.refresh_interval == 300
+      assert meta.auto_refresh == true
+      assert meta.on_item == :stream_item
+    end
+
+    test "converts process_monitor with polling metadata" do
+      process_monitor = %ProcessMonitor{
+        id: :processes,
+        node: :nonode@nohost,
+        refresh_interval: 1_250,
+        sort_by: :memory,
+        on_process_select: :process_selected
+      }
+
+      assert {:process_monitor, widget, meta} = Desktop.convert_iur(process_monitor)
+      assert widget.type == :process_monitor
+      assert meta.id == :processes
+      assert meta.node == :nonode@nohost
+      assert meta.refresh_interval == 1_250
+      assert meta.auto_refresh == true
+      assert meta.sort_by == :memory
+      assert meta.on_process_select == :process_selected
     end
   end
 end

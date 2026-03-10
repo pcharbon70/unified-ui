@@ -18,7 +18,16 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
   alias Spark.Dsl.Transformer
   alias UnifiedUi.Dsl.CompileIndex
   alias UnifiedIUR.Widgets
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
 
   @click_signal_type "unified.button.clicked"
   @change_signal_type "unified.input.changed"
@@ -581,6 +590,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
       %{name: :canvas, attrs: attrs} ->
         [build_route(:click, attr_get(attrs, :on_click), attr_get(attrs, :id))]
 
+      %ProcessMonitor{} = process_monitor ->
+        [build_route(:click, process_monitor.on_process_select, process_monitor.id)]
+
+      %{name: :process_monitor, attrs: attrs} ->
+        [build_route(:click, attr_get(attrs, :on_process_select), attr_get(attrs, :id))]
+
       _ ->
         []
     end)
@@ -645,6 +660,12 @@ defmodule UnifiedUi.Dsl.Transformers.UpdateTransformer do
             attr_get(attrs, :commands)
           )
         ]
+
+      %StreamWidget{} = stream_widget ->
+        [build_route(:change, stream_widget.on_item, stream_widget.id)]
+
+      %{name: :stream_widget, attrs: attrs} ->
+        [build_route(:change, attr_get(attrs, :on_item), attr_get(attrs, :id))]
 
       _ ->
         []

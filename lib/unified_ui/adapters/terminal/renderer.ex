@@ -50,7 +50,18 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Terminal.Style
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1315,6 +1326,70 @@ defmodule UnifiedUi.Adapters.Terminal do
        trigger_shortcut: palette.trigger_shortcut,
        on_select: palette.on_select,
        commands: commands
+     }}
+  end
+
+  defp convert_by_type(%LogViewer{} = log_viewer, :log_viewer, _state) do
+    label = "Log Viewer (#{log_viewer.lines} lines)"
+    text_node = TermUI.Component.Helpers.text(label)
+
+    styled_node =
+      case Style.convert_style(log_viewer.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:log_viewer, styled_node,
+     %{
+       id: log_viewer.id,
+       source: log_viewer.source,
+       lines: log_viewer.lines,
+       auto_scroll: log_viewer.auto_scroll,
+       filter: log_viewer.filter,
+       refresh_interval: log_viewer.refresh_interval,
+       auto_refresh: log_viewer.refresh_interval > 0
+     }}
+  end
+
+  defp convert_by_type(%StreamWidget{} = stream_widget, :stream_widget, _state) do
+    text_node = TermUI.Component.Helpers.text("Stream Widget")
+
+    styled_node =
+      case Style.convert_style(stream_widget.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:stream_widget, styled_node,
+     %{
+       id: stream_widget.id,
+       producer: stream_widget.producer,
+       transform: stream_widget.transform,
+       buffer_size: stream_widget.buffer_size,
+       refresh_interval: stream_widget.refresh_interval,
+       auto_refresh: stream_widget.refresh_interval > 0,
+       on_item: stream_widget.on_item
+     }}
+  end
+
+  defp convert_by_type(%ProcessMonitor{} = process_monitor, :process_monitor, _state) do
+    node_label = if process_monitor.node, do: process_monitor.node, else: node()
+    text_node = TermUI.Component.Helpers.text("Process Monitor (#{node_label})")
+
+    styled_node =
+      case Style.convert_style(process_monitor.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:process_monitor, styled_node,
+     %{
+       id: process_monitor.id,
+       node: process_monitor.node || node(),
+       refresh_interval: process_monitor.refresh_interval,
+       auto_refresh: process_monitor.refresh_interval > 0,
+       sort_by: process_monitor.sort_by,
+       on_process_select: process_monitor.on_process_select
      }}
   end
 

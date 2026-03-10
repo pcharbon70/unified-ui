@@ -7,7 +7,18 @@ defmodule UnifiedUi.Adapters.TerminalTest do
 
   alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    StreamWidget,
+    Viewport,
+    SplitPane
+  }
+
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -1112,6 +1123,61 @@ defmodule UnifiedUi.Adapters.TerminalTest do
       assert meta.trigger_shortcut == "ctrl+k"
       assert meta.on_select == :command_selected
       assert [%{id: :open, label: "Open File"}, %{id: :save, label: "Save File"}] = meta.commands
+    end
+
+    test "converts log_viewer with auto-refresh metadata" do
+      log_viewer = %LogViewer{
+        id: :logs,
+        source: "/tmp/app.log",
+        lines: 200,
+        auto_scroll: true,
+        filter: "error",
+        refresh_interval: 500
+      }
+
+      assert {:log_viewer, _node, meta} = Terminal.convert_iur(log_viewer)
+      assert meta.id == :logs
+      assert meta.lines == 200
+      assert meta.auto_scroll == true
+      assert meta.filter == "error"
+      assert meta.refresh_interval == 500
+      assert meta.auto_refresh == true
+    end
+
+    test "converts stream_widget with producer metadata" do
+      stream_widget = %StreamWidget{
+        id: :events,
+        producer: :event_source,
+        buffer_size: 64,
+        refresh_interval: 250,
+        on_item: :stream_item
+      }
+
+      assert {:stream_widget, _node, meta} = Terminal.convert_iur(stream_widget)
+      assert meta.id == :events
+      assert meta.producer == :event_source
+      assert meta.buffer_size == 64
+      assert meta.refresh_interval == 250
+      assert meta.auto_refresh == true
+      assert meta.on_item == :stream_item
+    end
+
+    test "converts process_monitor with polling metadata" do
+      process_monitor = %ProcessMonitor{
+        id: :processes,
+        node: :nonode@nohost,
+        refresh_interval: 1_500,
+        sort_by: :reductions,
+        on_process_select: :process_selected
+      }
+
+      assert {:process_monitor, _node, meta} = Terminal.convert_iur(process_monitor)
+      assert meta.id == :processes
+      assert meta.node == :nonode@nohost
+      assert meta.refresh_interval == 1_500
+      assert meta.auto_refresh == true
+      assert meta.sort_by == :reductions
+      assert meta.on_process_select == :process_selected
     end
   end
 end

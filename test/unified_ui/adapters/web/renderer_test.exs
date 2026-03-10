@@ -7,7 +7,18 @@ defmodule UnifiedUi.Adapters.WebTest do
 
   alias UnifiedUi.Adapters.Web
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    StreamWidget,
+    Viewport,
+    SplitPane
+  }
+
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -721,6 +732,65 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert html =~ ~s(data-command-id="open")
       assert html =~ "Open File"
       assert html =~ "Save File"
+    end
+
+    test "converts log_viewer with auto-refresh and filter attributes" do
+      log_viewer = %LogViewer{
+        id: :logs,
+        source: "/tmp/app.log",
+        lines: 180,
+        auto_scroll: true,
+        filter: "error",
+        refresh_interval: 500
+      }
+
+      html = Web.convert_iur(log_viewer)
+
+      assert html =~ ~s(id="logs")
+      assert html =~ ~s(data-source="/tmp/app.log")
+      assert html =~ ~s(data-lines="180")
+      assert html =~ ~s(data-auto-scroll="true")
+      assert html =~ ~s(data-filter="error")
+      assert html =~ ~s(data-refresh-interval="500")
+      assert html =~ ~s(data-auto-refresh="true")
+    end
+
+    test "converts stream_widget with producer and refresh attributes" do
+      stream_widget = %StreamWidget{
+        id: :events,
+        producer: :event_source,
+        buffer_size: 40,
+        refresh_interval: 250,
+        on_item: :stream_item
+      }
+
+      html = Web.convert_iur(stream_widget)
+
+      assert html =~ ~s(id="events")
+      assert html =~ ~s(data-producer="event_source")
+      assert html =~ ~s(data-buffer-size="40")
+      assert html =~ ~s(data-refresh-interval="250")
+      assert html =~ ~s(data-auto-refresh="true")
+      assert html =~ ~s(data-on-item="stream-item")
+    end
+
+    test "converts process_monitor with node and polling attributes" do
+      process_monitor = %ProcessMonitor{
+        id: :processes,
+        node: :nonode@nohost,
+        sort_by: :reductions,
+        refresh_interval: 1_200,
+        on_process_select: :process_selected
+      }
+
+      html = Web.convert_iur(process_monitor)
+
+      assert html =~ ~s(id="processes")
+      assert html =~ ~s(data-node="nonode@nohost")
+      assert html =~ ~s(data-sort-by="reductions")
+      assert html =~ ~s(data-refresh-interval="1200")
+      assert html =~ ~s(data-auto-refresh="true")
+      assert html =~ ~s(data-select-event="process-selected")
     end
   end
 end

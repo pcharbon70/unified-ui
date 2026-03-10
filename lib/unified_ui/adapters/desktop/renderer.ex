@@ -61,7 +61,18 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Desktop.Style
-  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
+
+  alias UnifiedUi.Widgets.{
+    Canvas,
+    Command,
+    CommandPalette,
+    LogViewer,
+    ProcessMonitor,
+    SplitPane,
+    StreamWidget,
+    Viewport
+  }
+
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1157,6 +1168,73 @@ defmodule UnifiedUi.Adapters.Desktop do
        trigger_shortcut: palette.trigger_shortcut,
        on_select: palette.on_select,
        commands: commands
+     }}
+  end
+
+  defp convert_by_type(%LogViewer{} = log_viewer, :log_viewer, _state) do
+    props =
+      []
+      |> Style.add_props(log_viewer.style)
+      |> then(fn props -> [{:source, log_viewer.source} | props] end)
+      |> then(fn props -> [{:lines, log_viewer.lines} | props] end)
+      |> then(fn props -> [{:auto_scroll, log_viewer.auto_scroll} | props] end)
+      |> then(fn props -> [{:filter, log_viewer.filter} | props] end)
+      |> then(fn props -> [{:refresh_interval, log_viewer.refresh_interval} | props] end)
+
+    widget = %{type: :log_viewer, id: log_viewer.id, props: props, children: []}
+
+    {:log_viewer, widget,
+     %{
+       id: log_viewer.id,
+       source: log_viewer.source,
+       lines: log_viewer.lines,
+       auto_scroll: log_viewer.auto_scroll,
+       filter: log_viewer.filter,
+       refresh_interval: log_viewer.refresh_interval,
+       auto_refresh: log_viewer.refresh_interval > 0
+     }}
+  end
+
+  defp convert_by_type(%StreamWidget{} = stream_widget, :stream_widget, _state) do
+    props =
+      []
+      |> Style.add_props(stream_widget.style)
+      |> then(fn props -> [{:producer, stream_widget.producer} | props] end)
+      |> then(fn props -> [{:buffer_size, stream_widget.buffer_size} | props] end)
+      |> then(fn props -> [{:refresh_interval, stream_widget.refresh_interval} | props] end)
+
+    widget = %{type: :stream_widget, id: stream_widget.id, props: props, children: []}
+
+    {:stream_widget, widget,
+     %{
+       id: stream_widget.id,
+       producer: stream_widget.producer,
+       transform: stream_widget.transform,
+       buffer_size: stream_widget.buffer_size,
+       refresh_interval: stream_widget.refresh_interval,
+       auto_refresh: stream_widget.refresh_interval > 0,
+       on_item: stream_widget.on_item
+     }}
+  end
+
+  defp convert_by_type(%ProcessMonitor{} = process_monitor, :process_monitor, _state) do
+    props =
+      []
+      |> Style.add_props(process_monitor.style)
+      |> then(fn props -> [{:node, process_monitor.node || node()} | props] end)
+      |> then(fn props -> [{:sort_by, process_monitor.sort_by} | props] end)
+      |> then(fn props -> [{:refresh_interval, process_monitor.refresh_interval} | props] end)
+
+    widget = %{type: :process_monitor, id: process_monitor.id, props: props, children: []}
+
+    {:process_monitor, widget,
+     %{
+       id: process_monitor.id,
+       node: process_monitor.node || node(),
+       refresh_interval: process_monitor.refresh_interval,
+       auto_refresh: process_monitor.refresh_interval > 0,
+       sort_by: process_monitor.sort_by,
+       on_process_select: process_monitor.on_process_select
      }}
   end
 
