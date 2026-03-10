@@ -13,6 +13,18 @@ defmodule UnifiedUi.Agent do
 
   @type component_id :: atom()
   @type signal :: term()
+  @type signal_topic :: String.t()
+
+  @doc """
+  Returns the default signal topic used for a component id.
+
+  Components subscribe to this topic on startup and can receive routed
+  `Jido.Signal` messages through `UnifiedUi.SignalBus`.
+  """
+  @spec component_signal_topic(component_id()) :: signal_topic()
+  def component_signal_topic(component_id) when is_atom(component_id) do
+    "unified_ui:component:#{component_id}"
+  end
 
   @doc """
   Starts a component process for the given module and component id.
@@ -20,6 +32,8 @@ defmodule UnifiedUi.Agent do
   Supported opts:
   - `:platforms` - list of platforms for adapter rendering (`[:terminal | :desktop | :web]`)
   - `:render_opts` - options forwarded to adapter rendering
+  - `:signal_topic` - additional signal topic to subscribe to
+  - `:signal_topics` - additional list of signal topics to subscribe to
   - any additional opts are passed to the component `init/1` callback
   """
   @spec start_component(module(), component_id(), keyword()) :: {:ok, pid()} | {:error, term()}
@@ -110,6 +124,7 @@ defmodule UnifiedUi.Agent.Server do
   use GenServer
 
   alias UnifiedUi.Adapters.Coordinator
+  alias UnifiedUi.SignalBus
 
   @registry UnifiedUi.AgentRegistry
   @flush_delay_ms 5
@@ -121,6 +136,7 @@ defmodule UnifiedUi.Agent.Server do
     :iur,
     pending_signals: [],
     flush_timer_ref: nil,
+    signal_topics: [],
     platforms: [],
     render_opts: [],
     render_results: %{}
@@ -133,6 +149,7 @@ defmodule UnifiedUi.Agent.Server do
           iur: term(),
           pending_signals: [term()],
           flush_timer_ref: reference() | nil,
+          signal_topics: [String.t()],
           platforms: [atom()],
           render_opts: keyword(),
           render_results: map()
@@ -157,22 +174,38 @@ defmodule UnifiedUi.Agent.Server do
   @impl true
   @spec init({module(), atom(), keyword()}) :: {:ok, t()}
   def init({module, component_id, opts}) do
-    platforms = normalize_platforms(Keyword.get(opts, :platforms, []))
-    render_opts = Keyword.get(opts, :render_opts, [])
+    with {:ok, signal_topics} <- normalize_signal_topics(component_id, opts),
+         :ok <- subscribe_signal_topics(signal_topics) do
+      platforms = normalize_platforms(Keyword.get(opts, :platforms, []))
+      render_opts = Keyword.get(opts, :render_opts, [])
 
-    model_state = init_model_state(module, opts)
-    {iur, render_results} = build_render_data(module, model_state, platforms, render_opts)
+      model_state = init_model_state(module, opts)
+      {iur, render_results} = build_render_data(module, model_state, platforms, render_opts)
 
-    {:ok,
-     %__MODULE__{
-       module: module,
-       component_id: component_id,
-       model_state: model_state,
-       iur: iur,
-       platforms: platforms,
-       render_opts: render_opts,
-       render_results: render_results
-     }}
+      {:ok,
+       %__MODULE__{
+         module: module,
+         component_id: component_id,
+         model_state: model_state,
+         iur: iur,
+         signal_topics: signal_topics,
+         platforms: platforms,
+         render_opts: render_opts,
+         render_results: render_results
+       }}
+    else
+      {:error, reason} -> {:stop, reason}
+    end
+  end
+
+  @impl true
+  @spec terminate(term(), t()) :: :ok
+  def terminate(_reason, %__MODULE__{signal_topics: signal_topics}) do
+    Enum.each(signal_topics, fn topic ->
+      _ = SignalBus.unsubscribe(topic)
+    end)
+
+    :ok
   end
 
   @impl true
@@ -201,6 +234,12 @@ defmodule UnifiedUi.Agent.Server do
   end
 
   @impl true
+  @spec handle_info(term(), t()) :: {:noreply, t()}
+  def handle_info({:unified_ui_signal, signal}, %__MODULE__{} = state) do
+    {:noreply, enqueue_signal(state, signal)}
+  end
+
+  @impl true
   def handle_info(:flush_signals, %__MODULE__{} = state) do
     {:noreply, flush_pending_signals(%{state | flush_timer_ref: nil})}
   end
@@ -209,6 +248,34 @@ defmodule UnifiedUi.Agent.Server do
   def handle_info(_message, %__MODULE__{} = state) do
     {:noreply, state}
   end
+
+  defp normalize_signal_topics(component_id, opts) when is_atom(component_id) and is_list(opts) do
+    default_topic = UnifiedUi.Agent.component_signal_topic(component_id)
+    single_topic = Keyword.get(opts, :signal_topic)
+    extra_topics = Keyword.get(opts, :signal_topics, [])
+
+    topics =
+      [default_topic, single_topic | List.wrap(extra_topics)]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+
+    if Enum.all?(topics, &is_binary/1) do
+      {:ok, topics}
+    else
+      {:error, :invalid_signal_topic}
+    end
+  end
+
+  defp subscribe_signal_topics(topics) when is_list(topics) do
+    Enum.reduce_while(topics, :ok, fn topic, :ok ->
+      case SignalBus.subscribe(topic) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, {:signal_subscription_failed, topic, reason}}}
+      end
+    end)
+  end
+
+  defp subscribe_signal_topics(_topics), do: {:error, :invalid_signal_topic}
 
   defp via_tuple(component_id) do
     {:via, Registry, {@registry, component_id}}
