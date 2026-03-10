@@ -61,7 +61,7 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Desktop.Style
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1097,6 +1097,69 @@ defmodule UnifiedUi.Adapters.Desktop do
      }}
   end
 
+  defp convert_by_type(%Canvas{} = canvas, :canvas, _state) do
+    props =
+      []
+      |> Style.add_props(canvas.style)
+      |> then(fn props -> if canvas.width, do: [{:width, canvas.width} | props], else: props end)
+      |> then(fn props ->
+        if canvas.height, do: [{:height, canvas.height} | props], else: props
+      end)
+
+    widget = %{
+      type: :canvas,
+      id: canvas.id,
+      props: props,
+      children: []
+    }
+
+    {:canvas, widget,
+     %{
+       id: canvas.id,
+       width: canvas.width,
+       height: canvas.height,
+       draw: canvas.draw,
+       on_click: canvas.on_click,
+       on_hover: canvas.on_hover
+     }}
+  end
+
+  defp convert_by_type(%CommandPalette{} = palette, :command_palette, _state) do
+    commands =
+      palette.commands
+      |> List.wrap()
+      |> Enum.map(&command_palette_command_map/1)
+
+    props =
+      []
+      |> Style.add_props(palette.style)
+      |> then(fn props ->
+        [{:placeholder, palette.placeholder || "Type a command..."} | props]
+      end)
+      |> then(fn props ->
+        if palette.trigger_shortcut,
+          do: [{:trigger_shortcut, palette.trigger_shortcut} | props],
+          else: props
+      end)
+      |> then(fn props -> [{:commands, commands} | props] end)
+
+    widget = %{
+      type: :command_palette,
+      id: palette.id,
+      props: props,
+      children: []
+    }
+
+    {:command_palette, widget,
+     %{
+       id: palette.id,
+       placeholder: palette.placeholder,
+       trigger_shortcut: palette.trigger_shortcut,
+       on_select: palette.on_select,
+       commands: commands
+     }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
@@ -1150,6 +1213,51 @@ defmodule UnifiedUi.Adapters.Desktop do
   end
 
   defp convert_children(_, _state), do: []
+
+  defp command_palette_command_map(%Command{} = command) do
+    %{
+      id: command.id,
+      label: command.label,
+      description: command.description,
+      shortcut: command.shortcut,
+      keywords: command.keywords,
+      disabled: command.disabled
+    }
+  end
+
+  defp command_palette_command_map(command) when is_map(command) do
+    disabled =
+      cond do
+        Map.has_key?(command, :disabled) -> Map.get(command, :disabled) == true
+        Map.has_key?(command, "disabled") -> Map.get(command, "disabled") == true
+        true -> false
+      end
+
+    %{
+      id: Map.get(command, :id) || Map.get(command, "id"),
+      label: Map.get(command, :label) || Map.get(command, "label"),
+      description: Map.get(command, :description) || Map.get(command, "description"),
+      shortcut: Map.get(command, :shortcut) || Map.get(command, "shortcut"),
+      keywords:
+        (Map.get(command, :keywords) || Map.get(command, "keywords") || []) |> List.wrap(),
+      disabled: disabled
+    }
+  end
+
+  defp command_palette_command_map({id, label}) when is_atom(id) and is_binary(label) do
+    %{id: id, label: label, description: nil, shortcut: nil, keywords: [], disabled: false}
+  end
+
+  defp command_palette_command_map(other) do
+    %{
+      id: other,
+      label: inspect(other),
+      description: nil,
+      shortcut: nil,
+      keywords: [],
+      disabled: false
+    }
+  end
 
   # Spacing in DesktopUi is in pixels
   defp maybe_add_spacing(props, nil), do: props

@@ -386,7 +386,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       assert widgets_section != nil
       # 4 basic + 4 data-viz + 1 table + 4 navigation + 3 dialog/feedback +
       # 2 input widgets + 2 container widgets = 20
-      assert length(widgets_section.entities) == 20
+      assert length(widgets_section.entities) == 22
     end
 
     test "widget entities are accessible from extension" do
@@ -443,6 +443,12 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
       assert %Spark.Dsl.Entity{name: :split_pane} =
                UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
+
+      assert %Spark.Dsl.Entity{name: :canvas} =
+               UnifiedUi.Dsl.Entities.Specialized.canvas_entity()
+
+      assert %Spark.Dsl.Entity{name: :command_palette} =
+               UnifiedUi.Dsl.Entities.Specialized.command_palette_entity()
     end
   end
 
@@ -585,7 +591,7 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
       layouts_section = Enum.find(sections, fn %{name: name} -> name == :layouts end)
 
       assert layouts_section != nil
-      assert length(layouts_section.entities) == 4
+      assert length(layouts_section.entities) == 6
     end
 
     test "layout entities are accessible from extension" do
@@ -598,6 +604,12 @@ defmodule UnifiedUi.Dsl.IntegrationTest do
 
       assert %Spark.Dsl.Entity{name: :split_pane} =
                UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
+
+      assert %Spark.Dsl.Entity{name: :canvas} =
+               UnifiedUi.Dsl.Entities.Specialized.canvas_entity()
+
+      assert %Spark.Dsl.Entity{name: :command_palette} =
+               UnifiedUi.Dsl.Entities.Specialized.command_palette_entity()
     end
   end
 end

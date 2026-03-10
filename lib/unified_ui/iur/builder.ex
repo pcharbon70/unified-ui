@@ -71,7 +71,7 @@ defmodule UnifiedUi.IUR.Builder do
 
   alias UnifiedIUR.{Style, Widgets, Layouts}
   alias UnifiedUi.Dsl.StyleResolver
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias Spark.Dsl
 
   @doc """
@@ -141,6 +141,9 @@ defmodule UnifiedUi.IUR.Builder do
              Widgets.PickList,
              Widgets.FormField,
              Widgets.FormBuilder,
+             Canvas,
+             Command,
+             CommandPalette,
              Viewport,
              SplitPane
            ] do
@@ -249,6 +252,18 @@ defmodule UnifiedUi.IUR.Builder do
 
   def build_entity(%{name: :split_pane} = entity, dsl_state) do
     build_split_pane(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :canvas} = entity, dsl_state) do
+    build_canvas(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :command} = entity, dsl_state) do
+    build_command(entity, dsl_state)
+  end
+
+  def build_entity(%{name: :command_palette} = entity, dsl_state) do
+    build_command_palette(entity, dsl_state)
   end
 
   def build_entity(_entity, _dsl_state) do
@@ -968,6 +983,75 @@ defmodule UnifiedUi.IUR.Builder do
     }
   end
 
+  @doc """
+  Builds a Canvas struct from a canvas DSL entity.
+  """
+  @spec build_canvas(map(), Dsl.t()) :: Canvas.t()
+  def build_canvas(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Canvas{
+      id: Map.get(attrs, :id),
+      width: Map.get(attrs, :width),
+      height: Map.get(attrs, :height),
+      draw: Map.get(attrs, :draw),
+      on_click: Map.get(attrs, :on_click),
+      on_hover: Map.get(attrs, :on_hover),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
+  @doc """
+  Builds a Command struct from a command DSL entity.
+  """
+  @spec build_command(map(), Dsl.t()) :: Command.t()
+  def build_command(entity, _dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    %Command{
+      id: Map.get(attrs, :id),
+      label: Map.get(attrs, :label),
+      description: Map.get(attrs, :description),
+      shortcut: Map.get(attrs, :shortcut),
+      keywords: Map.get(attrs, :keywords, []) |> List.wrap(),
+      disabled: Map.get(attrs, :disabled, false),
+      visible: Map.get(attrs, :visible, true)
+    }
+  end
+
+  @doc """
+  Builds a CommandPalette struct from a command_palette DSL entity.
+  """
+  @spec build_command_palette(map(), Dsl.t()) :: CommandPalette.t()
+  def build_command_palette(entity, dsl_state) do
+    attrs = get_entity_attrs(entity)
+
+    commands =
+      case build_nested_entities(entity, dsl_state, :cmds, &build_command/2, child_name: :command) do
+        [] ->
+          case build_nested_entities(entity, dsl_state, :commands, &build_command/2,
+                 child_name: :command
+               ) do
+            [] -> normalize_commands(Map.get(attrs, :commands), dsl_state)
+            nested -> nested
+          end
+
+        nested ->
+          nested
+      end
+
+    %CommandPalette{
+      id: Map.get(attrs, :id),
+      commands: commands,
+      placeholder: Map.get(attrs, :placeholder, "Type a command..."),
+      trigger_shortcut: Map.get(attrs, :trigger_shortcut, "cmd+k"),
+      on_select: Map.get(attrs, :on_select),
+      visible: Map.get(attrs, :visible, true),
+      style: build_style(Map.get(attrs, :style), dsl_state)
+    }
+  end
+
   # Children building
 
   @doc """
@@ -1175,6 +1259,13 @@ defmodule UnifiedUi.IUR.Builder do
     do: validate_children(fields)
 
   def validate(%Widgets.FormBuilder{}), do: :ok
+  def validate(%Canvas{}), do: :ok
+  def validate(%Command{}), do: :ok
+
+  def validate(%CommandPalette{commands: commands}) when is_list(commands),
+    do: validate_children(commands)
+
+  def validate(%CommandPalette{}), do: :ok
 
   def validate(%Layouts.VBox{children: children}), do: validate_children(children)
   def validate(%Layouts.HBox{children: children}), do: validate_children(children)
@@ -1329,6 +1420,34 @@ defmodule UnifiedUi.IUR.Builder do
   end
 
   defp normalize_form_fields(other, _dsl_state), do: other
+
+  defp normalize_commands(nil, _dsl_state), do: []
+
+  defp normalize_commands(commands, dsl_state) when is_list(commands) do
+    commands
+    |> Enum.map(fn
+      %Command{} = command ->
+        command
+
+      %{name: :command} = command_entity ->
+        build_command(command_entity, dsl_state)
+
+      {id, label} when is_atom(id) and is_binary(label) ->
+        build_command(%{attrs: %{id: id, label: label}}, dsl_state)
+
+      attrs when is_map(attrs) ->
+        build_command(%{attrs: attrs}, dsl_state)
+
+      attrs when is_list(attrs) ->
+        build_command(%{attrs: Enum.into(attrs, %{})}, dsl_state)
+
+      _other ->
+        nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp normalize_commands(_commands, _dsl_state), do: []
 
   defp normalize_viewport_content(nil, _dsl_state), do: nil
 

@@ -50,7 +50,7 @@ defmodule UnifiedUi.Adapters.Terminal do
 
   alias UnifiedUi.Adapters.State
   alias UnifiedUi.Adapters.Terminal.Style
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Element
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
@@ -1272,6 +1272,52 @@ defmodule UnifiedUi.Adapters.Terminal do
      }}
   end
 
+  defp convert_by_type(%Canvas{} = canvas, :canvas, _state) do
+    base_node =
+      TermUI.Component.Helpers.stack(:vertical, [TermUI.Component.Helpers.empty()], spacing: 0)
+
+    styled_node =
+      case Style.convert_style(canvas.style) do
+        nil -> base_node
+        style -> TermUI.Component.Helpers.styled(base_node, style)
+      end
+
+    {:canvas, styled_node,
+     %{
+       id: canvas.id,
+       width: canvas.width,
+       height: canvas.height,
+       draw: canvas.draw,
+       on_click: canvas.on_click,
+       on_hover: canvas.on_hover
+     }}
+  end
+
+  defp convert_by_type(%CommandPalette{} = palette, :command_palette, _state) do
+    commands =
+      palette.commands
+      |> List.wrap()
+      |> Enum.map(&command_palette_command_map/1)
+
+    text_node =
+      TermUI.Component.Helpers.text(palette.placeholder || "Type a command...")
+
+    styled_node =
+      case Style.convert_style(palette.style) do
+        nil -> text_node
+        style -> TermUI.Component.Helpers.styled(text_node, style)
+      end
+
+    {:command_palette, styled_node,
+     %{
+       id: palette.id,
+       placeholder: palette.placeholder,
+       trigger_shortcut: palette.trigger_shortcut,
+       on_select: palette.on_select,
+       commands: commands
+     }}
+  end
+
   # Layout converters
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
@@ -1324,6 +1370,51 @@ defmodule UnifiedUi.Adapters.Terminal do
   defp convert_by_type(_element, _type, _state) do
     # Return empty node for unknown element types
     TermUI.Component.Helpers.empty()
+  end
+
+  defp command_palette_command_map(%Command{} = command) do
+    %{
+      id: command.id,
+      label: command.label,
+      description: command.description,
+      shortcut: command.shortcut,
+      keywords: command.keywords,
+      disabled: command.disabled
+    }
+  end
+
+  defp command_palette_command_map(command) when is_map(command) do
+    disabled =
+      cond do
+        Map.has_key?(command, :disabled) -> Map.get(command, :disabled) == true
+        Map.has_key?(command, "disabled") -> Map.get(command, "disabled") == true
+        true -> false
+      end
+
+    %{
+      id: Map.get(command, :id) || Map.get(command, "id"),
+      label: Map.get(command, :label) || Map.get(command, "label"),
+      description: Map.get(command, :description) || Map.get(command, "description"),
+      shortcut: Map.get(command, :shortcut) || Map.get(command, "shortcut"),
+      keywords:
+        (Map.get(command, :keywords) || Map.get(command, "keywords") || []) |> List.wrap(),
+      disabled: disabled
+    }
+  end
+
+  defp command_palette_command_map({id, label}) when is_atom(id) and is_binary(label) do
+    %{id: id, label: label, description: nil, shortcut: nil, keywords: [], disabled: false}
+  end
+
+  defp command_palette_command_map(other) do
+    %{
+      id: other,
+      label: inspect(other),
+      description: nil,
+      shortcut: nil,
+      keywords: [],
+      disabled: false
+    }
   end
 
   # Helper functions

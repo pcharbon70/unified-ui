@@ -7,7 +7,7 @@ defmodule UnifiedUi.Adapters.TerminalTest do
 
   alias UnifiedUi.Adapters.Terminal
   alias UnifiedUi.Adapters.State
-  alias UnifiedUi.Widgets.{Viewport, SplitPane}
+  alias UnifiedUi.Widgets.{Canvas, Command, CommandPalette, Viewport, SplitPane}
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
   alias UnifiedIUR.Style
@@ -1073,6 +1073,45 @@ defmodule UnifiedUi.Adapters.TerminalTest do
       assert meta.initial_split == 60
       assert meta.min_size == 15
       assert meta.on_resize_change == :split_resized
+    end
+
+    test "converts canvas with drawing and pointer metadata" do
+      canvas = %Canvas{
+        id: :chart_canvas,
+        width: 120,
+        height: 40,
+        draw: fn _ctx -> :ok end,
+        on_click: :canvas_clicked,
+        on_hover: :canvas_hovered
+      }
+
+      assert {:canvas, _node, meta} = Terminal.convert_iur(canvas)
+      assert meta.id == :chart_canvas
+      assert meta.width == 120
+      assert meta.height == 40
+      assert is_function(meta.draw, 1)
+      assert meta.on_click == :canvas_clicked
+      assert meta.on_hover == :canvas_hovered
+    end
+
+    test "converts command_palette with command metadata" do
+      command_palette = %CommandPalette{
+        id: :main_commands,
+        placeholder: "Search commands",
+        trigger_shortcut: "ctrl+k",
+        on_select: :command_selected,
+        commands: [
+          %Command{id: :open, label: "Open File", shortcut: "ctrl+o"},
+          %Command{id: :save, label: "Save File", shortcut: "ctrl+s"}
+        ]
+      }
+
+      assert {:command_palette, _node, meta} = Terminal.convert_iur(command_palette)
+      assert meta.id == :main_commands
+      assert meta.placeholder == "Search commands"
+      assert meta.trigger_shortcut == "ctrl+k"
+      assert meta.on_select == :command_selected
+      assert [%{id: :open, label: "Open File"}, %{id: :save, label: "Save File"}] = meta.commands
     end
   end
 end

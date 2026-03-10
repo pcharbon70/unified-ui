@@ -13,7 +13,9 @@ defmodule UnifiedUi.Dsl.Sections.Layouts do
       UnifiedUi.Dsl.Entities.Layouts.vbox_entity(),
       UnifiedUi.Dsl.Entities.Layouts.hbox_entity(),
       UnifiedUi.Dsl.Entities.Containers.viewport_entity(),
-      UnifiedUi.Dsl.Entities.Containers.split_pane_entity()
+      UnifiedUi.Dsl.Entities.Containers.split_pane_entity(),
+      UnifiedUi.Dsl.Entities.Specialized.canvas_entity(),
+      UnifiedUi.Dsl.Entities.Specialized.command_palette_entity()
     ]
   }
 
