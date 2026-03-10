@@ -157,7 +157,7 @@ Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveV
 
 ## 3.5 Terminal Event Handling
 
-- [ ] **Task 3.5** Implement event capture and signal dispatch for Terminal
+- [x] **Task 3.5** Implement event capture and signal dispatch for Terminal
 
 Capture TermUi events and convert them to JidoSignal messages.
 
@@ -165,7 +165,7 @@ Capture TermUi events and convert them to JidoSignal messages.
 - [x] 3.5.2 Define terminal event types
 - [x] 3.5.3 Implement event capture from TermUi
 - [x] 3.5.4 Implement event-to-signal converter
-- [ ] 3.5.5 Implement signal dispatch to agents
+- [x] 3.5.5 Implement signal dispatch to agents
 - [x] 3.5.6 Add keyboard event handling
 - [x] 3.5.7 Add mouse event handling (where supported)
 
@@ -180,13 +180,13 @@ Capture TermUi events and convert them to JidoSignal messages.
 - [x] Test text input change captured
 - [x] Test keyboard events captured
 - [x] Test event converts to JidoSignal
-- [ ] Test signal dispatches to agent
+- [x] Test signal dispatches to agent
 
 ---
 
 ## 3.6 Desktop Event Handling
 
-- [ ] **Task 3.6** Implement event capture and signal dispatch for Desktop
+- [x] **Task 3.6** Implement event capture and signal dispatch for Desktop
 
 Capture DesktopUi events and convert them to JidoSignal messages.
 
@@ -194,7 +194,7 @@ Capture DesktopUi events and convert them to JidoSignal messages.
 - [x] 3.6.2 Define desktop event types
 - [x] 3.6.3 Implement event capture from DesktopUi
 - [x] 3.6.4 Implement event-to-signal converter
-- [ ] 3.6.5 Implement signal dispatch to agents
+- [x] 3.6.5 Implement signal dispatch to agents
 - [x] 3.6.6 Add keyboard event handling
 - [x] 3.6.7 Add mouse event handling
 - [x] 3.6.8 Add window event handling
@@ -212,7 +212,7 @@ Capture DesktopUi events and convert them to JidoSignal messages.
 - [x] Test mouse events captured
 - [x] Test window events captured
 - [x] Test event converts to JidoSignal
-- [ ] Test signal dispatches to agent
+- [x] Test signal dispatches to agent
 
 ---
 
@@ -226,7 +226,7 @@ Capture browser events and convert them to JidoSignal messages.
 - [x] 3.7.2 Define web event types
 - [x] 3.7.3 Implement event capture via LiveView
 - [x] 3.7.4 Implement event-to-signal converter
-- [ ] 3.7.5 Implement signal dispatch to agents
+- [x] 3.7.5 Implement signal dispatch to agents
 - [x] 3.7.6 Add phx-event bindings
 - [ ] 3.7.7 Add WebSocket communication
 - [x] 3.7.8 Add reconnection handling
@@ -242,7 +242,7 @@ Capture browser events and convert them to JidoSignal messages.
 - [x] Test input change captured via phx-change
 - [x] Test keyboard events captured
 - [x] Test event converts to JidoSignal
-- [ ] Test signal dispatches to agent
+- [x] Test signal dispatches to agent
 - [x] Test WebSocket reconnection works
 
 ---

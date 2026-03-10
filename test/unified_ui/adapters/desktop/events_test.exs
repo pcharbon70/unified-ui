@@ -6,6 +6,23 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
   use ExUnit.Case, async: true
 
   alias UnifiedUi.Adapters.Desktop.Events
+  alias UnifiedUi.Agent, as: UiAgent
+
+  defmodule DispatchComponent do
+    @behaviour UnifiedUi.ElmArchitecture
+
+    @impl true
+    def init(opts), do: %{observer: Keyword.get(opts, :observer)}
+
+    @impl true
+    def update(state, signal) do
+      if is_pid(state.observer), do: send(state.observer, {:desktop_dispatch_signal, signal})
+      state
+    end
+
+    @impl true
+    def view(_state), do: %UnifiedIUR.Widgets.Text{id: :desktop_dispatch_probe, content: "ok"}
+  end
 
   describe "event_types/0" do
     test "returns list of supported event types" do
@@ -243,6 +260,48 @@ defmodule UnifiedUi.Adapters.Desktop.EventsTest do
       assert signal.type == "unified.window.resize"
       assert signal.data.width == 1024
       assert signal.data.height == 768
+    end
+
+    test "dispatches signal to a running component when component_id is provided" do
+      component_id = :"desktop_dispatch_#{System.unique_integer([:positive])}"
+
+      assert {:ok, _pid} =
+               UiAgent.start_component(DispatchComponent, component_id, observer: self())
+
+      on_exit(fn -> UiAgent.stop_component(component_id) end)
+
+      assert {:ok, signal} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: component_id
+               )
+
+      assert signal.type == "unified.button.clicked"
+
+      assert_receive {:desktop_dispatch_signal, delivered_signal}
+      assert delivered_signal.type == "unified.button.clicked"
+      assert delivered_signal.data.widget_id == :my_button
+    end
+
+    test "returns not_found when component_id is unknown" do
+      missing_component_id = :"desktop_missing_#{System.unique_integer([:positive])}"
+
+      assert {:error, :not_found} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: missing_component_id
+               )
+    end
+
+    test "returns invalid_component_id when component_id is not an atom" do
+      assert {:error, :invalid_component_id} =
+               Events.dispatch(
+                 :click,
+                 %{widget_id: :my_button, action: :clicked},
+                 component_id: "not_an_atom"
+               )
     end
   end
 
