@@ -57,6 +57,46 @@ defmodule UnifiedUi.Adapters.WebTest do
       assert {:ok, state} = Web.render(iur, window_title: "My App")
       assert State.get_config(state, :window_title) == "My App"
     end
+
+    test "supports HEEx output format via format option" do
+      iur = %Widgets.Button{id: :save_btn, label: "Save", on_click: :save}
+
+      assert {:ok, state} = Web.render(iur, format: :heex)
+      assert {:ok, root} = State.get_root(state)
+
+      assert State.get_metadata(state, :output_format) == :heex
+      assert root =~ "<button"
+      assert root =~ "phx-click=\"save\""
+      assert root =~ "id=\"save_btn\""
+    end
+
+    test "supports HEEx output format via template option alias" do
+      iur = %Widgets.Text{content: "Alias check"}
+
+      assert {:ok, state} = Web.render(iur, template: :heex)
+      assert {:ok, root} = State.get_root(state)
+
+      assert State.get_metadata(state, :output_format) == :heex
+      assert root =~ "<span"
+      assert root =~ "Alias check"
+    end
+  end
+
+  describe "render_heex/2" do
+    test "returns HEEx-compatible template string" do
+      iur = %Layouts.VBox{
+        children: [
+          %Widgets.Text{id: :title, content: "Hello HEEx"},
+          %Widgets.Button{id: :submit, label: "Submit", on_click: :submit_form}
+        ]
+      }
+
+      assert {:ok, template} = Web.render_heex(iur)
+      assert is_binary(template)
+      assert template =~ "<div"
+      assert template =~ "Hello HEEx"
+      assert template =~ "phx-click=\"submit-form\""
+    end
   end
 
   describe "update/3" do
@@ -100,6 +140,20 @@ defmodule UnifiedUi.Adapters.WebTest do
 
       assert updated_state.version == state.version + 1
       assert State.get_config(updated_state, :window_title) == "Updated"
+    end
+
+    test "updates and tracks HEEx output format" do
+      initial = %Widgets.Text{content: "Before"}
+      updated = %Widgets.Text{content: "After"}
+
+      assert {:ok, state} = Web.render(initial, format: :heex)
+      assert State.get_metadata(state, :output_format) == :heex
+
+      assert {:ok, updated_state} = Web.update(updated, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      assert State.get_metadata(updated_state, :output_format) == :heex
+      assert updated_root =~ "After"
     end
   end
 

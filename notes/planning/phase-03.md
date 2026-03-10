@@ -117,7 +117,7 @@ Create the UnifiedUi.Adapters.Desktop module that converts IUR to DesktopUi widg
 
 ## 3.4 Web Renderer - Core
 
-- [ ] **Task 3.4** Implement the Web renderer for basic widgets and layouts
+- [x] **Task 3.4** Implement the Web renderer for basic widgets and layouts
 
 Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveView).
 
@@ -133,7 +133,7 @@ Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveV
   - `convert_hbox/2` - IUR.HBox → flexbox row
 - [x] 3.4.5 Implement style converter:
   - `convert_style/1` - IUR.Style → CSS
-- [ ] 3.4.6 Add HEEx template support
+- [x] 3.4.6 Add HEEx template support
 - [x] 3.4.7 Create Web.Server for LiveView integration
 
 **Implementation Notes:**
@@ -151,7 +151,7 @@ Create the UnifiedUi.Adapters.Web module that converts IUR to web UI (HTML/LiveV
 - [x] Test convert_vbox produces flexbox column
 - [x] Test convert_hbox produces flexbox row
 - [x] Test convert_style produces CSS
-- [ ] Test HEEx templates work
+- [x] Test HEEx templates work
 
 ---
 

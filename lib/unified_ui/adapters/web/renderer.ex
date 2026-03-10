@@ -1,6 +1,7 @@
 defmodule UnifiedUi.Adapters.Web do
   @moduledoc """
-  Web renderer that converts IUR to HTML/CSS strings.
+  Web renderer that converts IUR to HTML/CSS and HEEx-compatible template
+  strings.
 
   This renderer implements the `UnifiedUi.Renderer` behaviour and converts
   Intermediate UI Representation (IUR) elements to HTML strings with inline
@@ -16,15 +17,19 @@ defmodule UnifiedUi.Adapters.Web do
         ]
       }
 
-      # Render to HTML
+      # Render to HTML (default)
       {:ok, state} = Web.render(iur)
 
-      # The state contains the HTML string
-      # state.root is the HTML string
+      # Render to HEEx-compatible output
+      {:ok, heex_template} = Web.render_heex(iur)
 
-  ## HTML Output Structure
+  ## Output Formats
 
-  The renderer produces HTML strings with:
+  The renderer supports:
+  * HTML output (`:format` = `:html`, default)
+  * HEEx-compatible output (`:format` = `:heex` or `:template` = `:heex`)
+
+  Both formats produce semantic markup with:
   * Semantic HTML5 elements
   * Inline CSS styles
   * Phoenix LiveView phx-event bindings
@@ -76,22 +81,43 @@ defmodule UnifiedUi.Adapters.Web do
   alias UnifiedIUR.Widgets
   alias UnifiedIUR.Layouts
 
+  @type output_format :: :html | :heex
+
   @impl true
   @spec render(UnifiedUi.Renderer.iur_tree(), keyword()) ::
           {:ok, State.t()} | {:error, term()}
   def render(iur_tree, opts \\ []) do
     renderer_state = State.new(:web, config: opts)
+    format = output_format(opts)
 
-    # Convert IUR tree to HTML string
-    root = convert_iur(iur_tree, renderer_state)
+    # Convert IUR tree to requested output format
+    root = render_output(iur_tree, renderer_state, format)
 
     # Update state with root reference and metadata for diff-aware updates
     renderer_state =
       renderer_state
       |> State.put_root(root)
       |> State.put_metadata(:last_iur, iur_tree)
+      |> State.put_metadata(:output_format, format)
 
     {:ok, renderer_state}
+  end
+
+  @doc """
+  Renders an IUR tree to a HEEx-compatible template string.
+
+  This is equivalent to calling `render/2` with `format: :heex`, then returning
+  the rendered root string.
+  """
+  @spec render_heex(UnifiedUi.Renderer.iur_tree(), keyword()) ::
+          {:ok, String.t()} | {:error, term()}
+  def render_heex(iur_tree, opts \\ []) do
+    opts = Keyword.put(opts, :format, :heex)
+
+    case render(iur_tree, opts) do
+      {:ok, state} -> State.get_root(state)
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @impl true
@@ -99,19 +125,21 @@ defmodule UnifiedUi.Adapters.Web do
           {:ok, State.t()} | {:error, term()}
   def update(iur_tree, renderer_state, opts \\ []) do
     merged_config = Keyword.merge(renderer_state.config, opts)
+    format = output_format(merged_config)
     previous_iur = State.get_metadata(renderer_state, :last_iur, :__missing__)
 
     config_changed = merged_config != renderer_state.config
     iur_changed = previous_iur != iur_tree
 
     if iur_changed or config_changed do
-      new_root = convert_iur(iur_tree, renderer_state)
+      new_root = render_output(iur_tree, renderer_state, format)
       root_changed = new_root != renderer_state.root
 
       updated_state =
         renderer_state
         |> put_config(merged_config)
         |> State.put_metadata(:last_iur, iur_tree)
+        |> State.put_metadata(:output_format, format)
         |> maybe_put_root(new_root, root_changed)
         |> maybe_bump_version(root_changed or config_changed)
 
@@ -2041,5 +2069,26 @@ defmodule UnifiedUi.Adapters.Web do
 
   defp maybe_bump_version(%State{} = renderer_state, true) do
     State.bump_version(renderer_state)
+  end
+
+  defp render_output(iur_tree, renderer_state, :html) do
+    convert_iur(iur_tree, renderer_state)
+  end
+
+  defp render_output(iur_tree, renderer_state, :heex) do
+    iur_tree
+    |> convert_iur(renderer_state)
+    |> to_heex_template()
+  end
+
+  defp output_format(opts) when is_list(opts) do
+    case Keyword.get(opts, :format) || Keyword.get(opts, :template) do
+      :heex -> :heex
+      _ -> :html
+    end
+  end
+
+  defp to_heex_template(html) when is_binary(html) do
+    String.trim(html)
   end
 end
