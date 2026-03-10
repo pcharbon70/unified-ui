@@ -93,6 +93,8 @@ defmodule UnifiedUi.Dsl.Extension do
     UnifiedUi.Dsl.Verifiers.StateReferenceVerifier
   ]
 
+  @info_sections [:signals]
+
   @spec sections() :: [Spark.Dsl.Section.t()]
   def sections, do: @sections
 
@@ -101,6 +103,18 @@ defmodule UnifiedUi.Dsl.Extension do
 
   @spec verifiers() :: [module()]
   def verifiers, do: @verifiers
+
+  @doc """
+  Sections exposed via `UnifiedUi.Info`.
+  """
+  @spec info_sections() :: [atom()]
+  def info_sections, do: @info_sections
+
+  @doc """
+  Info module for UnifiedUi DSL introspection.
+  """
+  @spec info_module() :: module()
+  def info_module, do: UnifiedUi.Info
 
   @spec add_extensions() :: [module()]
   def add_extensions, do: []

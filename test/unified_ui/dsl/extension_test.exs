@@ -56,6 +56,11 @@ defmodule UnifiedUi.Dsl.ExtensionTest do
                UnifiedUi.Dsl.Verifiers.StateReferenceVerifier
              ]
     end
+
+    test "exposes info module configuration" do
+      assert UnifiedUi.Dsl.Extension.info_sections() == [:signals]
+      assert UnifiedUi.Dsl.Extension.info_module() == UnifiedUi.Info
+    end
   end
 
   describe "Standard signals" do

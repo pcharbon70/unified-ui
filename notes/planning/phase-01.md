@@ -256,19 +256,19 @@ Create verifiers that perform semantic validation of DSL definitions, catching e
 
 ## 1.8 Info Module Generation
 
-- [ ] **Task 1.8** Set up Spark.InfoGenerator for DSL introspection
+- [x] **Task 1.8** Set up Spark.InfoGenerator for DSL introspection
 
 Create the Info module that provides convenient functions to query the DSL state at compile time and runtime.
 
-- [ ] 1.8.1 Configure `Spark.InfoGenerator` in DSL extension
-- [ ] 1.8.2 Generate `UnifiedUi.Info` module
-- [ ] 1.8.3 Add info functions:
+- [x] 1.8.1 Configure `Spark.InfoGenerator` in DSL extension
+- [x] 1.8.2 Generate `UnifiedUi.Info` module
+- [x] 1.8.3 Add info functions:
   - `widgets/1` - Get all widgets from a DSL module
   - `layouts/1` - Get all layouts from a DSL module
   - `signals/1` - Get all signals from a DSL module
   - `styles/1` - Get all styles from a DSL module
-- [ ] 1.8.4 Document Info module usage
-- [ ] 1.8.5 Test Info functions work correctly
+- [x] 1.8.4 Document Info module usage
+- [x] 1.8.5 Test Info functions work correctly
 
 **Implementation Notes:**
 - Spark.InfoGenerator automatically creates Info module
@@ -276,11 +276,11 @@ Create the Info module that provides convenient functions to query the DSL state
 - Provides runtime introspection capabilities
 
 **Unit Tests for Section 1.8:**
-- [ ] Test Info module is generated
-- [ ] Test widgets/1 returns widget list
-- [ ] Test layouts/1 returns layout list
-- [ ] Test signals/1 returns signal list
-- [ ] Test styles/1 returns style list
+- [x] Test Info module is generated
+- [x] Test widgets/1 returns widget list
+- [x] Test layouts/1 returns layout list
+- [x] Test signals/1 returns signal list
+- [x] Test styles/1 returns style list
 
 ---
 
@@ -320,7 +320,7 @@ Comprehensive integration tests to verify all foundation components work togethe
 - [x] 1.10.5 Test IUR generation from DSL definitions
 - [x] 1.10.6 Test verifiers catch all invalid configurations
 - [x] 1.10.7 Test component startup and shutdown
-- [ ] 1.10.8 Test Info module introspection
+- [x] 1.10.8 Test Info module introspection
 
 **Implementation Notes:**
 - Integration tests go in `test/unified_ui/integration/phase1_test.exs`
