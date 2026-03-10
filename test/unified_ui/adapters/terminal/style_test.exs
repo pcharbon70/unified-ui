@@ -33,6 +33,14 @@ defmodule UnifiedUi.Adapters.Terminal.StyleTest do
     assert MapSet.member?(converted.attrs, :underline)
   end
 
+  test "convert_style/1 maps font_weight tuple attrs to terminal emphasis" do
+    iur_style = %Style{attrs: [{:font_weight, 700}, {:font_weight, :lighter}]}
+    converted = TerminalStyle.convert_style(iur_style)
+
+    assert MapSet.member?(converted.attrs, :bold)
+    assert MapSet.member?(converted.attrs, :dim)
+  end
+
   test "convert_style/1 returns nil for nil style" do
     assert TerminalStyle.convert_style(nil) == nil
   end

@@ -377,6 +377,12 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
           content: "Multiple",
           style: [attrs: [:bold, :underline, :italic]],
           __meta__: [entity: "text4"]
+        },
+        %{
+          __struct__: Widgets.Text,
+          content: "Dim",
+          style: [attrs: [:dim]],
+          __meta__: [entity: "text5"]
         }
       ]
 
@@ -416,7 +422,14 @@ defmodule UnifiedUi.Dsl.VerifiersTest do
             width: :auto,
             height: :fill,
             align: :center,
-            spacing: 1
+            spacing: 1,
+            font_family: "JetBrains Mono",
+            font_size: 14,
+            font_weight: 700,
+            border: [width: 1, style: :solid, color: :blue],
+            border_width: 2,
+            border_color: "#ff00aa",
+            border_style: :dashed
           ],
           __meta__: [entity: "button"]
         }

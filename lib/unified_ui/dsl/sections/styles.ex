@@ -53,6 +53,41 @@ defmodule UnifiedUi.Dsl.Sections.Styles do
         type: :integer,
         doc: "Spacing between children in a layout.",
         required: false
+      ],
+      font_family: [
+        type: :string,
+        doc: "Preferred font family.",
+        required: false
+      ],
+      font_size: [
+        type: {:or, [:integer, :string]},
+        doc: "Font size (integer pixels or CSS size string).",
+        required: false
+      ],
+      font_weight: [
+        type: {:or, [{:one_of, [:normal, :bold, :bolder, :lighter]}, :integer]},
+        doc: "Font weight keyword or numeric value.",
+        required: false
+      ],
+      border: [
+        type: {:or, [:string, :integer, :map, :keyword_list]},
+        doc: "Border shorthand (string/integer) or border descriptor map/keyword.",
+        required: false
+      ],
+      border_width: [
+        type: :integer,
+        doc: "Border width in pixels.",
+        required: false
+      ],
+      border_color: [
+        type: {:or, [:atom, :string, {:tuple, [:integer, :integer, :integer]}]},
+        doc: "Border color.",
+        required: false
+      ],
+      border_style: [
+        type: {:one_of, [:none, :solid, :dashed, :dotted, :double]},
+        doc: "Border stroke style.",
+        required: false
       ]
     ],
     entities: [

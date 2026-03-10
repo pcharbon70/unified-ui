@@ -31,6 +31,41 @@ defmodule UnifiedUi.Adapters.Web.StyleTest do
     assert hex_css =~ "color: #ff00aa"
   end
 
+  test "to_css/1 maps layout and extended style attrs" do
+    css =
+      WebStyle.to_css(%Style{
+        padding: 2,
+        margin: 1,
+        width: :fill,
+        height: 240,
+        align: :center,
+        attrs: [
+          {:spacing, 6},
+          {:font_family, "JetBrains Mono"},
+          {:font_size, 14},
+          {:font_weight, 700},
+          {:border, %{width: 2, style: :dashed, color: :blue}},
+          {:border_width, 3},
+          {:border_color, "#ff00aa"},
+          {:border_style, :solid}
+        ]
+      })
+
+    assert css =~ "padding: 2px"
+    assert css =~ "margin: 1px"
+    assert css =~ "width: 100%"
+    assert css =~ "height: 240px"
+    assert css =~ "text-align: center"
+    assert css =~ "gap: 6px"
+    assert css =~ "font-family: JetBrains Mono"
+    assert css =~ "font-size: 14px"
+    assert css =~ "font-weight: 700"
+    assert css =~ "border: 2px dashed blue"
+    assert css =~ "border-width: 3px"
+    assert css =~ "border-color: #ff00aa"
+    assert css =~ "border-style: solid"
+  end
+
   test "to_css/1 returns empty css for nil style" do
     assert WebStyle.to_css(nil) == ""
   end

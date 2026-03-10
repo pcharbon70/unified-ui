@@ -99,6 +99,14 @@ defmodule UnifiedUi.Adapters.Terminal.Style do
   defp add_attr(style, :dim), do: TermUI.Renderer.Style.dim(style)
   defp add_attr(style, :italic), do: TermUI.Renderer.Style.italic(style)
   defp add_attr(style, :strikethrough), do: TermUI.Renderer.Style.strikethrough(style)
+  defp add_attr(style, {:font_weight, :bold}), do: TermUI.Renderer.Style.bold(style)
+  defp add_attr(style, {:font_weight, :bolder}), do: TermUI.Renderer.Style.bold(style)
+
+  defp add_attr(style, {:font_weight, value}) when is_integer(value) and value >= 600,
+    do: TermUI.Renderer.Style.bold(style)
+
+  defp add_attr(style, {:font_weight, :lighter}), do: TermUI.Renderer.Style.dim(style)
+  defp add_attr(style, {:font_weight, :normal}), do: style
   defp add_attr(style, _attr), do: style
 
   @doc """

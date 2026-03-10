@@ -60,7 +60,12 @@ defmodule UnifiedUi.Adapters.Desktop.Style do
     props
     |> maybe_add_color(iur_style.fg)
     |> maybe_add_background(iur_style.bg)
-    |> maybe_add_font_style(iur_style.attrs)
+    |> maybe_add_spacing_prop(:padding, iur_style.padding)
+    |> maybe_add_spacing_prop(:margin, iur_style.margin)
+    |> maybe_add_size_prop(:width, iur_style.width)
+    |> maybe_add_size_prop(:height, iur_style.height)
+    |> maybe_add_align(iur_style.align)
+    |> maybe_add_style_attrs(iur_style.attrs)
   end
 
   @doc """
@@ -97,30 +102,74 @@ defmodule UnifiedUi.Adapters.Desktop.Style do
   defp maybe_add_background(props, nil), do: props
   defp maybe_add_background(props, color), do: [{:background, color} | props]
 
-  # Map text attributes to font style
-  defp maybe_add_font_style(props, nil), do: props
-  defp maybe_add_font_style(props, attrs) do
-    # DesktopUi may not support all text attributes
-    # We map what we can and ignore the rest
+  defp maybe_add_spacing_prop(props, _key, nil), do: props
+
+  defp maybe_add_spacing_prop(props, key, value) when is_integer(value),
+    do: [{key, value} | props]
+
+  defp maybe_add_spacing_prop(props, _key, _value), do: props
+
+  defp maybe_add_size_prop(props, _key, nil), do: props
+  defp maybe_add_size_prop(props, key, value) when is_integer(value), do: [{key, value} | props]
+  defp maybe_add_size_prop(props, key, value) when is_atom(value), do: [{key, value} | props]
+  defp maybe_add_size_prop(props, _key, _value), do: props
+
+  defp maybe_add_align(props, nil), do: props
+  defp maybe_add_align(props, align), do: [{:align, align} | props]
+
+  # Map text/extended attributes
+  defp maybe_add_style_attrs(props, attrs) when is_list(attrs) do
     attrs
     |> Enum.reduce(props, fn attr, acc_props ->
-      add_font_attr(acc_props, attr)
+      add_style_attr(acc_props, attr)
     end)
   end
 
+  defp maybe_add_style_attrs(props, _attrs), do: props
+
   # Font attribute mapping
   # DesktopUi style uses :font_style prop for text decoration
-  defp add_font_attr(props, :bold), do: [{:font_style, :bold} | props]
-  defp add_font_attr(props, :underline), do: [{:font_style, :underline} | props]
-  defp add_font_attr(props, :italic), do: [{:font_style, :italic} | props]
+  defp add_style_attr(props, :bold), do: [{:font_style, :bold} | props]
+  defp add_style_attr(props, :underline), do: [{:font_style, :underline} | props]
+  defp add_style_attr(props, :italic), do: [{:font_style, :italic} | props]
 
   # For attributes that might not have direct DesktopUi support,
   # we still try to map them or ignore gracefully
-  defp add_font_attr(props, :reverse), do: props  # No direct equivalent
-  defp add_font_attr(props, :blink), do: props    # No direct equivalent
-  defp add_font_attr(props, :dim), do: props      # Could map to opacity/alpha
-  defp add_font_attr(props, :strikethrough), do: props  # No direct equivalent
-  defp add_font_attr(props, _), do: props         # Unknown attribute, ignore
+  defp add_style_attr(props, :reverse), do: props
+  defp add_style_attr(props, :blink), do: props
+  defp add_style_attr(props, :dim), do: props
+  defp add_style_attr(props, :strikethrough), do: props
+
+  defp add_style_attr(props, {:spacing, value}) when is_integer(value),
+    do: [{:gap, value} | props]
+
+  defp add_style_attr(props, {:font_family, value})
+       when is_binary(value) and byte_size(value) > 0,
+       do: [{:font_family, value} | props]
+
+  defp add_style_attr(props, {:font_size, value}) when is_integer(value) and value > 0,
+    do: [{:font_size, value} | props]
+
+  defp add_style_attr(props, {:font_size, value}) when is_binary(value) and byte_size(value) > 0,
+    do: [{:font_size, value} | props]
+
+  defp add_style_attr(props, {:font_weight, value})
+       when value in [:normal, :bold, :bolder, :lighter] or
+              (is_integer(value) and value >= 100 and value <= 900),
+       do: [{:font_weight, value} | props]
+
+  defp add_style_attr(props, {:border, value}), do: [{:border, value} | props]
+
+  defp add_style_attr(props, {:border_width, value}) when is_integer(value) and value >= 0,
+    do: [{:border_width, value} | props]
+
+  defp add_style_attr(props, {:border_color, value}), do: [{:border_color, value} | props]
+
+  defp add_style_attr(props, {:border_style, value})
+       when value in [:none, :solid, :dashed, :dotted, :double],
+       do: [{:border_style, value} | props]
+
+  defp add_style_attr(props, _), do: props
 
   @doc """
   Merges multiple styles into a single DesktopUi props list.
@@ -144,6 +193,7 @@ defmodule UnifiedUi.Adapters.Desktop.Style do
   """
   @spec merge_props(keyword(), [Style.t() | nil]) :: keyword()
   def merge_props(props, []), do: props
+
   def merge_props(props, styles) when is_list(styles) do
     styles
     |> Enum.reject(&is_nil/1)

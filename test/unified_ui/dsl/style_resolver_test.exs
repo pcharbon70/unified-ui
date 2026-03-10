@@ -469,7 +469,15 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
             margin: 3,
             width: :fill,
             height: :auto,
-            align: :center
+            align: :center,
+            spacing: 1,
+            font_family: "JetBrains Mono",
+            font_size: 16,
+            font_weight: 700,
+            border: [width: 2, color: :blue, style: :dashed],
+            border_width: 3,
+            border_color: "#ff00aa",
+            border_style: :solid
           ]
         )
       ]
@@ -487,6 +495,14 @@ defmodule UnifiedUi.Dsl.StyleResolverTest do
       assert result.width == :fill
       assert result.height == :auto
       assert result.align == :center
+      assert {:spacing, 1} in result.attrs
+      assert {:font_family, "JetBrains Mono"} in result.attrs
+      assert {:font_size, 16} in result.attrs
+      assert {:font_weight, 700} in result.attrs
+      assert {:border, %{width: 2, color: :blue, style: :dashed}} in result.attrs
+      assert {:border_width, 3} in result.attrs
+      assert {:border_color, "#ff00aa"} in result.attrs
+      assert {:border_style, :solid} in result.attrs
     end
   end
 
