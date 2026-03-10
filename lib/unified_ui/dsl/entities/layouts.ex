@@ -42,6 +42,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
   alias UnifiedIUR.Layouts
   alias UnifiedUi.Widgets.{Grid, Stack, ZBox}
 
+  @state_ref_type {:tuple, [:atom, :atom]}
+
   alias UnifiedUi.Dsl.Entities.{
     Containers,
     DataViz,
@@ -122,8 +124,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the grid is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the grid is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -166,8 +168,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the stack is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the stack is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -205,8 +207,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the zbox is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the zbox is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -256,8 +258,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the layout is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the layout is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]
@@ -311,8 +313,8 @@ defmodule UnifiedUi.Dsl.Entities.Layouts do
         required: false
       ],
       visible: [
-        type: :boolean,
-        doc: "Whether the layout is visible.",
+        type: {:or, [:boolean, @state_ref_type]},
+        doc: "Whether the layout is visible, or `{:state, :key}`.",
         required: false,
         default: true
       ]

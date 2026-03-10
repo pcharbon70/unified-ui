@@ -86,6 +86,13 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
     end
+
+    test "supports state references for visible" do
+      entity = LayoutEntities.vbox_entity()
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
+    end
   end
 
   describe "hbox_entity/0" do
@@ -159,6 +166,13 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert visible_schema != nil
       assert Keyword.get(visible_schema, :default) == true
     end
+
+    test "supports state references for visible" do
+      entity = LayoutEntities.hbox_entity()
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
+    end
   end
 
   describe "grid_entity/0" do
@@ -176,6 +190,13 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert Keyword.has_key?(entity.schema, :style)
       assert Keyword.has_key?(entity.schema, :visible)
     end
+
+    test "supports state references for visible" do
+      entity = LayoutEntities.grid_entity()
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
+    end
   end
 
   describe "stack_entity/0" do
@@ -192,6 +213,13 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert Keyword.has_key?(entity.schema, :style)
       assert Keyword.has_key?(entity.schema, :visible)
     end
+
+    test "supports state references for visible" do
+      entity = LayoutEntities.stack_entity()
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
+    end
   end
 
   describe "zbox_entity/0" do
@@ -206,6 +234,13 @@ defmodule UnifiedUi.Dsl.Entities.LayoutsTest do
       assert Keyword.has_key?(entity.schema, :positions)
       assert Keyword.has_key?(entity.schema, :style)
       assert Keyword.has_key?(entity.schema, :visible)
+    end
+
+    test "supports state references for visible" do
+      entity = LayoutEntities.zbox_entity()
+
+      assert {:or, [:boolean, {:tuple, [:atom, :atom]}]} ==
+               entity.schema |> Keyword.fetch!(:visible) |> Keyword.fetch!(:type)
     end
   end
 

@@ -209,6 +209,56 @@ defmodule UnifiedUi.DslTest do
       assert %Widgets.Text{id: :widget_1, content: "Widget 1"} = List.first(children)
       assert %Widgets.Text{id: :widget_100, content: "Widget 100"} = List.last(children)
     end
+
+    test "interpolates {:state, :key} references in generated view output" do
+      module = unique_fixture_module(:state_interpolation)
+
+      compile_fixture(
+        module,
+        """
+        state(Enum.into(%{
+          email: "guest@example.com",
+          submitting: false,
+          show_status: true,
+          status_message: "Idle",
+          show_root: true
+        }, []))
+
+        vbox do
+          id :root
+          visible {:state, :show_root}
+
+          text {:state, :status_message}, id: :status, visible: {:state, :show_status}
+          text_input :email_input, value: {:state, :email}, disabled: {:state, :submitting}
+          button "Submit", id: :submit_btn, disabled: {:state, :submitting}
+        end
+        """
+      )
+
+      assert module.init([]) == %{
+               email: "guest@example.com",
+               submitting: false,
+               show_status: true,
+               status_message: "Idle",
+               show_root: true
+             }
+
+      assert %Layouts.VBox{visible: true, children: [status, input, button]} =
+               module.view(%{
+                 email: "admin@example.com",
+                 submitting: true,
+                 show_status: false,
+                 status_message: "Saving...",
+                 show_root: true
+               })
+
+      assert %Widgets.Text{id: :status, content: "Saving...", visible: false} = status
+
+      assert %Widgets.TextInput{id: :email_input, value: "admin@example.com", disabled: true} =
+               input
+
+      assert %Widgets.Button{id: :submit_btn, disabled: true} = button
+    end
   end
 
   describe "standard_signals" do
