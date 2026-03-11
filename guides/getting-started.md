@@ -10,7 +10,8 @@ Add UnifiedUi and its runtime dependencies to your project:
 defp deps do
   [
     {:unified_ui, "~> 0.1"},
-    {:jido_signal, "~> 1.0"},
+    {:jido, git: "https://github.com/agentjido/jido.git", tag: "v2.0.0"},
+    {:jido_signal, "~> 2.0"},
     {:spark, "~> 1.0"}
   ]
 end

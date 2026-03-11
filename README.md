@@ -148,7 +148,8 @@ Add to your `mix.exs`:
 def deps do
   [
     {:unified_ui, "~> 0.1"},
-    {:jido_signal, "~> 0.1"},
+    {:jido, git: "https://github.com/agentjido/jido.git", tag: "v2.0.0"},
+    {:jido_signal, "~> 2.0"},
     {:spark, "~> 1.0"}
   ]
 end
