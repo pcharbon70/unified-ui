@@ -36,6 +36,7 @@ The main remaining work is no longer basic scaffolding. It is hardening and refi
 
 - Planning/audit status has been realigned with implementation reality: foundational runtime agent integration, advanced widget families, guide coverage, and `mix unified_ui.*` tooling are now tracked as completed.
 - Track C remains focused on adapter runtime depth (subtree incremental updates) and final planning terminology cleanup.
+- Desktop adapter `update/3` now applies a first subtree-level strategy for stable root VBox/HBox trees, reusing unchanged rendered children and only re-rendering changed child subtrees.
 
 ## Audit Findings by Phase
 
@@ -142,7 +143,7 @@ Status: complete.
 1. Move from rerender to diff-aware update.
 - Add element-ID matching and incremental update logic where possible.
 - Exit criteria: `update/3` applies structural diff, no full rerender default for unchanged subtrees.
-Status: complete for root-level diff-aware updates; subtree-level incremental patching remains.
+Status: root-level diff-aware updates complete; desktop root-layout child incremental patching complete; deeper/nested and terminal/web subtree patching remains.
 
 2. Strengthen event dispatch path.
 - Complete bus dispatch wiring and target routing contracts.
