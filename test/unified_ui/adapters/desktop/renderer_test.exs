@@ -137,6 +137,113 @@ defmodule UnifiedUi.Adapters.DesktopTest do
       assert Enum.at(updated_root.children, 0) != Enum.at(initial_root.children, 0)
     end
 
+    test "applies nested incremental patch and reuses unchanged grandchildren" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Desktop.render(iur)
+      assert {:ok, initial_root} = State.get_root(state)
+
+      initial_nested = Enum.at(initial_root.children, 0)
+      initial_left = Enum.at(initial_nested.children, 0)
+      initial_right = Enum.at(initial_nested.children, 1)
+      initial_button = Enum.at(initial_root.children, 1)
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right Updated"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Desktop.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      updated_nested = Enum.at(updated_root.children, 0)
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 2,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert Enum.at(updated_root.children, 1) == initial_button
+      assert Enum.at(updated_nested.children, 0) == initial_left
+      assert Enum.at(updated_nested.children, 1) != initial_right
+    end
+
+    test "rerenders changed nested child when nested shape changes" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Desktop.render(iur)
+      assert {:ok, initial_root} = State.get_root(state)
+
+      initial_nested = Enum.at(initial_root.children, 0)
+      initial_button = Enum.at(initial_root.children, 1)
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"},
+              %Widgets.Text{id: :added, content: "Added"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Desktop.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      updated_nested = Enum.at(updated_root.children, 0)
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 1,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert Enum.at(updated_root.children, 1) == initial_button
+      assert updated_nested != initial_nested
+      assert length(updated_nested.children) == 3
+    end
+
     test "falls back to full render when root child shape changes" do
       iur = %Layouts.VBox{
         children: [
