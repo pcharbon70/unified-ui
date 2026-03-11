@@ -1,6 +1,6 @@
 # Phase 2: Core Widgets & Layouts
 
-This phase implements the core widget entities and layout containers that form the building blocks of any UI. These widgets and layouts are defined once in the DSL and work across all platforms through the IUR and renderer system.
+This phase implements the core widget entities and layout containers that form the building blocks of any UI. These widgets and layouts are defined once in the DSL and work across all platforms through the IUR and adapter system.
 
 ---
 

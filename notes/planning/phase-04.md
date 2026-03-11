@@ -439,24 +439,24 @@ Comprehensive integration tests to verify all advanced widgets and features work
 - `lib/unified_ui/widgets/` - All widget target structs
 - `lib/unified_ui/layouts/` - All layout target structs
 - `lib/unified_ui/iur/widgets_advanced.ex` - Advanced IUR structs
-- `lib/unified_ui/renderers/terminal_advanced.ex` - Terminal advanced converters
-- `lib/unified_ui/renderers/desktop_advanced.ex` - Desktop advanced converters
-- `lib/unified_ui/renderers/web_advanced.ex` - Web advanced converters
+- `lib/unified_ui/adapters/terminal/renderer.ex` - Terminal advanced converters
+- `lib/unified_ui/adapters/desktop/renderer.ex` - Desktop advanced converters
+- `lib/unified_ui/adapters/web/renderer.ex` - Web advanced converters
 - `lib/unified_ui/styles/` - Complete style system
 - `test/unified_ui/integration/phase4_test.exs` - Integration tests
 
 **Modified Files:**
 - `lib/unified_ui/dsl/extension.ex` - Add new entities and sections
-- `lib/unified_ui/renderers/terminal.ex` - Add widget converters
-- `lib/unified_ui/renderers/desktop.ex` - Add widget converters
-- `lib/unified_ui/renderers/web.ex` - Add widget converters
+- `lib/unified_ui/adapters/terminal/renderer.ex` - Add widget converters
+- `lib/unified_ui/adapters/desktop/renderer.ex` - Add widget converters
+- `lib/unified_ui/adapters/web/renderer.ex` - Add widget converters
 
 ---
 
 ## Dependencies
 
 **Depends on:**
-- Phase 3: Renderer Implementations (renderer foundation)
+- Phase 3: Renderer Implementations (adapter foundation)
 
 **Enables:**
 - Phase 5: Testing, Docs & Tooling (complete widget library for documentation)
