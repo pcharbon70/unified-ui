@@ -38,6 +38,7 @@ The main remaining work is no longer basic scaffolding. It is hardening and refi
 - Track C remains focused on adapter runtime depth (subtree incremental updates) and final planning terminology cleanup.
 - Terminal adapter `update/3` now applies a first subtree-level strategy for stable root VBox/HBox trees, reusing unchanged rendered children and only re-rendering changed child subtrees.
 - Desktop adapter `update/3` now applies a first subtree-level strategy for stable root VBox/HBox trees, reusing unchanged rendered children and only re-rendering changed child subtrees.
+- Web adapter `update/3` now applies a first subtree-level strategy for stable root VBox/HBox trees, reusing unchanged rendered child fragments and only re-rendering changed child subtrees.
 
 ## Audit Findings by Phase
 
@@ -74,7 +75,7 @@ Completed evidence:
 - Multi-platform coordinator implemented (`lib/unified_ui/adapters/coordinator.ex`).
 
 Gaps:
-- Subtree-level incremental patching is now only partially implemented (terminal + desktop root VBox/HBox child patching); deeper/nested and cross-adapter subtree patching by element ID is not implemented yet.
+- Subtree-level incremental patching is now only partially implemented (terminal + desktop + web root VBox/HBox child patching); deeper/nested and cross-adapter subtree patching by element ID is not implemented yet.
 - Planning terminology alignment is still in progress; legacy phase artifacts still reference `renderers/*` paths.
 
 ### Phase 4 (Advanced Features and Styling) - Substantially complete
@@ -144,7 +145,7 @@ Status: complete.
 1. Move from rerender to diff-aware update.
 - Add element-ID matching and incremental update logic where possible.
 - Exit criteria: `update/3` applies structural diff, no full rerender default for unchanged subtrees.
-Status: root-level diff-aware updates complete; terminal + desktop root-layout child incremental patching complete; web and deeper subtree patching remains.
+Status: root-level diff-aware updates complete; terminal + desktop + web root-layout child incremental patching complete; deeper subtree patching remains.
 
 2. Strengthen event dispatch path.
 - Complete bus dispatch wiring and target routing contracts.

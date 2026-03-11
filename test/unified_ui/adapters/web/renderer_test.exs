@@ -140,6 +140,69 @@ defmodule UnifiedUi.Adapters.WebTest do
 
       assert updated_state.version == state.version + 1
       assert State.get_config(updated_state, :window_title) == "Updated"
+
+      assert %{
+               applied: false,
+               reason: :config_changed
+             } = State.get_metadata(updated_state, :incremental_patch)
+    end
+
+    test "applies root child incremental patch for stable vbox layouts" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"},
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Web.render(iur)
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Widgets.Text{id: :headline, content: "Updated"},
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Web.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 1,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert updated_root =~ "Updated"
+      assert updated_root =~ "Save"
+      refute updated_root =~ "Original"
+    end
+
+    test "falls back to full render when root child shape changes" do
+      iur = %Layouts.VBox{
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"}
+        ]
+      }
+
+      assert {:ok, state} = Web.render(iur)
+
+      updated_iur = %Layouts.VBox{
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"},
+          %Widgets.Text{id: :new_item, content: "Added"}
+        ]
+      }
+
+      assert {:ok, updated_state} = Web.update(updated_iur, state)
+
+      assert %{
+               applied: false,
+               reason: :full_render_fallback
+             } = State.get_metadata(updated_state, :incremental_patch)
     end
 
     test "updates and tracks HEEx output format" do

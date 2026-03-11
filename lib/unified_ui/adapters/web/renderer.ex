@@ -92,6 +92,7 @@ defmodule UnifiedUi.Adapters.Web do
 
     # Convert IUR tree to requested output format
     root = render_output(iur_tree, renderer_state, format)
+    root_layout_children_rendered = root_layout_children_rendered(iur_tree, renderer_state)
 
     # Update state with root reference and metadata for diff-aware updates
     renderer_state =
@@ -99,6 +100,7 @@ defmodule UnifiedUi.Adapters.Web do
       |> State.put_root(root)
       |> State.put_metadata(:last_iur, iur_tree)
       |> State.put_metadata(:output_format, format)
+      |> State.put_metadata(:root_layout_children_rendered, root_layout_children_rendered)
 
     {:ok, renderer_state}
   end
@@ -125,11 +127,23 @@ defmodule UnifiedUi.Adapters.Web do
     format = output_format(merged_config)
     previous_iur = State.get_metadata(renderer_state, :last_iur, :__missing__)
 
+    previous_rendered_children =
+      State.get_metadata(renderer_state, :root_layout_children_rendered, :__missing__)
+
     config_changed = merged_config != renderer_state.config
     iur_changed = previous_iur != iur_tree
 
     if iur_changed or config_changed do
-      new_root = render_output(iur_tree, renderer_state, format)
+      {new_root, incremental_patch, root_layout_children_rendered} =
+        build_updated_root(
+          iur_tree,
+          previous_iur,
+          previous_rendered_children,
+          renderer_state,
+          config_changed,
+          format
+        )
+
       root_changed = new_root != renderer_state.root
 
       updated_state =
@@ -137,6 +151,8 @@ defmodule UnifiedUi.Adapters.Web do
         |> put_config(merged_config)
         |> State.put_metadata(:last_iur, iur_tree)
         |> State.put_metadata(:output_format, format)
+        |> State.put_metadata(:incremental_patch, incremental_patch)
+        |> State.put_metadata(:root_layout_children_rendered, root_layout_children_rendered)
         |> maybe_put_root(new_root, root_changed)
         |> maybe_bump_version(root_changed or config_changed)
 
@@ -1601,59 +1617,13 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp convert_by_type(%Layouts.VBox{} = vbox, :vbox, state) do
-    children_html = convert_children(vbox.children, state)
-
-    # Build CSS styles
-    css_parts = ["display: flex", "flex-direction: column"]
-
-    css_parts = maybe_add_spacing_css(css_parts, vbox.spacing)
-    css_parts = maybe_add_padding_css(css_parts, vbox.padding)
-    css_parts = maybe_add_align_items_css(css_parts, vbox.align_items, :column)
-    css_parts = maybe_add_justify_content_css(css_parts, vbox.justify_content, :column)
-
-    # Add style from IUR style
-    style = Style.to_css(vbox.style)
-
-    css_parts =
-      if style do
-        [style | css_parts]
-      else
-        css_parts
-      end
-
-    css = Enum.reverse(css_parts) |> Enum.join("; ")
-
-    attrs = build_attributes([{"style", css}])
-
-    ~s(<div#{attrs}>#{children_html}</div>)
+    children_html = convert_children_list(vbox.children, state)
+    render_root_layout_html(vbox, children_html)
   end
 
   defp convert_by_type(%Layouts.HBox{} = hbox, :hbox, state) do
-    children_html = convert_children(hbox.children, state)
-
-    # Build CSS styles
-    css_parts = ["display: flex", "flex-direction: row"]
-
-    css_parts = maybe_add_spacing_css(css_parts, hbox.spacing)
-    css_parts = maybe_add_padding_css(css_parts, hbox.padding)
-    css_parts = maybe_add_align_items_css(css_parts, hbox.align_items, :row)
-    css_parts = maybe_add_justify_content_css(css_parts, hbox.justify_content, :row)
-
-    # Add style from IUR style
-    style = Style.to_css(hbox.style)
-
-    css_parts =
-      if style do
-        [style | css_parts]
-      else
-        css_parts
-      end
-
-    css = Enum.reverse(css_parts) |> Enum.join("; ")
-
-    attrs = build_attributes([{"style", css}])
-
-    ~s(<div#{attrs}>#{children_html}</div>)
+    children_html = convert_children_list(hbox.children, state)
+    render_root_layout_html(hbox, children_html)
   end
 
   # Fallback for unknown types
@@ -2047,6 +2017,165 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp toast_dismiss_at(_duration), do: nil
+
+  defp build_updated_root(
+         iur_tree,
+         previous_iur,
+         previous_rendered_children,
+         renderer_state,
+         config_changed,
+         format
+       ) do
+    cond do
+      config_changed ->
+        full_render_with_cache(iur_tree, renderer_state, format, :config_changed)
+
+      previous_iur == :__missing__ ->
+        full_render_with_cache(iur_tree, renderer_state, format, :missing_previous_iur)
+
+      true ->
+        case patch_root_layout_children(
+               iur_tree,
+               previous_iur,
+               previous_rendered_children,
+               renderer_state,
+               format
+             ) do
+          {:ok, patched_root, patched_children, reused_children, re_rendered_children} ->
+            {patched_root,
+             %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: reused_children,
+               re_rendered_children: re_rendered_children
+             }, patched_children}
+
+          :error ->
+            full_render_with_cache(iur_tree, renderer_state, format, :full_render_fallback)
+        end
+    end
+  end
+
+  defp full_render_with_cache(iur_tree, renderer_state, format, reason) do
+    {render_output(iur_tree, renderer_state, format), fallback_incremental_patch(reason),
+     root_layout_children_rendered(iur_tree, renderer_state)}
+  end
+
+  defp fallback_incremental_patch(reason) when is_atom(reason) do
+    %{
+      applied: false,
+      strategy: nil,
+      reused_children: 0,
+      re_rendered_children: 0,
+      reason: reason
+    }
+  end
+
+  defp patch_root_layout_children(
+         %module{} = iur_tree,
+         %module{} = previous_iur,
+         rendered_children,
+         %State{} = state,
+         format
+       )
+       when module in [Layouts.VBox, Layouts.HBox] do
+    with true <- layout_signature(iur_tree) == layout_signature(previous_iur),
+         true <- is_list(rendered_children),
+         true <- same_child_count?(iur_tree.children, previous_iur.children, rendered_children),
+         {:ok, patched_children, reused_children, re_rendered_children} <-
+           patch_children(iur_tree.children, previous_iur.children, rendered_children, state) do
+      patched_root =
+        iur_tree
+        |> render_root_layout_html(patched_children)
+        |> format_root_output(format)
+
+      {:ok, patched_root, patched_children, reused_children, re_rendered_children}
+    else
+      _ -> :error
+    end
+  end
+
+  defp patch_root_layout_children(_, _, _, _, _), do: :error
+
+  defp layout_signature(%_{} = layout) do
+    layout
+    |> Map.from_struct()
+    |> Map.drop([:children])
+  end
+
+  defp same_child_count?(new_children, old_children, rendered_children)
+       when is_list(new_children) and is_list(old_children) and is_list(rendered_children) do
+    length(new_children) == length(old_children) and
+      length(old_children) == length(rendered_children)
+  end
+
+  defp same_child_count?(_, _, _), do: false
+
+  defp patch_children(new_children, old_children, rendered_children, state) do
+    {patched_children, reused_children, re_rendered_children, has_empty_render?} =
+      new_children
+      |> Enum.zip(old_children)
+      |> Enum.zip(rendered_children)
+      |> Enum.reduce({[], 0, 0, false}, fn {{new_child, old_child}, rendered_child},
+                                           {children_acc, reused_acc, rerendered_acc, empty_acc} ->
+        if new_child == old_child do
+          {[rendered_child | children_acc], reused_acc + 1, rerendered_acc, empty_acc}
+        else
+          new_render = convert_iur(new_child, state)
+
+          {[new_render | children_acc], reused_acc, rerendered_acc + 1,
+           empty_acc or new_render == ""}
+        end
+      end)
+
+    if has_empty_render? do
+      :error
+    else
+      {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
+    end
+  end
+
+  defp root_layout_children_rendered(%module{} = iur_tree, %State{} = state)
+       when module in [Layouts.VBox, Layouts.HBox] do
+    convert_children_list(iur_tree.children, state)
+  end
+
+  defp root_layout_children_rendered(_, _), do: nil
+
+  defp render_root_layout_html(%Layouts.VBox{} = vbox, children_html)
+       when is_list(children_html) do
+    css_parts = ["display: flex", "flex-direction: column"]
+    css_parts = maybe_add_spacing_css(css_parts, vbox.spacing)
+    css_parts = maybe_add_padding_css(css_parts, vbox.padding)
+    css_parts = maybe_add_align_items_css(css_parts, vbox.align_items, :column)
+    css_parts = maybe_add_justify_content_css(css_parts, vbox.justify_content, :column)
+
+    style = Style.to_css(vbox.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+    attrs = build_attributes([{"style", css}])
+
+    ~s(<div#{attrs}>#{Enum.join(children_html)}</div>)
+  end
+
+  defp render_root_layout_html(%Layouts.HBox{} = hbox, children_html)
+       when is_list(children_html) do
+    css_parts = ["display: flex", "flex-direction: row"]
+    css_parts = maybe_add_spacing_css(css_parts, hbox.spacing)
+    css_parts = maybe_add_padding_css(css_parts, hbox.padding)
+    css_parts = maybe_add_align_items_css(css_parts, hbox.align_items, :row)
+    css_parts = maybe_add_justify_content_css(css_parts, hbox.justify_content, :row)
+
+    style = Style.to_css(hbox.style)
+    css_parts = if style, do: [style | css_parts], else: css_parts
+    css = Enum.reverse(css_parts) |> Enum.join("; ")
+    attrs = build_attributes([{"style", css}])
+
+    ~s(<div#{attrs}>#{Enum.join(children_html)}</div>)
+  end
+
+  defp format_root_output(html, :html), do: html
+  defp format_root_output(html, :heex), do: to_heex_template(html)
 
   defp put_config(%State{} = renderer_state, config) when is_list(config) do
     %{renderer_state | config: config}
