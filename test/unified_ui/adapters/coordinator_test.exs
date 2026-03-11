@@ -4,6 +4,7 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
   """
 
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
 
   alias UnifiedUi.Adapters.Coordinator
   alias UnifiedUi.Agent, as: UiAgent
@@ -257,6 +258,33 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
 
       assert Map.has_key?(results, :terminal)
       assert {:error, _} = results.invalid
+    end
+
+    test "await_render_tasks/2 preserves platform keys when one task times out" do
+      fast_task = Task.async(fn -> {:ok, :fast_render} end)
+      slow_task = Task.async(fn -> Process.sleep(50) end)
+
+      results = Coordinator.await_render_tasks([{:terminal, fast_task}, {:web, slow_task}], 10)
+
+      assert results.terminal == {:ok, :fast_render}
+      assert results.web == {:error, :timeout}
+      refute Map.has_key?(results, :error)
+    end
+
+    test "await_render_tasks/2 returns task_exit error when task crashes" do
+      capture_log(fn ->
+        {:ok, supervisor} = Task.Supervisor.start_link()
+
+        failing_task =
+          Task.Supervisor.async_nolink(supervisor, fn ->
+            raise "intentional task failure"
+          end)
+
+        results = Coordinator.await_render_tasks([{:desktop, failing_task}], 100)
+
+        assert {:error, {:task_exit, reason}} = results.desktop
+        assert reason != nil
+      end)
     end
   end
 
@@ -676,6 +704,25 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
       assert {:ok, %{count: 4}} = UiAgent.current_state(component_id)
     end
 
+    test "dispatches normalized signal to component when atom target matches component id" do
+      component_id = :"coordinator_atom_target_#{System.unique_integer([:positive])}"
+      assert {:ok, _pid} = UiAgent.start_component(RoutedCounterComponent, component_id)
+      on_exit(fn -> _ = UiAgent.stop_component(component_id) end)
+
+      assert {:ok, signal} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :counter_button, action: :increment, delta: 3},
+                 component_id
+               )
+
+      Process.sleep(20)
+
+      assert signal.type == "unified.button.clicked"
+      assert {:ok, %{count: 3}} = UiAgent.current_state(component_id)
+    end
+
     test "broadcasts normalized signal to multiple targets" do
       target_one = fn signal ->
         send(self(), {:target_one, signal})
@@ -742,6 +789,16 @@ defmodule UnifiedUi.Adapters.CoordinatorTest do
                  :click,
                  %{widget_id: :save, action: :save},
                  {:component, :missing_component_target}
+               )
+    end
+
+    test "returns target_not_found for missing atom target when no process or component exists" do
+      assert {:error, :target_not_found} =
+               Coordinator.dispatch_event(
+                 :terminal,
+                 :click,
+                 %{widget_id: :save, action: :save},
+                 :missing_atom_target
                )
     end
 
