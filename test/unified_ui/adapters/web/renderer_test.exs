@@ -181,6 +181,101 @@ defmodule UnifiedUi.Adapters.WebTest do
       refute updated_root =~ "Original"
     end
 
+    test "applies nested incremental patch and reuses unchanged grandchildren" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Web.render(iur)
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right Updated"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Web.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 2,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert updated_root =~ "<span>Left</span>"
+      assert updated_root =~ "<span>Right Updated</span>"
+      assert updated_root =~ "Save"
+      refute updated_root =~ "<span>Right</span>"
+    end
+
+    test "rerenders changed nested child when nested shape changes" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Web.render(iur)
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Layouts.HBox{
+            spacing: 2,
+            children: [
+              %Widgets.Text{id: :left, content: "Left"},
+              %Widgets.Text{id: :right, content: "Right"},
+              %Widgets.Text{id: :added, content: "Added"}
+            ]
+          },
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Web.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 1,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert updated_root =~ "<span>Left</span>"
+      assert updated_root =~ "<span>Right</span>"
+      assert updated_root =~ "<span>Added</span>"
+      assert updated_root =~ "Save"
+    end
+
     test "falls back to full render when root child shape changes" do
       iur = %Layouts.VBox{
         children: [
