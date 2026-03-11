@@ -92,7 +92,11 @@ defmodule UnifiedUi.Adapters.Web do
 
     # Convert IUR tree to requested output format
     root = render_output(iur_tree, renderer_state, format)
-    root_layout_children_rendered = root_layout_children_rendered(iur_tree, renderer_state)
+
+    root_layout_children_render_cache =
+      root_layout_children_render_cache(iur_tree, renderer_state)
+
+    root_layout_children_rendered = render_cache_html_list(root_layout_children_render_cache)
 
     # Update state with root reference and metadata for diff-aware updates
     renderer_state =
@@ -101,6 +105,7 @@ defmodule UnifiedUi.Adapters.Web do
       |> State.put_metadata(:last_iur, iur_tree)
       |> State.put_metadata(:output_format, format)
       |> State.put_metadata(:root_layout_children_rendered, root_layout_children_rendered)
+      |> State.put_metadata(:root_layout_children_render_cache, root_layout_children_render_cache)
 
     {:ok, renderer_state}
   end
@@ -130,15 +135,20 @@ defmodule UnifiedUi.Adapters.Web do
     previous_rendered_children =
       State.get_metadata(renderer_state, :root_layout_children_rendered, :__missing__)
 
+    previous_render_cache =
+      State.get_metadata(renderer_state, :root_layout_children_render_cache, :__missing__)
+
     config_changed = merged_config != renderer_state.config
     iur_changed = previous_iur != iur_tree
 
     if iur_changed or config_changed do
-      {new_root, incremental_patch, root_layout_children_rendered} =
+      {new_root, incremental_patch, root_layout_children_rendered,
+       root_layout_children_render_cache} =
         build_updated_root(
           iur_tree,
           previous_iur,
           previous_rendered_children,
+          previous_render_cache,
           renderer_state,
           config_changed,
           format
@@ -153,6 +163,10 @@ defmodule UnifiedUi.Adapters.Web do
         |> State.put_metadata(:output_format, format)
         |> State.put_metadata(:incremental_patch, incremental_patch)
         |> State.put_metadata(:root_layout_children_rendered, root_layout_children_rendered)
+        |> State.put_metadata(
+          :root_layout_children_render_cache,
+          root_layout_children_render_cache
+        )
         |> maybe_put_root(new_root, root_changed)
         |> maybe_bump_version(root_changed or config_changed)
 
@@ -2022,10 +2036,14 @@ defmodule UnifiedUi.Adapters.Web do
          iur_tree,
          previous_iur,
          previous_rendered_children,
+         previous_render_cache,
          renderer_state,
          config_changed,
          format
        ) do
+    previous_root_render_cache =
+      normalize_root_render_cache(previous_render_cache, previous_rendered_children)
+
     cond do
       config_changed ->
         full_render_with_cache(iur_tree, renderer_state, format, :config_changed)
@@ -2037,18 +2055,20 @@ defmodule UnifiedUi.Adapters.Web do
         case patch_root_layout_children(
                iur_tree,
                previous_iur,
-               previous_rendered_children,
+               previous_root_render_cache,
                renderer_state,
                format
              ) do
-          {:ok, patched_root, patched_children, reused_children, re_rendered_children} ->
+          {:ok, patched_root, patched_children_cache, reused_children, re_rendered_children} ->
+            root_layout_children_rendered = render_cache_html_list(patched_children_cache)
+
             {patched_root,
              %{
                applied: true,
                strategy: :root_layout_children,
                reused_children: reused_children,
                re_rendered_children: re_rendered_children
-             }, patched_children}
+             }, root_layout_children_rendered, patched_children_cache}
 
           :error ->
             full_render_with_cache(iur_tree, renderer_state, format, :full_render_fallback)
@@ -2057,8 +2077,13 @@ defmodule UnifiedUi.Adapters.Web do
   end
 
   defp full_render_with_cache(iur_tree, renderer_state, format, reason) do
+    root_layout_children_render_cache =
+      root_layout_children_render_cache(iur_tree, renderer_state)
+
+    root_layout_children_rendered = render_cache_html_list(root_layout_children_render_cache)
+
     {render_output(iur_tree, renderer_state, format), fallback_incremental_patch(reason),
-     root_layout_children_rendered(iur_tree, renderer_state)}
+     root_layout_children_rendered, root_layout_children_render_cache}
   end
 
   defp fallback_incremental_patch(reason) when is_atom(reason) do
@@ -2074,19 +2099,25 @@ defmodule UnifiedUi.Adapters.Web do
   defp patch_root_layout_children(
          %module{} = iur_tree,
          %module{} = previous_iur,
-         rendered_children,
+         rendered_children_cache,
          %State{} = state,
          format
        )
        when module in [Layouts.VBox, Layouts.HBox] do
     with true <- layout_signature(iur_tree) == layout_signature(previous_iur),
-         true <- is_list(rendered_children),
-         true <- same_child_count?(iur_tree.children, previous_iur.children, rendered_children),
+         true <- is_list(rendered_children_cache),
+         true <-
+           same_child_count?(iur_tree.children, previous_iur.children, rendered_children_cache),
          {:ok, patched_children, reused_children, re_rendered_children} <-
-           patch_children(iur_tree.children, previous_iur.children, rendered_children, state) do
+           patch_children(
+             iur_tree.children,
+             previous_iur.children,
+             rendered_children_cache,
+             state
+           ) do
       patched_root =
         iur_tree
-        |> render_root_layout_html(patched_children)
+        |> render_root_layout_html(render_cache_html_list(patched_children))
         |> format_root_output(format)
 
       {:ok, patched_root, patched_children, reused_children, re_rendered_children}
@@ -2112,35 +2143,148 @@ defmodule UnifiedUi.Adapters.Web do
   defp same_child_count?(_, _, _), do: false
 
   defp patch_children(new_children, old_children, rendered_children, state) do
-    {patched_children, reused_children, re_rendered_children, has_empty_render?} =
+    patch_result =
       new_children
       |> Enum.zip(old_children)
       |> Enum.zip(rendered_children)
-      |> Enum.reduce({[], 0, 0, false}, fn {{new_child, old_child}, rendered_child},
-                                           {children_acc, reused_acc, rerendered_acc, empty_acc} ->
-        if new_child == old_child do
-          {[rendered_child | children_acc], reused_acc + 1, rerendered_acc, empty_acc}
-        else
-          new_render = convert_iur(new_child, state)
+      |> Enum.reduce_while({[], 0, 0}, fn {{new_child, old_child}, rendered_child},
+                                          {children_acc, reused_acc, rerendered_acc} ->
+        case patch_child(new_child, old_child, rendered_child, state) do
+          {:ok, patched_child, reused_delta, rerendered_delta} ->
+            {:cont,
+             {[
+                patched_child
+                | children_acc
+              ], reused_acc + reused_delta, rerendered_acc + rerendered_delta}}
 
-          {[new_render | children_acc], reused_acc, rerendered_acc + 1,
-           empty_acc or new_render == ""}
+          :error ->
+            {:halt, :error}
         end
       end)
 
-    if has_empty_render? do
-      :error
-    else
-      {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
+    case patch_result do
+      :error ->
+        :error
+
+      {patched_children, reused_children, re_rendered_children} ->
+        {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
     end
   end
 
-  defp root_layout_children_rendered(%module{} = iur_tree, %State{} = state)
-       when module in [Layouts.VBox, Layouts.HBox] do
-    convert_children_list(iur_tree.children, state)
+  defp patch_child(new_child, old_child, rendered_child, _state) when new_child == old_child do
+    {:ok, rendered_child, 1, 0}
   end
 
-  defp root_layout_children_rendered(_, _), do: nil
+  defp patch_child(new_child, old_child, rendered_child, state) do
+    case patch_nested_layout_child(new_child, old_child, rendered_child, state) do
+      {:ok, patched_child, reused_children, re_rendered_children} ->
+        {:ok, patched_child, reused_children, re_rendered_children}
+
+      :error ->
+        patched_child = build_render_cache(new_child, state)
+
+        if render_cache_html(patched_child) == "" do
+          :error
+        else
+          {:ok, patched_child, 0, 1}
+        end
+    end
+  end
+
+  defp patch_nested_layout_child(
+         %module{} = new_layout,
+         %module{} = old_layout,
+         rendered_child,
+         state
+       )
+       when module in [Layouts.VBox, Layouts.HBox] do
+    with true <- layout_signature(new_layout) == layout_signature(old_layout),
+         {:ok, rendered_children} <- extract_layout_render_cache_children(rendered_child, module),
+         true <- same_child_count?(new_layout.children, old_layout.children, rendered_children),
+         {:ok, patched_children, reused_children, re_rendered_children} <-
+           patch_children(new_layout.children, old_layout.children, rendered_children, state) do
+      patched_html =
+        new_layout |> render_root_layout_html(render_cache_html_list(patched_children))
+
+      {:ok, layout_render_cache(module, patched_html, patched_children), reused_children,
+       re_rendered_children}
+    else
+      _ -> :error
+    end
+  end
+
+  defp patch_nested_layout_child(_, _, _, _), do: :error
+
+  defp normalize_root_render_cache(previous_render_cache, _previous_rendered_children)
+       when is_list(previous_render_cache) do
+    Enum.map(previous_render_cache, fn
+      %{kind: :layout} = render_cache -> render_cache
+      %{kind: :leaf} = render_cache -> render_cache
+      render_cache -> render_cache |> render_cache_html() |> leaf_render_cache()
+    end)
+  end
+
+  defp normalize_root_render_cache(:__missing__, previous_rendered_children)
+       when is_list(previous_rendered_children) do
+    Enum.map(previous_rendered_children, &leaf_render_cache/1)
+  end
+
+  defp normalize_root_render_cache(_, _), do: nil
+
+  defp extract_layout_render_cache_children(
+         %{kind: :layout, layout_module: module, children: children},
+         module
+       )
+       when is_list(children) do
+    {:ok, children}
+  end
+
+  defp extract_layout_render_cache_children(_, _), do: :error
+
+  defp build_render_cache(%module{} = layout, state)
+       when module in [Layouts.VBox, Layouts.HBox] do
+    children = build_children_render_cache(layout.children, state)
+    html = layout |> render_root_layout_html(render_cache_html_list(children))
+    layout_render_cache(module, html, children)
+  end
+
+  defp build_render_cache(iur_element, state) do
+    iur_element
+    |> convert_iur(state)
+    |> leaf_render_cache()
+  end
+
+  defp build_children_render_cache(children, state) when is_list(children) do
+    children
+    |> Enum.map(&build_render_cache(&1, state))
+    |> Enum.reject(&(render_cache_html(&1) == ""))
+  end
+
+  defp build_children_render_cache(_, _), do: []
+
+  defp layout_render_cache(module, html, children) do
+    %{kind: :layout, layout_module: module, html: html, children: children}
+  end
+
+  defp leaf_render_cache(html) when is_binary(html), do: %{kind: :leaf, html: html}
+  defp leaf_render_cache(_), do: %{kind: :leaf, html: ""}
+
+  defp render_cache_html(%{html: html}) when is_binary(html), do: html
+  defp render_cache_html(html) when is_binary(html), do: html
+  defp render_cache_html(_), do: ""
+
+  defp render_cache_html_list(cache_entries) when is_list(cache_entries) do
+    Enum.map(cache_entries, &render_cache_html/1)
+  end
+
+  defp render_cache_html_list(_), do: nil
+
+  defp root_layout_children_render_cache(%module{} = iur_tree, %State{} = state)
+       when module in [Layouts.VBox, Layouts.HBox] do
+    build_children_render_cache(iur_tree.children, state)
+  end
+
+  defp root_layout_children_render_cache(_, _), do: nil
 
   defp render_root_layout_html(%Layouts.VBox{} = vbox, children_html)
        when is_list(children_html) do

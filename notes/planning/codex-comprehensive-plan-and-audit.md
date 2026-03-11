@@ -38,7 +38,7 @@ The main remaining work is no longer basic scaffolding. It is hardening and refi
 - Track C remains focused on adapter runtime depth (subtree incremental updates) and final planning terminology cleanup.
 - Terminal adapter `update/3` now applies recursive nested VBox/HBox subtree patching for stable layout signatures/child counts, reusing unchanged grandchildren and only re-rendering changed nodes.
 - Desktop adapter `update/3` now applies recursive nested VBox/HBox subtree patching for stable layout signatures/child counts, reusing unchanged grandchildren and only re-rendering changed nodes.
-- Web adapter `update/3` now applies a first subtree-level strategy for stable root VBox/HBox trees, reusing unchanged rendered child fragments and only re-rendering changed child subtrees.
+- Web adapter `update/3` now applies recursive nested VBox/HBox subtree patching for stable layout signatures/child counts, reusing unchanged grandchildren and only re-rendering changed nodes.
 
 ## Audit Findings by Phase
 
@@ -75,7 +75,7 @@ Completed evidence:
 - Multi-platform coordinator implemented (`lib/unified_ui/adapters/coordinator.ex`).
 
 Gaps:
-- Subtree-level incremental patching is now only partially implemented (web root VBox/HBox child patching; terminal + desktop nested VBox/HBox subtree patching); cross-adapter subtree patching by element ID and deeper web patching are not implemented yet.
+- Subtree-level incremental patching is now only partially implemented (terminal + desktop + web nested VBox/HBox subtree patching complete); cross-adapter subtree patching by element ID is not implemented yet.
 - Planning terminology alignment is still in progress; legacy phase artifacts still reference `renderers/*` paths.
 
 ### Phase 4 (Advanced Features and Styling) - Substantially complete
@@ -145,7 +145,7 @@ Status: complete.
 1. Move from rerender to diff-aware update.
 - Add element-ID matching and incremental update logic where possible.
 - Exit criteria: `update/3` applies structural diff, no full rerender default for unchanged subtrees.
-Status: root-level diff-aware updates complete; terminal + desktop nested VBox/HBox subtree patching is complete; web deeper subtree patching remains.
+Status: root-level diff-aware updates complete; terminal + desktop + web nested VBox/HBox subtree patching is complete; cross-adapter element-ID subtree patching remains.
 
 2. Strengthen event dispatch path.
 - Complete bus dispatch wiring and target routing contracts.
