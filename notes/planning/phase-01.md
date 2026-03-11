@@ -8,7 +8,7 @@ This phase establishes the foundational infrastructure for the UnifiedUi library
 
 - [x] **Task 1.1** Create Elixir library structure with proper directory layout
 
-Initialize the UnifiedUi library with the appropriate directory structure for DSL definitions, code generation, and platform-specific renderers.
+Initialize the UnifiedUi library with the appropriate directory structure for DSL definitions, code generation, and platform-specific adapters.
 
 - [x] 1.1.1 Create new Elixir library with `mix new unified_ui --sup`
 - [x] 1.1.2 Configure application metadata in mix.exs (name, description, licenses)
@@ -18,7 +18,7 @@ Initialize the UnifiedUi library with the appropriate directory structure for DS
   - `layouts/` - Layout target structs
   - `styles/` - Style system
   - `iur/` - Intermediate UI Representation
-  - `renderers/` - Platform-specific renderers
+  - `adapters/` - Platform-specific adapters
 - [x] 1.1.4 Create mirror test directory structure
 - [x] 1.1.5 Add required dependencies to mix.exs:
   - `{:spark, "~> 1.0"}` - DSL framework

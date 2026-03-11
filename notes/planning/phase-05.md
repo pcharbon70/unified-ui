@@ -205,7 +205,7 @@ Write guides to help developers get started and be productive.
 
 - [x] **Task 5.6** Document and implement extension framework
 
-Create documentation and tooling for extending UnifiedUi with custom widgets and renderers.
+Create documentation and tooling for extending UnifiedUi with custom widgets and adapters.
 
 - [x] 5.6.1 Write "Creating Custom Widgets" guide:
   - Widget entity definition
