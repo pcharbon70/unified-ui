@@ -109,13 +109,16 @@ defmodule UnifiedUi.Adapters.Desktop do
     iur_changed = previous_iur != iur_tree
 
     if iur_changed or config_changed do
-      new_root = convert_iur(iur_tree, renderer_state)
+      {new_root, incremental_patch} =
+        build_updated_root(iur_tree, previous_iur, renderer_state, config_changed)
+
       root_changed = new_root != renderer_state.root
 
       updated_state =
         renderer_state
         |> put_config(merged_config)
         |> State.put_metadata(:last_iur, iur_tree)
+        |> State.put_metadata(:incremental_patch, incremental_patch)
         |> maybe_put_root(new_root, root_changed)
         |> maybe_bump_version(root_changed or config_changed)
 
@@ -1486,6 +1489,104 @@ defmodule UnifiedUi.Adapters.Desktop do
 
   defp extract_desktop_keys(row) when is_list(row) do
     Keyword.keys(row)
+  end
+
+  defp build_updated_root(iur_tree, previous_iur, renderer_state, config_changed) do
+    cond do
+      config_changed ->
+        {convert_iur(iur_tree, renderer_state), fallback_incremental_patch(:config_changed)}
+
+      previous_iur == :__missing__ ->
+        {convert_iur(iur_tree, renderer_state), fallback_incremental_patch(:missing_previous_iur)}
+
+      true ->
+        case patch_root_layout_children(iur_tree, previous_iur, renderer_state) do
+          {:ok, patched_root, reused_children, re_rendered_children} ->
+            {patched_root,
+             %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: reused_children,
+               re_rendered_children: re_rendered_children
+             }}
+
+          :error ->
+            {convert_iur(iur_tree, renderer_state),
+             fallback_incremental_patch(:full_render_fallback)}
+        end
+    end
+  end
+
+  defp fallback_incremental_patch(reason) when is_atom(reason) do
+    %{
+      applied: false,
+      strategy: nil,
+      reused_children: 0,
+      re_rendered_children: 0,
+      reason: reason
+    }
+  end
+
+  defp patch_root_layout_children(
+         %module{} = iur_tree,
+         %module{} = previous_iur,
+         %State{} = state
+       )
+       when module in [Layouts.VBox, Layouts.HBox] do
+    with true <- layout_signature(iur_tree) == layout_signature(previous_iur),
+         true <- is_map(state.root),
+         true <- state.root[:type] == :container,
+         rendered_children when is_list(rendered_children) <- state.root[:children],
+         true <- same_child_count?(iur_tree.children, previous_iur.children, rendered_children),
+         {:ok, patched_children, reused_children, re_rendered_children} <-
+           patch_children(iur_tree.children, previous_iur.children, rendered_children, state) do
+      {:ok, Map.put(state.root, :children, patched_children), reused_children,
+       re_rendered_children}
+    else
+      _ -> :error
+    end
+  end
+
+  defp patch_root_layout_children(_, _, _), do: :error
+
+  defp layout_signature(%_{} = layout) do
+    layout
+    |> Map.from_struct()
+    |> Map.drop([:children])
+  end
+
+  defp same_child_count?(new_children, old_children, rendered_children)
+       when is_list(new_children) and is_list(old_children) and is_list(rendered_children) do
+    length(new_children) == length(old_children) and
+      length(old_children) == length(rendered_children)
+  end
+
+  defp same_child_count?(_, _, _), do: false
+
+  defp patch_children(new_children, old_children, rendered_children, state) do
+    {patched_children, reused_children, re_rendered_children, has_nil_render?} =
+      new_children
+      |> Enum.zip(old_children)
+      |> Enum.zip(rendered_children)
+      |> Enum.reduce({[], 0, 0, false}, fn {{new_child, old_child}, rendered_child},
+                                           {children_acc, reused_acc, rerendered_acc, nil_acc} ->
+        if new_child == old_child do
+          {[rendered_child | children_acc], reused_acc + 1, rerendered_acc, nil_acc}
+        else
+          new_render = convert_iur(new_child, state)
+
+          {[
+             new_render
+             | children_acc
+           ], reused_acc, rerendered_acc + 1, nil_acc or is_nil(new_render)}
+        end
+      end)
+
+    if has_nil_render? do
+      :error
+    else
+      {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
+    end
   end
 
   defp put_config(%State{} = renderer_state, config) when is_list(config) do
