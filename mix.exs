@@ -27,12 +27,13 @@ defmodule UnifiedUi.MixProject do
   defp deps do
     [
       {:spark, "~> 1.0"},
-      {:jido, "~> 1.0"},
-      {:jido_signal, "~> 1.0"},
+      {:jido, git: "https://github.com/agentjido/jido.git", tag: "v2.0.0"},
+      {:jido_signal, "~> 2.0"},
       {:phoenix_pubsub, "~> 2.1"},
       {:term_ui, github: "pcharbon70/term_ui", branch: "multi-renderer"},
       {:unified_iur, path: "../unified_iur"},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:benchee, "~> 1.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test}
