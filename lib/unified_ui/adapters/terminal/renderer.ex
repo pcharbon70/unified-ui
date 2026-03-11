@@ -1723,7 +1723,7 @@ defmodule UnifiedUi.Adapters.Terminal do
 
     with true <- layout_signature(iur_tree) == layout_signature(previous_iur),
          {:ok, rendered_children, rebuild_root} <-
-           extract_root_layout_children(state.root, expected_direction),
+           extract_layout_children(state.root, expected_direction),
          true <- same_child_count?(iur_tree.children, previous_iur.children, rendered_children),
          {:ok, patched_children, reused_children, re_rendered_children} <-
            patch_children(iur_tree.children, previous_iur.children, rendered_children, state) do
@@ -1744,7 +1744,7 @@ defmodule UnifiedUi.Adapters.Terminal do
     |> Map.drop([:children])
   end
 
-  defp extract_root_layout_children(
+  defp extract_layout_children(
          %{type: :stack, direction: direction, children: rendered_children} = root,
          expected_direction
        )
@@ -1753,7 +1753,7 @@ defmodule UnifiedUi.Adapters.Terminal do
      fn patched_children -> Map.put(root, :children, patched_children) end}
   end
 
-  defp extract_root_layout_children(
+  defp extract_layout_children(
          %{
            type: :box,
            children: [
@@ -1771,7 +1771,7 @@ defmodule UnifiedUi.Adapters.Terminal do
      end}
   end
 
-  defp extract_root_layout_children(_, _), do: :error
+  defp extract_layout_children(_, _), do: :error
 
   defp same_child_count?(new_children, old_children, rendered_children)
        when is_list(new_children) and is_list(old_children) and is_list(rendered_children) do
@@ -1782,28 +1782,73 @@ defmodule UnifiedUi.Adapters.Terminal do
   defp same_child_count?(_, _, _), do: false
 
   defp patch_children(new_children, old_children, rendered_children, state) do
-    {patched_children, reused_children, re_rendered_children, has_nil_render?} =
+    patch_result =
       new_children
       |> Enum.zip(old_children)
       |> Enum.zip(rendered_children)
-      |> Enum.reduce({[], 0, 0, false}, fn {{new_child, old_child}, rendered_child},
-                                           {children_acc, reused_acc, rerendered_acc, nil_acc} ->
-        if new_child == old_child do
-          {[rendered_child | children_acc], reused_acc + 1, rerendered_acc, nil_acc}
-        else
-          new_render = convert_iur(new_child, state)
+      |> Enum.reduce_while({[], 0, 0}, fn {{new_child, old_child}, rendered_child},
+                                          {children_acc, reused_acc, rerendered_acc} ->
+        case patch_child(new_child, old_child, rendered_child, state) do
+          {:ok, patched_child, reused_delta, rerendered_delta} ->
+            {:cont,
+             {[
+                patched_child
+                | children_acc
+              ], reused_acc + reused_delta, rerendered_acc + rerendered_delta}}
 
-          {[new_render | children_acc], reused_acc, rerendered_acc + 1,
-           nil_acc or is_nil(new_render)}
+          :error ->
+            {:halt, :error}
         end
       end)
 
-    if has_nil_render? do
-      :error
-    else
-      {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
+    case patch_result do
+      :error ->
+        :error
+
+      {patched_children, reused_children, re_rendered_children} ->
+        {:ok, Enum.reverse(patched_children), reused_children, re_rendered_children}
     end
   end
+
+  defp patch_child(new_child, old_child, rendered_child, _state) when new_child == old_child do
+    {:ok, rendered_child, 1, 0}
+  end
+
+  defp patch_child(new_child, old_child, rendered_child, state) do
+    case patch_nested_layout_child(new_child, old_child, rendered_child, state) do
+      {:ok, patched_child, reused_children, re_rendered_children} ->
+        {:ok, patched_child, reused_children, re_rendered_children}
+
+      :error ->
+        case convert_iur(new_child, state) do
+          nil -> :error
+          new_render -> {:ok, new_render, 0, 1}
+        end
+    end
+  end
+
+  defp patch_nested_layout_child(
+         %module{} = new_layout,
+         %module{} = old_layout,
+         rendered_child,
+         state
+       )
+       when module in [Layouts.VBox, Layouts.HBox] do
+    expected_direction = layout_direction(module)
+
+    with true <- layout_signature(new_layout) == layout_signature(old_layout),
+         {:ok, rendered_children, rebuild_child} <-
+           extract_layout_children(rendered_child, expected_direction),
+         true <- same_child_count?(new_layout.children, old_layout.children, rendered_children),
+         {:ok, patched_children, reused_children, re_rendered_children} <-
+           patch_children(new_layout.children, old_layout.children, rendered_children, state) do
+      {:ok, rebuild_child.(patched_children), reused_children, re_rendered_children}
+    else
+      _ -> :error
+    end
+  end
+
+  defp patch_nested_layout_child(_, _, _, _), do: :error
 
   defp put_config(%State{} = renderer_state, config) when is_list(config) do
     %{renderer_state | config: config}
