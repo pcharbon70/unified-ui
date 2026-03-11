@@ -96,6 +96,71 @@ defmodule UnifiedUi.Adapters.TerminalTest do
 
       assert updated_state.version == state.version + 1
       assert State.get_config(updated_state, :window_title) == "Updated"
+
+      assert %{
+               applied: false,
+               reason: :config_changed
+             } = State.get_metadata(updated_state, :incremental_patch)
+    end
+
+    test "applies root child incremental patch for stable vbox layouts" do
+      iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"},
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, state} = Terminal.render(iur)
+      assert {:ok, initial_root} = State.get_root(state)
+      assert %{type: :stack, children: initial_children} = initial_root
+
+      updated_iur = %Layouts.VBox{
+        spacing: 1,
+        children: [
+          %Widgets.Text{id: :headline, content: "Updated"},
+          %Widgets.Button{id: :save, label: "Save", on_click: :save}
+        ]
+      }
+
+      assert {:ok, updated_state} = Terminal.update(updated_iur, state)
+      assert {:ok, updated_root} = State.get_root(updated_state)
+      assert %{type: :stack, children: updated_children} = updated_root
+
+      assert %{
+               applied: true,
+               strategy: :root_layout_children,
+               reused_children: 1,
+               re_rendered_children: 1
+             } = State.get_metadata(updated_state, :incremental_patch)
+
+      assert Enum.at(updated_children, 1) == Enum.at(initial_children, 1)
+      assert Enum.at(updated_children, 0) != Enum.at(initial_children, 0)
+    end
+
+    test "falls back to full render when root child shape changes" do
+      iur = %Layouts.VBox{
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"}
+        ]
+      }
+
+      assert {:ok, state} = Terminal.render(iur)
+
+      updated_iur = %Layouts.VBox{
+        children: [
+          %Widgets.Text{id: :headline, content: "Original"},
+          %Widgets.Text{id: :new_item, content: "Added"}
+        ]
+      }
+
+      assert {:ok, updated_state} = Terminal.update(updated_iur, state)
+
+      assert %{
+               applied: false,
+               reason: :full_render_fallback
+             } = State.get_metadata(updated_state, :incremental_patch)
     end
   end
 
